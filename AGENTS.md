@@ -9,6 +9,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 
 ## Project Snapshot
 - App: lightweight CRM (accounts, contacts, opportunities, tasks, activities)
+- Product label: Toprock CRM
 - Stack: Next.js App Router, TypeScript, Tailwind, Drizzle ORM, Neon Postgres
 - Auth: custom username/password login with signed JWT cookie session
 - Rendering: route pages are server-rendered (`force-dynamic`) with server actions for writes
@@ -34,7 +35,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `src/lib/schema.ts` Drizzle schema and enums
 - `src/lib/db.ts` shared Neon Drizzle client
 - `src/lib/auth.ts` session create/verify helpers
-- `src/components/` shared UI helpers (`crm-shell`, autosave fields, call link)
+- `src/components/` shared UI helpers (`crm-shell`, autosave fields, call link, collapsible form section)
 - `drizzle/` generated migrations
 - `scripts/create-user.mjs` CLI user upsert helper
 
@@ -43,7 +44,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `/login`
 - `/accounts`, `/accounts/[id]`
 - `/contacts`, `/contacts/[id]`
-- `/opportunities`
+- `/opportunities`, `/opportunities/[id]`
 - `/tasks`
 - `/activities`
 - compatibility redirects: `/customers` and `/customers/[id]`
@@ -67,14 +68,27 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - Keep contact/account terminology consistent in UI:
   - UI label: Account
   - DB table: `companies`
+- Keep opportunity terminology consistent in UI:
+  - UI label: Opportunity
+  - DB table: `deals`
 - Phone numbers are normalized to US format in actions (`(###) ###-####`).
 - Keep routes dynamic when data should always be fresh.
+
+## Key Workflows Added
+- Opportunity detail workflow lives at `/opportunities/[id]`.
+- Opportunity detail supports:
+  - editing core fields via `updateDeal`
+  - stage updates + stage history notes via `updateDealStage`
+  - contextual activity logging via `logActivity` with `returnPath`
+- Many create/log forms are wrapped in `CollapsibleFormSection` and default collapsed.
+- Collapsible sections auto-close on submit (`onSubmitCapture`) and remain minimized after refresh.
 
 ## When Editing Existing Features
 - If touching contact profile editing, preserve blur autosave behavior.
 - If touching phone display, preserve `Call` button (`tel:` link behavior).
 - If adding activity logging context, set `returnPath` so the page revalidates after submit.
 - If adding/renaming routes, update top nav in `src/components/crm-shell.tsx`.
+- If editing create/log forms, preserve the collapsible interaction pattern.
 
 ## Database Change Workflow
 1. Update `src/lib/schema.ts`
@@ -88,6 +102,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `npm run build`
 - If auth touched: verify `/login` flow and guarded pages redirect as expected
 - If schema touched: verify migration generated and applied
+- If opportunity workflow touched: verify `/opportunities/[id]` save + stage updates + timeline logging
 
 ## Safety Notes
 - Do not store plaintext passwords; always hash with bcrypt (`bcryptjs`).
@@ -96,8 +111,8 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 
 ## Known Issues / Tech Debt
 - Single-tenant data model: all authenticated users see all data; no per-user/org authorization boundaries yet.
-- Contact-to-deal relationship is underused: `deals.primaryContactId` exists, but most create flows do not currently set it.
+- Contact-to-opportunity linking is partial: `deals.primaryContactId` is editable, but not consistently set in all create flows.
 - Minimal error UX: server action validation failures generally throw; no structured inline form error states yet.
-- Activity logging is now contextual (account/contact), but dashboard still shows global mixed activity with no filters.
+- Stage change guard for `lost` reason is soft (auto-fills "No reason provided."); no hard UI enforcement yet.
 - Phone normalization assumes US numbers only; non-US formats are rejected.
 - No test suite yet (unit/integration/e2e); quality relies on lint/build and manual verification.
