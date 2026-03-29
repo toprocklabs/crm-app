@@ -30,7 +30,7 @@ export function CrmShell({
     <main className="crm-shell mx-auto grid min-h-screen w-full max-w-[1400px] gap-6 px-4 py-5 md:grid-cols-[250px_minmax(0,1fr)] md:px-6 md:py-7">
       <aside className="crm-sidebar rounded-3xl border border-white/45 bg-slate-950/90 p-4 text-slate-100 shadow-2xl shadow-cyan-950/30 md:sticky md:top-6 md:h-[calc(100vh-3rem)]">
         <div className="rounded-2xl border border-white/20 bg-white/5 p-4">
-          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-cyan-300">Startup CRM</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-cyan-300">Toprock</p>
           <p className="mt-2 text-sm text-slate-300">Signed in as</p>
           <p className="text-lg font-semibold text-white">{username}</p>
         </div>
@@ -82,3 +82,4 @@ export function CrmShell({
     </main>
   );
 }
+

@@ -146,7 +146,7 @@ export default async function Home() {
   return (
     <CrmShell
       username={session.username}
-      title="Simple HubSpot-style control center"
+      title="Dashboard"
       description="Track pipeline, enforce next steps, and run a clean follow-up cadence for your SMB opportunities."
     >
 
@@ -286,6 +286,7 @@ export default async function Home() {
     </CrmShell>
   );
 }
+
 
 
 
