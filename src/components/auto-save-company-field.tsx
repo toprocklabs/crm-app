@@ -7,13 +7,15 @@ export function AutoSaveCompanyField({
   field,
   label,
   defaultValue,
+  emptyText,
   type = "text",
   action,
 }: {
   companyId: number;
-  field: "customerProjectUrl";
+  field: "website" | "customerProjectUrl";
   label: string;
   defaultValue: string;
+  emptyText?: string;
   type?: "text" | "url";
   action: (formData: FormData) => void | Promise<void>;
 }) {
@@ -47,6 +49,15 @@ export function AutoSaveCompanyField({
     setIsEditing(true);
   }
 
+  const normalizedUrl =
+    defaultValue && defaultValue.trim()
+      ? (defaultValue.startsWith("http://") || defaultValue.startsWith("https://")
+          ? defaultValue
+          : `https://${defaultValue}`)
+      : null;
+
+  const fallbackText = emptyText ?? (field === "website" ? "No website" : "No customer project URL");
+
   return (
     <form ref={formRef} action={action} className="space-y-1">
       <input type="hidden" name="companyId" value={companyId} />
@@ -58,7 +69,7 @@ export function AutoSaveCompanyField({
           name="value"
           type={type}
           value={draftValue}
-          placeholder="No customer project URL"
+          placeholder={fallbackText}
           onChange={(event) => setDraftValue(event.currentTarget.value)}
           onBlur={submitIfChanged}
           onKeyDown={(event) => {
@@ -76,17 +87,30 @@ export function AutoSaveCompanyField({
           className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
         />
       ) : (
-        <button
-          type="button"
-          onClick={beginEditing}
-          className="w-full rounded-md border border-transparent bg-slate-50 px-3 py-2 text-left text-sm text-slate-900 transition hover:border-slate-200 hover:bg-white"
-        >
-          {defaultValue ? (
-            <span className="underline decoration-slate-300 underline-offset-2">{defaultValue}</span>
-          ) : (
-            <span className="text-slate-500">No customer project URL</span>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={beginEditing}
+            className="min-w-0 flex-1 rounded-md border border-transparent bg-slate-50 px-3 py-2 text-left text-sm text-slate-900 transition hover:border-slate-200 hover:bg-white"
+            title={defaultValue || fallbackText}
+          >
+            {defaultValue ? (
+              <span className="block truncate underline decoration-slate-300 underline-offset-2">{defaultValue}</span>
+            ) : (
+              <span className="text-slate-500">{fallbackText}</span>
+            )}
+          </button>
+          {normalizedUrl ? (
+            <a
+              href={normalizedUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="shrink-0 rounded-md border border-slate-300 bg-white px-2.5 py-2 text-xs font-medium text-slate-700"
+            >
+              Open
+            </a>
+          ) : null}
+        </div>
       )}
       <p className="text-[11px] text-slate-500">Auto-saves when you leave the field.</p>
     </form>

@@ -81,7 +81,7 @@ const contactFieldUpdateSchema = z.object({
 
 const companyFieldUpdateSchema = z.object({
   companyId: z.coerce.number().int().positive(),
-  field: z.enum(["customerProjectUrl", "industry"]),
+  field: z.enum(["website", "customerProjectUrl", "industry"]),
   value: z.string().optional(),
 });
 
@@ -92,6 +92,18 @@ function cleanOptionalText(value: string | undefined) {
 
   const trimmed = value.trim();
   return trimmed.length ? trimmed : null;
+}
+
+function normalizeUrl(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+
+  return `https://${value}`;
 }
 
 function normalizeUsPhone(value: string | undefined) {
@@ -127,8 +139,8 @@ export async function createCompany(formData: FormData) {
 
   await db.insert(companies).values({
     name: parsed.name,
-    website: cleanOptionalText(parsed.website),
-    customerProjectUrl: cleanOptionalText(parsed.customerProjectUrl),
+    website: normalizeUrl(cleanOptionalText(parsed.website)),
+    customerProjectUrl: normalizeUrl(cleanOptionalText(parsed.customerProjectUrl)),
     industry: cleanOptionalText(parsed.industry),
   });
 
@@ -222,8 +234,10 @@ export async function updateCompanyField(formData: FormData) {
 
   const cleaned = cleanOptionalText(parsed.value);
 
-  if (parsed.field === "customerProjectUrl" && cleaned) {
-    z.string().url().parse(cleaned);
+  const normalizedUrl = normalizeUrl(cleaned);
+
+  if ((parsed.field === "customerProjectUrl" || parsed.field === "website") && normalizedUrl) {
+    z.string().url().parse(normalizedUrl);
   }
 
   if (parsed.field === "industry") {
@@ -233,7 +247,8 @@ export async function updateCompanyField(formData: FormData) {
   await db
     .update(companies)
     .set({
-      customerProjectUrl: parsed.field === "customerProjectUrl" ? cleaned : undefined,
+      website: parsed.field === "website" ? normalizedUrl : undefined,
+      customerProjectUrl: parsed.field === "customerProjectUrl" ? normalizedUrl : undefined,
       industry: parsed.field === "industry" ? cleanOptionalText(parsed.value) : undefined,
     })
     .where(eq(companies.id, parsed.companyId));

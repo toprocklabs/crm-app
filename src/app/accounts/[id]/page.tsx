@@ -73,7 +73,7 @@ export default async function AccountDetailPage({ params }: Props) {
     >
       <section className="flex flex-wrap items-start justify-between gap-4">
         <div className="w-full max-w-3xl rounded-xl border border-slate-200 bg-white p-4">
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.35fr)]">
             <AutoSaveCompanySelectField
               action={updateCompanyField}
               companyId={company.id}
@@ -82,10 +82,15 @@ export default async function AccountDetailPage({ params }: Props) {
               defaultValue={company.industry ?? ""}
               options={companyIndustries}
             />
-            <div className="space-y-1 text-sm text-slate-600">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Website</p>
-              <p>{company.website ?? "No website"}</p>
-            </div>
+            <AutoSaveCompanyField
+              action={updateCompanyField}
+              companyId={company.id}
+              field="website"
+              label="Website"
+              type="url"
+              defaultValue={company.website ?? ""}
+              emptyText="No website"
+            />
             <AutoSaveCompanyField
               action={updateCompanyField}
               companyId={company.id}
