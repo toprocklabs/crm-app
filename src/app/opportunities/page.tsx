@@ -43,7 +43,7 @@ export default async function OpportunitiesPage() {
     <CrmShell
       username={session.username}
       title="Opportunities"
-      description="Complete deal pipeline with owner accountability and next-step deadlines."
+      description="Complete opportunity pipeline with owner accountability and next-step deadlines."
     >
       <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="overflow-x-auto">
@@ -95,4 +95,5 @@ export default async function OpportunitiesPage() {
     </CrmShell>
   );
 }
+
 

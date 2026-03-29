@@ -1,4 +1,4 @@
-﻿export function CallLink({
+export function CallLink({
   phone,
   className = "",
 }: {
@@ -15,11 +15,19 @@
   }
 
   return (
-    <a
-      href={`tel:${telValue}`}
-      className={`inline-flex items-center rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100 ${className}`.trim()}
-    >
-      Call
-    </a>
+    <span className={`inline-flex items-center gap-2 ${className}`.trim()}>
+      <a
+        href={`tel:${telValue}`}
+        className="inline-flex items-center rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+      >
+        Call
+      </a>
+      <a
+        href={`sms:${telValue}`}
+        className="inline-flex items-center rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+      >
+        Text
+      </a>
+    </span>
   );
 }

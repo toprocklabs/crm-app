@@ -59,7 +59,7 @@ export default async function TasksPage() {
               <input name="assignedTo" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
             </label>
             <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Deal</span>
+              <span>Opportunity</span>
               <select name="dealId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
                 <option value="">None</option>
                 {dealRows.map((deal) => (
@@ -122,4 +122,5 @@ export default async function TasksPage() {
     </CrmShell>
   );
 }
+
 

@@ -43,7 +43,7 @@ export default async function ActivitiesPage() {
     <CrmShell
       username={session.username}
       title="Activities"
-      description="A full timeline of deal and account interactions across your team."
+      description="A full timeline of opportunity and account interactions across your team."
     >
       <section className="grid gap-6 lg:grid-cols-3">
         <form action={logActivity} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-1">
@@ -70,7 +70,7 @@ export default async function ActivitiesPage() {
               />
             </label>
             <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Deal</span>
+              <span>Opportunity</span>
               <select name="dealId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
                 <option value="">None</option>
                 {dealRows.map((deal) => (
@@ -136,3 +136,4 @@ export default async function ActivitiesPage() {
     </CrmShell>
   );
 }
+

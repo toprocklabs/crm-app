@@ -170,7 +170,7 @@ export default async function ContactDetailPage({ params }: Props) {
                 </select>
               </label>
               <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Deal (optional)</span>
+                <span>Opportunity (optional)</span>
                 <select name="dealId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
                   <option value="">None</option>
                   {dealOptions.map((deal) => (
@@ -212,7 +212,7 @@ export default async function ContactDetailPage({ params }: Props) {
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Related Opportunities</h2>
           <ul className="mt-4 space-y-3">
-            {relatedDeals.length === 0 ? <li className="text-sm text-slate-500">No deals set with this as primary contact yet.</li> : null}
+            {relatedDeals.length === 0 ? <li className="text-sm text-slate-500">No opportunities set with this as primary contact yet.</li> : null}
             {relatedDeals.map((deal) => (
               <li key={deal.id} className="rounded-lg border border-slate-200 p-3">
                 <p className="font-medium text-slate-900">{deal.name}</p>
@@ -226,3 +226,4 @@ export default async function ContactDetailPage({ params }: Props) {
     </CrmShell>
   );
 }
+

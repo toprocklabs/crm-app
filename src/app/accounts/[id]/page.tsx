@@ -1,7 +1,7 @@
 ﻿import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createContact, logActivity } from "@/app/actions";
+import { createContact, createDeal, logActivity } from "@/app/actions";
 import { CallLink } from "@/components/call-link";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
@@ -150,6 +150,54 @@ export default async function AccountDetailPage({ params }: Props) {
 
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Opportunities</h2>
+          <form action={createDeal} className="mt-4 rounded-lg border border-slate-200 p-3">
+            <input type="hidden" name="companyId" value={company.id} />
+            <div className="grid gap-2 md:grid-cols-2">
+              <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
+                <span>Opportunity name</span>
+                <input name="name" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>Stage</span>
+                <select name="stage" defaultValue="lead" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
+                  <option value="lead">Lead</option>
+                  <option value="qualified">Qualified</option>
+                  <option value="proposal">Proposal</option>
+                  <option value="negotiation">Negotiation</option>
+                  <option value="won">Won</option>
+                  <option value="lost">Lost</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>Value (USD)</span>
+                <input name="valueUsd" type="number" placeholder="5000" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>Opportunity owner</span>
+                <input name="ownerName" placeholder="Justin" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
+                <span>Next step</span>
+                <input
+                  name="nextStep"
+                  required
+                  placeholder="Send proposal draft"
+                  className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>Next step due</span>
+                <input name="nextStepDueDate" type="date" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>Expected close</span>
+                <input name="expectedCloseDate" type="date" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+              </label>
+            </div>
+            <button type="submit" className="mt-3 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white">
+              Create Opportunity
+            </button>
+          </form>
           <ul className="mt-4 space-y-3">
             {companyDeals.length === 0 ? <li className="text-sm text-slate-500">No opportunities yet.</li> : null}
             {companyDeals.map((deal) => (
@@ -196,7 +244,7 @@ export default async function AccountDetailPage({ params }: Props) {
                 </select>
               </label>
               <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Deal (optional)</span>
+                <span>Opportunity (optional)</span>
                 <select name="dealId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
                   <option value="">None</option>
                   {companyDeals.map((deal) => (
@@ -249,3 +297,4 @@ export default async function AccountDetailPage({ params }: Props) {
     </CrmShell>
   );
 }
+

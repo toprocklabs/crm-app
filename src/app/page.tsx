@@ -1,7 +1,6 @@
 ﻿import { desc, eq, sql } from "drizzle-orm";
 import {
   completeTask,
-  createDeal,
   createTask,
 } from "@/app/actions";
 import { CrmShell } from "@/components/crm-shell";
@@ -147,7 +146,7 @@ export default async function Home() {
     <CrmShell
       username={session.username}
       title="Simple HubSpot-style control center"
-      description="Track pipeline, enforce next steps, and run a clean follow-up cadence for your SMB deals."
+      description="Track pipeline, enforce next steps, and run a clean follow-up cadence for your SMB opportunities."
     >
 
       <section className="grid gap-4 md:grid-cols-4">
@@ -156,50 +155,12 @@ export default async function Home() {
         <Card
           title="Pipeline Value"
           value={currency.format(Math.round((stats.pipelineCents ?? 0) / 100))}
-          subtitle="Total tracked deal value"
+          subtitle="Total tracked opportunity value"
         />
         <Card title="Open Tasks" value={String(stats.openTasks)} subtitle="Follow-ups due soon" />
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-3">
-        <form action={createDeal} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Create deal</h2>
-          <p className="mt-1 text-sm text-slate-600">Next step is required to keep pipeline moving.</p>
-          <div className="mt-4 space-y-3">
-            <Field label="Deal name" name="name" required />
-            <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Stage</span>
-              <select name="stage" defaultValue="lead" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                <option value="lead">Lead</option>
-                <option value="qualified">Qualified</option>
-                <option value="proposal">Proposal</option>
-                <option value="negotiation">Negotiation</option>
-                <option value="won">Won</option>
-                <option value="lost">Lost</option>
-              </select>
-            </label>
-            <Field label="Value (USD)" name="valueUsd" type="number" placeholder="5000" />
-            <Field label="Deal owner" name="ownerName" placeholder="Justin" />
-            <Field label="Next step" name="nextStep" required placeholder="Send proposal draft" />
-            <Field label="Next step due" name="nextStepDueDate" type="date" />
-            <Field label="Expected close" name="expectedCloseDate" type="date" />
-            <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Account</span>
-              <select name="companyId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                <option value="">None</option>
-                {companyRows.map((company) => (
-                  <option key={company.id} value={company.id}>
-                    {company.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <button className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white" type="submit">
-            Save deal
-          </button>
-        </form>
-
+      <section className="grid gap-6">
         <form action={createTask} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Create follow-up task</h2>
           <div className="mt-4 space-y-3">
@@ -207,7 +168,7 @@ export default async function Home() {
             <Field label="Due date" name="dueDate" type="date" required />
             <Field label="Assigned to" name="assignedTo" placeholder="Austin" />
             <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Deal</span>
+              <span>Opportunity</span>
               <select name="dealId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
                 <option value="">None</option>
                 {dealRows.map((deal) => (
@@ -238,9 +199,9 @@ export default async function Home() {
 
       <section className="grid gap-6 lg:grid-cols-2">
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Deals with next steps</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Opportunities with next steps</h2>
           <ul className="mt-4 space-y-3">
-            {dealRows.length === 0 ? <li className="text-sm text-slate-500">No deals yet.</li> : null}
+            {dealRows.length === 0 ? <li className="text-sm text-slate-500">No opportunities yet.</li> : null}
             {dealRows.map((deal) => {
               const stepLate = Boolean(deal.nextStepDueDate && deal.nextStepDueDate < today && deal.stage !== "won" && deal.stage !== "lost");
 
@@ -324,4 +285,9 @@ export default async function Home() {
     </CrmShell>
   );
 }
+
+
+
+
+
 
