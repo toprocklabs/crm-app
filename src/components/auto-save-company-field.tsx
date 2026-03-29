@@ -22,6 +22,7 @@ export function AutoSaveCompanyField({
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const lastSubmittedValueRef = useRef(defaultValue);
+  const [displayValue, setDisplayValue] = useState(defaultValue);
   const [isEditing, setIsEditing] = useState(false);
   const [draftValue, setDraftValue] = useState(defaultValue);
 
@@ -41,6 +42,7 @@ export function AutoSaveCompanyField({
     }
 
     lastSubmittedValueRef.current = current;
+    setDisplayValue(current);
     formRef.current?.requestSubmit();
   }
 
@@ -50,10 +52,10 @@ export function AutoSaveCompanyField({
   }
 
   const normalizedUrl =
-    defaultValue && defaultValue.trim()
-      ? (defaultValue.startsWith("http://") || defaultValue.startsWith("https://")
-          ? defaultValue
-          : `https://${defaultValue}`)
+    displayValue && displayValue.trim()
+      ? (displayValue.startsWith("http://") || displayValue.startsWith("https://")
+          ? displayValue
+          : `https://${displayValue}`)
       : null;
 
   const fallbackText = emptyText ?? (field === "website" ? "No website" : "No customer project URL");
@@ -92,10 +94,10 @@ export function AutoSaveCompanyField({
             type="button"
             onClick={beginEditing}
             className="min-w-0 flex-1 rounded-md border border-transparent bg-slate-50 px-3 py-2 text-left text-sm text-slate-900 transition hover:border-slate-200 hover:bg-white"
-            title={defaultValue || fallbackText}
+            title={displayValue || fallbackText}
           >
-            {defaultValue ? (
-              <span className="block truncate underline decoration-slate-300 underline-offset-2">{defaultValue}</span>
+            {displayValue ? (
+              <span className="block truncate underline decoration-slate-300 underline-offset-2">{displayValue}</span>
             ) : (
               <span className="text-slate-500">{fallbackText}</span>
             )}
