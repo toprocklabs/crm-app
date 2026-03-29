@@ -4,6 +4,7 @@ import { createCompany } from "@/app/actions";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
+import { companyIndustries } from "@/lib/company-industries";
 import { getDb } from "@/lib/db";
 import { companies, contacts, deals } from "@/lib/schema";
 
@@ -36,6 +37,34 @@ function Field({
   );
 }
 
+function SelectField({
+  label,
+  name,
+  options,
+}: {
+  label: string;
+  name: string;
+  options: readonly string[];
+}) {
+  return (
+    <label className="flex flex-col gap-1 text-sm text-slate-700">
+      <span>{label}</span>
+      <select
+        className="rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-xs outline-none transition focus:border-slate-500"
+        name={name}
+        defaultValue=""
+      >
+        <option value="">Select industry</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export default async function AccountsPage() {
   const session = await requireUser();
   const db = getDb();
@@ -49,6 +78,7 @@ export default async function AccountsPage() {
       id: companies.id,
       name: companies.name,
       website: companies.website,
+      customerProjectUrl: companies.customerProjectUrl,
       industry: companies.industry,
       createdAt: companies.createdAt,
       contactCount: sql<number>`count(distinct ${contacts.id})`,
@@ -70,10 +100,11 @@ export default async function AccountsPage() {
       <section>
         <CollapsibleFormSection title="Add account" description="Create a new account record.">
           <form action={createCompany}>
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-4">
               <Field label="Account name" name="name" required />
               <Field label="Website" name="website" placeholder="https://example.com" />
-              <Field label="Industry" name="industry" placeholder="Retail, HVAC, Legal..." />
+              <Field label="Customer Project URL" name="customerProjectUrl" placeholder="https://app.example.com/project/123" />
+              <SelectField label="Industry" name="industry" options={companyIndustries} />
             </div>
             <button className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white" type="submit">
               Save account
@@ -112,6 +143,7 @@ export default async function AccountsPage() {
                       </Link>
                     </p>
                     <p className="text-slate-500">{row.website ?? "No website"}</p>
+                    <p className="text-slate-500">{row.customerProjectUrl ?? "No customer project URL"}</p>
                   </td>
                   <td className="px-3 py-2 text-slate-700">{row.industry ?? "-"}</td>
                   <td className="px-3 py-2 text-slate-700">{row.contactCount}</td>

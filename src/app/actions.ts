@@ -5,12 +5,16 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { companyIndustries } from "@/lib/company-industries";
 import { activities, companies, contacts, deals, salesTasks } from "@/lib/schema";
+
+const optionalCompanyIndustrySchema = z.enum(companyIndustries).optional().or(z.literal(""));
 
 const companySchema = z.object({
   name: z.string().trim().min(2),
   website: z.string().trim().optional(),
-  industry: z.string().trim().optional(),
+  customerProjectUrl: z.string().trim().optional(),
+  industry: optionalCompanyIndustrySchema,
 });
 
 const contactSchema = z.object({
@@ -74,6 +78,12 @@ const contactFieldUpdateSchema = z.object({
   value: z.string().optional(),
 });
 
+const companyFieldUpdateSchema = z.object({
+  companyId: z.coerce.number().int().positive(),
+  field: z.enum(["customerProjectUrl", "industry"]),
+  value: z.string().optional(),
+});
+
 function cleanOptionalText(value: string | undefined) {
   if (!value) {
     return null;
@@ -110,12 +120,14 @@ export async function createCompany(formData: FormData) {
   const parsed = companySchema.parse({
     name: formData.get("name"),
     website: formData.get("website"),
+    customerProjectUrl: formData.get("customerProjectUrl"),
     industry: formData.get("industry"),
   });
 
   await db.insert(companies).values({
     name: parsed.name,
     website: cleanOptionalText(parsed.website),
+    customerProjectUrl: cleanOptionalText(parsed.customerProjectUrl),
     industry: cleanOptionalText(parsed.industry),
   });
 
@@ -187,6 +199,42 @@ export async function updateContactField(formData: FormData) {
 
   revalidatePath(`/contacts/${parsed.contactId}`);
   revalidatePath("/contacts");
+}
+
+export async function updateCompanyField(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const parsed = companyFieldUpdateSchema.parse({
+    companyId: formData.get("companyId"),
+    field: formData.get("field"),
+    value: formData.get("value"),
+  });
+
+  const cleaned = cleanOptionalText(parsed.value);
+
+  if (parsed.field === "customerProjectUrl" && cleaned) {
+    z.string().url().parse(cleaned);
+  }
+
+  if (parsed.field === "industry") {
+    optionalCompanyIndustrySchema.parse(parsed.value ?? "");
+  }
+
+  await db
+    .update(companies)
+    .set({
+      customerProjectUrl: parsed.field === "customerProjectUrl" ? cleaned : undefined,
+      industry: parsed.field === "industry" ? cleanOptionalText(parsed.value) : undefined,
+    })
+    .where(eq(companies.id, parsed.companyId));
+
+  revalidatePath(`/accounts/${parsed.companyId}`);
+  revalidatePath("/accounts");
 }
 
 export async function createDeal(formData: FormData) {

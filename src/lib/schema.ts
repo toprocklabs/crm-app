@@ -46,6 +46,7 @@ export const companies = pgTable("companies", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   website: text("website"),
+  customerProjectUrl: text("customer_project_url"),
   industry: text("industry"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

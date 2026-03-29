@@ -1,0 +1,1 @@
+ALTER TABLE "companies" ADD COLUMN "customer_project_url" text;

@@ -1,11 +1,14 @@
 ﻿import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createContact, createDeal, logActivity } from "@/app/actions";
+import { createContact, createDeal, logActivity, updateCompanyField } from "@/app/actions";
+import { AutoSaveCompanyField } from "@/components/auto-save-company-field";
+import { AutoSaveCompanySelectField } from "@/components/auto-save-company-select-field";
 import { CallLink } from "@/components/call-link";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
+import { companyIndustries } from "@/lib/company-industries";
 import { getDb } from "@/lib/db";
 import { activities, companies, contacts, deals, salesTasks } from "@/lib/schema";
 
@@ -67,14 +70,37 @@ export default async function AccountDetailPage({ params }: Props) {
       title={company.name}
       description="Account detail with all associated people, opportunities, tasks, and timeline."
     >
-      <section className="flex items-center justify-between gap-4">
-        <div className="text-sm text-slate-600">
-          <p>{company.industry ?? "No industry"}</p>
-          <p>{company.website ?? "No website"}</p>
+      <section className="flex flex-wrap items-start justify-between gap-4">
+        <div className="w-full max-w-3xl rounded-xl border border-slate-200 bg-white p-4">
+          <div className="grid gap-3 md:grid-cols-3">
+            <AutoSaveCompanySelectField
+              action={updateCompanyField}
+              companyId={company.id}
+              field="industry"
+              label="Industry"
+              defaultValue={company.industry ?? ""}
+              options={companyIndustries}
+            />
+            <div className="space-y-1 text-sm text-slate-600">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Website</p>
+              <p>{company.website ?? "No website"}</p>
+            </div>
+            <AutoSaveCompanyField
+              action={updateCompanyField}
+              companyId={company.id}
+              field="customerProjectUrl"
+              label="Customer Project URL"
+              type="url"
+              defaultValue={company.customerProjectUrl ?? ""}
+            />
+          </div>
         </div>
-        <Link href="/accounts" className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700">
-          Back to Accounts
-        </Link>
+        <div className="flex flex-col items-start gap-3 md:items-end">
+          <div className="text-sm text-slate-600">Created: {new Date(company.createdAt).toLocaleDateString()}</div>
+          <Link href="/accounts" className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700">
+            Back to Accounts
+          </Link>
+        </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-4">
