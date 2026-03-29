@@ -218,7 +218,7 @@ export default async function ContactDetailPage({ params }: Props) {
             {relatedDeals.length === 0 ? <li className="text-sm text-slate-500">No opportunities set with this as primary contact yet.</li> : null}
             {relatedDeals.map((deal) => (
               <li key={deal.id} className="rounded-lg border border-slate-200 p-3">
-                <p className="font-medium text-slate-900">{deal.name}</p>
+                <p className="font-medium text-slate-900"><Link href={`/opportunities/${deal.id}`} className="underline decoration-slate-300 underline-offset-2">{deal.name}</Link></p>
                 <p className="text-sm text-slate-600">{deal.stage}</p>
                 <p className="text-sm text-slate-700">{currency.format(Math.round(deal.valueCents / 100))}</p>
               </li>
@@ -229,3 +229,4 @@ export default async function ContactDetailPage({ params }: Props) {
     </CrmShell>
   );
 }
+

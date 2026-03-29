@@ -33,6 +33,24 @@ const dealSchema = z.object({
   expectedCloseDate: z.string().optional(),
 });
 
+const dealUpdateSchema = z.object({
+  dealId: z.coerce.number().int().positive(),
+  name: z.string().trim().min(2),
+  valueUsd: z.coerce.number().min(0),
+  ownerName: z.string().trim().optional(),
+  nextStep: z.string().trim().min(2),
+  nextStepDueDate: z.string().optional(),
+  expectedCloseDate: z.string().optional(),
+  companyId: z.coerce.number().int().positive().optional(),
+  primaryContactId: z.coerce.number().int().positive().optional(),
+});
+
+const dealStageUpdateSchema = z.object({
+  dealId: z.coerce.number().int().positive(),
+  stage: z.enum(["lead", "qualified", "proposal", "negotiation", "won", "lost"]),
+  reason: z.string().trim().optional(),
+});
+
 const taskSchema = z.object({
   title: z.string().trim().min(2),
   dueDate: z.string().min(4),
@@ -204,6 +222,96 @@ export async function createDeal(formData: FormData) {
   });
 
   revalidatePath("/");
+}
+
+export async function updateDeal(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const rawCompanyId = formData.get("companyId")?.toString();
+  const rawPrimaryContactId = formData.get("primaryContactId")?.toString();
+
+  const parsed = dealUpdateSchema.parse({
+    dealId: formData.get("dealId"),
+    name: formData.get("name"),
+    valueUsd: formData.get("valueUsd"),
+    ownerName: formData.get("ownerName"),
+    nextStep: formData.get("nextStep"),
+    nextStepDueDate: formData.get("nextStepDueDate"),
+    expectedCloseDate: formData.get("expectedCloseDate"),
+    companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+    primaryContactId: rawPrimaryContactId ? Number(rawPrimaryContactId) : undefined,
+  });
+
+  await db
+    .update(deals)
+    .set({
+      name: parsed.name,
+      valueCents: Math.round(parsed.valueUsd * 100),
+      ownerName: cleanOptionalText(parsed.ownerName),
+      nextStep: parsed.nextStep,
+      nextStepDueDate: cleanOptionalText(parsed.nextStepDueDate),
+      expectedCloseDate: cleanOptionalText(parsed.expectedCloseDate),
+      companyId: parsed.companyId ?? null,
+      primaryContactId: parsed.primaryContactId ?? null,
+    })
+    .where(eq(deals.id, parsed.dealId));
+
+  revalidatePath("/");
+  revalidatePath("/opportunities");
+  revalidatePath(`/opportunities/${parsed.dealId}`);
+}
+
+export async function updateDealStage(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const parsed = dealStageUpdateSchema.parse({
+    dealId: formData.get("dealId"),
+    stage: formData.get("stage"),
+    reason: formData.get("reason"),
+  });
+
+  const existing = await db.query.deals.findFirst({
+    where: eq(deals.id, parsed.dealId),
+  });
+
+  if (!existing) {
+    throw new Error("Opportunity not found.");
+  }
+
+  await db
+    .update(deals)
+    .set({
+      stage: parsed.stage,
+    })
+    .where(eq(deals.id, parsed.dealId));
+
+  const reasonText =
+    cleanOptionalText(parsed.reason) ?? (parsed.stage === "lost" ? "No reason provided." : null);
+  const stageHistoryNote = reasonText
+    ? `Stage changed: ${existing.stage} -> ${parsed.stage}. Reason: ${reasonText}`
+    : `Stage changed: ${existing.stage} -> ${parsed.stage}.`;
+
+  await db.insert(activities).values({
+    type: "note",
+    notes: stageHistoryNote,
+    dealId: existing.id,
+    companyId: existing.companyId,
+    contactId: existing.primaryContactId,
+  });
+
+  revalidatePath("/");
+  revalidatePath("/opportunities");
+  revalidatePath(`/opportunities/${parsed.dealId}`);
 }
 
 export async function createTask(formData: FormData) {

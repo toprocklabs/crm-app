@@ -1,4 +1,5 @@
 ﻿import { desc, eq } from "drizzle-orm";
+import Link from "next/link";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -72,7 +73,11 @@ export default async function OpportunitiesPage() {
                 return (
                   <tr key={row.id} className="border-b border-slate-100">
                     <td className="px-3 py-2">
-                      <p className="font-medium text-slate-900">{row.name}</p>
+                      <p className="font-medium text-slate-900">
+                        <Link href={`/opportunities/${row.id}`} className="underline decoration-slate-300 underline-offset-2">
+                          {row.name}
+                        </Link>
+                      </p>
                       <p className="text-slate-500">{row.companyName ?? "No account"}</p>
                     </td>
                     <td className="px-3 py-2 text-slate-700">{row.stage}</td>
@@ -95,5 +100,3 @@ export default async function OpportunitiesPage() {
     </CrmShell>
   );
 }
-
-

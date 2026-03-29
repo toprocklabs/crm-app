@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Simple CRM",
+  title: "Toprock CRM",
   description: "A lightweight CRM for SMB AI agencies built with Next.js and Neon.",
 };
 
@@ -31,3 +31,4 @@ export default function RootLayout({
     </html>
   );
 }
+
