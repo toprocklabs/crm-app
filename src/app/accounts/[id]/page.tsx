@@ -1,9 +1,10 @@
 ﻿import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createContact, createDeal, logActivity, updateCompanyField } from "@/app/actions";
+import { createContact, createDeal, logActivity, updateCompanyField, updateContactField } from "@/app/actions";
 import { AutoSaveCompanyField } from "@/components/auto-save-company-field";
 import { AutoSaveCompanySelectField } from "@/components/auto-save-company-select-field";
+import { AutoSaveContactField } from "@/components/auto-save-contact-field";
 import { CallLink } from "@/components/call-link";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
@@ -166,10 +167,35 @@ export default async function AccountDetailPage({ params }: Props) {
                     {contact.firstName} {contact.lastName}
                   </Link>
                 </p>
-                <p className="text-sm text-slate-600">{contact.title ?? "No title"}</p>
-                <p className="text-sm text-slate-600">{contact.email ?? "No email"}</p>
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <span>{contact.phone ?? "No phone"}</span>
+                <div className="mt-2 grid gap-2">
+                  <AutoSaveContactField
+                    action={updateContactField}
+                    contactId={contact.id}
+                    field="title"
+                    label="Title"
+                    defaultValue={contact.title ?? ""}
+                    returnPath={`/accounts/${company.id}`}
+                  />
+                  <AutoSaveContactField
+                    action={updateContactField}
+                    contactId={contact.id}
+                    field="email"
+                    label="Email"
+                    type="email"
+                    defaultValue={contact.email ?? ""}
+                    returnPath={`/accounts/${company.id}`}
+                  />
+                  <AutoSaveContactField
+                    action={updateContactField}
+                    contactId={contact.id}
+                    field="phone"
+                    label="Phone"
+                    type="tel"
+                    defaultValue={contact.phone ?? ""}
+                    returnPath={`/accounts/${company.id}`}
+                  />
+                </div>
+                <div className="mt-2 flex items-center gap-2 text-sm text-slate-600">
                   <CallLink phone={contact.phone} />
                 </div>
               </li>
@@ -330,4 +356,6 @@ export default async function AccountDetailPage({ params }: Props) {
     </CrmShell>
   );
 }
+
+
 

@@ -8,6 +8,7 @@ export function AutoSaveContactField({
   label,
   defaultValue,
   type = "text",
+  returnPath,
   action,
 }: {
   contactId: number;
@@ -15,6 +16,7 @@ export function AutoSaveContactField({
   label: string;
   defaultValue: string;
   type?: "text" | "email" | "tel";
+  returnPath?: string;
   action: (formData: FormData) => void | Promise<void>;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -36,6 +38,7 @@ export function AutoSaveContactField({
     <form ref={formRef} action={action} className="space-y-1">
       <input type="hidden" name="contactId" value={contactId} />
       <input type="hidden" name="field" value={field} />
+      {returnPath ? <input type="hidden" name="returnPath" value={returnPath} /> : null}
       <label className="text-xs uppercase tracking-wide text-slate-500">{label}</label>
       <input
         ref={inputRef}

@@ -76,6 +76,7 @@ const contactFieldUpdateSchema = z.object({
   contactId: z.coerce.number().int().positive(),
   field: z.enum(["title", "email", "phone"]),
   value: z.string().optional(),
+  returnPath: z.string().optional(),
 });
 
 const companyFieldUpdateSchema = z.object({
@@ -177,6 +178,7 @@ export async function updateContactField(formData: FormData) {
     contactId: formData.get("contactId"),
     field: formData.get("field"),
     value: formData.get("value"),
+    returnPath: formData.get("returnPath"),
   });
 
   const cleaned = cleanOptionalText(parsed.value);
@@ -199,6 +201,9 @@ export async function updateContactField(formData: FormData) {
 
   revalidatePath(`/contacts/${parsed.contactId}`);
   revalidatePath("/contacts");
+  if (parsed.returnPath?.startsWith("/")) {
+    revalidatePath(parsed.returnPath);
+  }
 }
 
 export async function updateCompanyField(formData: FormData) {
