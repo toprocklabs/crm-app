@@ -1,0 +1,287 @@
+﻿"use server";
+
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { requireUser } from "@/lib/auth";
+import { getDb } from "@/lib/db";
+import { activities, companies, contacts, deals, salesTasks } from "@/lib/schema";
+
+const companySchema = z.object({
+  name: z.string().trim().min(2),
+  website: z.string().trim().optional(),
+  industry: z.string().trim().optional(),
+});
+
+const contactSchema = z.object({
+  firstName: z.string().trim().min(1),
+  lastName: z.string().trim().min(1),
+  email: z.string().trim().email().optional().or(z.literal("")),
+  phone: z.string().trim().optional(),
+  title: z.string().trim().optional(),
+  companyId: z.coerce.number().int().positive().optional(),
+});
+
+const dealSchema = z.object({
+  name: z.string().trim().min(2),
+  stage: z.enum(["lead", "qualified", "proposal", "negotiation", "won", "lost"]),
+  valueUsd: z.coerce.number().min(0),
+  ownerName: z.string().trim().optional(),
+  nextStep: z.string().trim().min(2),
+  nextStepDueDate: z.string().optional(),
+  companyId: z.coerce.number().int().positive().optional(),
+  expectedCloseDate: z.string().optional(),
+});
+
+const taskSchema = z.object({
+  title: z.string().trim().min(2),
+  dueDate: z.string().min(4),
+  assignedTo: z.string().trim().optional(),
+  dealId: z.coerce.number().int().positive().optional(),
+  companyId: z.coerce.number().int().positive().optional(),
+});
+
+const activitySchema = z.object({
+  type: z.enum(["note", "call", "meeting", "email", "task"]),
+  notes: z.string().trim().min(2),
+  dealId: z.coerce.number().int().positive().optional(),
+  contactId: z.coerce.number().int().positive().optional(),
+  companyId: z.coerce.number().int().positive().optional(),
+  returnPath: z.string().optional(),
+});
+
+const contactFieldUpdateSchema = z.object({
+  contactId: z.coerce.number().int().positive(),
+  field: z.enum(["title", "email", "phone"]),
+  value: z.string().optional(),
+});
+
+function cleanOptionalText(value: string | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+}
+
+function normalizeUsPhone(value: string | undefined) {
+  const cleaned = cleanOptionalText(value);
+  if (!cleaned) {
+    return null;
+  }
+
+  const digits = cleaned.replace(/\D/g, "");
+  const tenDigits = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+
+  if (!/^\d{10}$/.test(tenDigits)) {
+    throw new Error("Phone number must have 10 digits (US format).");
+  }
+
+  return `(${tenDigits.slice(0, 3)}) ${tenDigits.slice(3, 6)}-${tenDigits.slice(6)}`;
+}
+
+export async function createCompany(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const parsed = companySchema.parse({
+    name: formData.get("name"),
+    website: formData.get("website"),
+    industry: formData.get("industry"),
+  });
+
+  await db.insert(companies).values({
+    name: parsed.name,
+    website: cleanOptionalText(parsed.website),
+    industry: cleanOptionalText(parsed.industry),
+  });
+
+  revalidatePath("/");
+}
+
+export async function createContact(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const rawCompanyId = formData.get("companyId")?.toString();
+
+  const parsed = contactSchema.parse({
+    firstName: formData.get("firstName"),
+    lastName: formData.get("lastName"),
+    email: formData.get("email"),
+    phone: formData.get("phone"),
+    title: formData.get("title"),
+    companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+  });
+
+  await db.insert(contacts).values({
+    firstName: parsed.firstName,
+    lastName: parsed.lastName,
+    email: cleanOptionalText(parsed.email),
+    phone: normalizeUsPhone(parsed.phone),
+    title: cleanOptionalText(parsed.title),
+    companyId: parsed.companyId ?? null,
+  });
+
+  revalidatePath("/");
+}
+
+export async function updateContactField(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const parsed = contactFieldUpdateSchema.parse({
+    contactId: formData.get("contactId"),
+    field: formData.get("field"),
+    value: formData.get("value"),
+  });
+
+  const cleaned = cleanOptionalText(parsed.value);
+
+  if (parsed.field === "email" && cleaned) {
+    z.string().email().parse(cleaned);
+  }
+
+  if (parsed.field === "title") {
+    await db.update(contacts).set({ title: cleaned }).where(eq(contacts.id, parsed.contactId));
+  }
+
+  if (parsed.field === "email") {
+    await db.update(contacts).set({ email: cleaned }).where(eq(contacts.id, parsed.contactId));
+  }
+
+  if (parsed.field === "phone") {
+    await db.update(contacts).set({ phone: normalizeUsPhone(parsed.value) }).where(eq(contacts.id, parsed.contactId));
+  }
+
+  revalidatePath(`/contacts/${parsed.contactId}`);
+  revalidatePath("/contacts");
+}
+
+export async function createDeal(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const rawCompanyId = formData.get("companyId")?.toString();
+
+  const parsed = dealSchema.parse({
+    name: formData.get("name"),
+    stage: formData.get("stage"),
+    valueUsd: formData.get("valueUsd"),
+    ownerName: formData.get("ownerName"),
+    nextStep: formData.get("nextStep"),
+    nextStepDueDate: formData.get("nextStepDueDate"),
+    companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+    expectedCloseDate: formData.get("expectedCloseDate"),
+  });
+
+  await db.insert(deals).values({
+    name: parsed.name,
+    stage: parsed.stage,
+    valueCents: Math.round(parsed.valueUsd * 100),
+    ownerName: cleanOptionalText(parsed.ownerName),
+    nextStep: parsed.nextStep,
+    nextStepDueDate: cleanOptionalText(parsed.nextStepDueDate),
+    companyId: parsed.companyId ?? null,
+    expectedCloseDate: cleanOptionalText(parsed.expectedCloseDate),
+  });
+
+  revalidatePath("/");
+}
+
+export async function createTask(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const rawDealId = formData.get("dealId")?.toString();
+  const rawCompanyId = formData.get("companyId")?.toString();
+
+  const parsed = taskSchema.parse({
+    title: formData.get("title"),
+    dueDate: formData.get("dueDate"),
+    assignedTo: formData.get("assignedTo"),
+    dealId: rawDealId ? Number(rawDealId) : undefined,
+    companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+  });
+
+  await db.insert(salesTasks).values({
+    title: parsed.title,
+    dueDate: parsed.dueDate,
+    assignedTo: cleanOptionalText(parsed.assignedTo),
+    dealId: parsed.dealId ?? null,
+    companyId: parsed.companyId ?? null,
+  });
+
+  revalidatePath("/");
+}
+
+export async function completeTask(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const taskId = z.coerce.number().int().positive().parse(formData.get("taskId"));
+
+  await db.update(salesTasks).set({ status: "done" }).where(eq(salesTasks.id, taskId));
+
+  revalidatePath("/");
+}
+
+export async function logActivity(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const rawDealId = formData.get("dealId")?.toString();
+  const rawContactId = formData.get("contactId")?.toString();
+  const rawCompanyId = formData.get("companyId")?.toString();
+
+  const parsed = activitySchema.parse({
+    type: formData.get("type"),
+    notes: formData.get("notes"),
+    dealId: rawDealId ? Number(rawDealId) : undefined,
+    contactId: rawContactId ? Number(rawContactId) : undefined,
+    companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+    returnPath: formData.get("returnPath"),
+  });
+
+  await db.insert(activities).values({
+    type: parsed.type,
+    notes: parsed.notes,
+    dealId: parsed.dealId ?? null,
+    contactId: parsed.contactId ?? null,
+    companyId: parsed.companyId ?? null,
+  });
+
+  revalidatePath("/");
+  if (parsed.returnPath?.startsWith("/")) {
+    revalidatePath(parsed.returnPath);
+  }
+}

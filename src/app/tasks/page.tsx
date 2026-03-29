@@ -1,0 +1,125 @@
+﻿import { desc, eq } from "drizzle-orm";
+import { completeTask, createTask } from "@/app/actions";
+import { CrmShell } from "@/components/crm-shell";
+import { requireUser } from "@/lib/auth";
+import { getDb } from "@/lib/db";
+import { companies, deals, salesTasks } from "@/lib/schema";
+
+export const dynamic = "force-dynamic";
+
+export default async function TasksPage() {
+  const session = await requireUser();
+  const db = getDb();
+
+  if (!db) {
+    return null;
+  }
+
+  const [taskRows, dealRows, companyRows] = await Promise.all([
+    db
+      .select({
+        id: salesTasks.id,
+        title: salesTasks.title,
+        status: salesTasks.status,
+        dueDate: salesTasks.dueDate,
+        assignedTo: salesTasks.assignedTo,
+        dealName: deals.name,
+        companyName: companies.name,
+      })
+      .from(salesTasks)
+      .leftJoin(deals, eq(salesTasks.dealId, deals.id))
+      .leftJoin(companies, eq(salesTasks.companyId, companies.id))
+      .orderBy(salesTasks.dueDate, desc(salesTasks.createdAt)),
+    db.select({ id: deals.id, name: deals.name }).from(deals).orderBy(desc(deals.createdAt)),
+    db.select({ id: companies.id, name: companies.name }).from(companies).orderBy(desc(companies.createdAt)),
+  ]);
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  return (
+    <CrmShell
+      username={session.username}
+      title="Tasks"
+      description="Manage follow-up reminders and close the loop on every open opportunity."
+    >
+      <section className="grid gap-6 lg:grid-cols-3">
+        <form action={createTask} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-1">
+          <h2 className="text-lg font-semibold text-slate-900">New task</h2>
+          <div className="mt-4 space-y-3">
+            <label className="flex flex-col gap-1 text-sm text-slate-700">
+              <span>Title</span>
+              <input name="title" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-slate-700">
+              <span>Due date</span>
+              <input name="dueDate" type="date" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-slate-700">
+              <span>Assigned to</span>
+              <input name="assignedTo" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-slate-700">
+              <span>Deal</span>
+              <select name="dealId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
+                <option value="">None</option>
+                {dealRows.map((deal) => (
+                  <option key={deal.id} value={deal.id}>
+                    {deal.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-slate-700">
+              <span>Account</span>
+              <select name="companyId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
+                <option value="">None</option>
+                {companyRows.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <button type="submit" className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+            Save task
+          </button>
+        </form>
+
+        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
+          <h2 className="text-lg font-semibold text-slate-900">All reminders</h2>
+          <ul className="mt-4 space-y-3">
+            {taskRows.length === 0 ? <li className="text-sm text-slate-500">No tasks yet.</li> : null}
+            {taskRows.map((task) => {
+              const overdue = task.status === "open" && task.dueDate < today;
+              return (
+                <li key={task.id} className="rounded-lg border border-slate-200 p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-slate-900">{task.title}</p>
+                      <p className="text-sm text-slate-600">
+                        {task.dealName ?? task.companyName ?? "General"} • {task.assignedTo ?? "Unassigned"}
+                      </p>
+                      <p className={`mt-1 text-xs ${overdue ? "text-red-700" : "text-slate-500"}`}>Due {task.dueDate}</p>
+                    </div>
+                    {task.status === "open" ? (
+                      <form action={completeTask}>
+                        <input type="hidden" name="taskId" value={task.id} />
+                        <button type="submit" className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700">
+                          Mark done
+                        </button>
+                      </form>
+                    ) : (
+                      <span className="rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">Done</span>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </article>
+      </section>
+    </CrmShell>
+  );
+}
+
