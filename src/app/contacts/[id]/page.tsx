@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { logActivity, updateContactField } from "@/app/actions";
 import { AutoSaveContactField } from "@/components/auto-save-contact-field";
 import { CallLink } from "@/components/call-link";
+import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -154,47 +155,49 @@ export default async function ContactDetailPage({ params }: Props) {
       <section className="grid gap-6 lg:grid-cols-2">
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Activity Timeline</h2>
-          <form action={logActivity} className="mt-4 rounded-lg border border-slate-200 p-3">
-            <input type="hidden" name="contactId" value={contact.id} />
-            <input type="hidden" name="companyId" value={contact.companyId ?? ""} />
-            <input type="hidden" name="returnPath" value={`/contacts/${contact.id}`} />
-            <div className="grid gap-2 md:grid-cols-2">
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Type</span>
-                <select name="type" defaultValue="note" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                  <option value="note">Note</option>
-                  <option value="call">Call</option>
-                  <option value="meeting">Meeting</option>
-                  <option value="email">Email</option>
-                  <option value="task">Task</option>
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Opportunity (optional)</span>
-                <select name="dealId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                  <option value="">None</option>
-                  {dealOptions.map((deal) => (
-                    <option key={deal.id} value={deal.id}>
-                      {deal.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
-                <span>Notes</span>
-                <textarea
-                  name="notes"
-                  required
-                  rows={3}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
-                  placeholder="Add a quick note about this contact interaction."
-                />
-              </label>
-            </div>
-            <button type="submit" className="mt-3 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white">
-              Save activity
-            </button>
-          </form>
+          <CollapsibleFormSection title="Log activity" description="Capture a note, call, meeting, or email." className="mt-4">
+            <form action={logActivity}>
+              <input type="hidden" name="contactId" value={contact.id} />
+              <input type="hidden" name="companyId" value={contact.companyId ?? ""} />
+              <input type="hidden" name="returnPath" value={`/contacts/${contact.id}`} />
+              <div className="grid gap-2 md:grid-cols-2">
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Type</span>
+                  <select name="type" defaultValue="note" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
+                    <option value="note">Note</option>
+                    <option value="call">Call</option>
+                    <option value="meeting">Meeting</option>
+                    <option value="email">Email</option>
+                    <option value="task">Task</option>
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Opportunity (optional)</span>
+                  <select name="dealId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
+                    <option value="">None</option>
+                    {dealOptions.map((deal) => (
+                      <option key={deal.id} value={deal.id}>
+                        {deal.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
+                  <span>Notes</span>
+                  <textarea
+                    name="notes"
+                    required
+                    rows={3}
+                    className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
+                    placeholder="Add a quick note about this contact interaction."
+                  />
+                </label>
+              </div>
+              <button type="submit" className="mt-3 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white">
+                Save activity
+              </button>
+            </form>
+          </CollapsibleFormSection>
           <ul className="mt-4 space-y-3">
             {activityRows.length === 0 ? <li className="text-sm text-slate-500">No activity yet for this contact.</li> : null}
             {activityRows.map((item) => (
@@ -226,4 +229,3 @@ export default async function ContactDetailPage({ params }: Props) {
     </CrmShell>
   );
 }
-

@@ -1,5 +1,6 @@
 ﻿import { desc, eq } from "drizzle-orm";
 import { completeTask, createTask } from "@/app/actions";
+import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -43,48 +44,53 @@ export default async function TasksPage() {
       description="Manage follow-up reminders and close the loop on every open opportunity."
     >
       <section className="grid gap-6 lg:grid-cols-3">
-        <form action={createTask} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-1">
-          <h2 className="text-lg font-semibold text-slate-900">New task</h2>
-          <div className="mt-4 space-y-3">
-            <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Title</span>
-              <input name="title" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-            </label>
-            <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Due date</span>
-              <input name="dueDate" type="date" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-            </label>
-            <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Assigned to</span>
-              <input name="assignedTo" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-            </label>
-            <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Opportunity</span>
-              <select name="dealId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                <option value="">None</option>
-                {dealRows.map((deal) => (
-                  <option key={deal.id} value={deal.id}>
-                    {deal.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Account</span>
-              <select name="companyId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                <option value="">None</option>
-                {companyRows.map((company) => (
-                  <option key={company.id} value={company.id}>
-                    {company.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <button type="submit" className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">
-            Save task
-          </button>
-        </form>
+        <CollapsibleFormSection
+          title="New task"
+          description="Expand to create a follow-up reminder."
+          className="lg:col-span-1"
+        >
+          <form action={createTask}>
+            <div className="space-y-3">
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>Title</span>
+                <input name="title" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>Due date</span>
+                <input name="dueDate" type="date" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>Assigned to</span>
+                <input name="assignedTo" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>Opportunity</span>
+                <select name="dealId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
+                  <option value="">None</option>
+                  {dealRows.map((deal) => (
+                    <option key={deal.id} value={deal.id}>
+                      {deal.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>Account</span>
+                <select name="companyId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
+                  <option value="">None</option>
+                  {companyRows.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <button type="submit" className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+              Save task
+            </button>
+          </form>
+        </CollapsibleFormSection>
 
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
           <h2 className="text-lg font-semibold text-slate-900">All reminders</h2>
@@ -122,5 +128,3 @@ export default async function TasksPage() {
     </CrmShell>
   );
 }
-
-

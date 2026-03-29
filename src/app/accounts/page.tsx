@@ -1,6 +1,7 @@
 ﻿import { desc, eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { createCompany } from "@/app/actions";
+import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -67,17 +68,18 @@ export default async function AccountsPage() {
       description="All account records with contacts, opportunities, and total pipeline value."
     >
       <section>
-        <form action={createCompany} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Add account</h2>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <Field label="Account name" name="name" required />
-            <Field label="Website" name="website" placeholder="https://example.com" />
-            <Field label="Industry" name="industry" placeholder="Retail, HVAC, Legal..." />
-          </div>
-          <button className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white" type="submit">
-            Save account
-          </button>
-        </form>
+        <CollapsibleFormSection title="Add account" description="Create a new account record.">
+          <form action={createCompany}>
+            <div className="grid gap-3 md:grid-cols-3">
+              <Field label="Account name" name="name" required />
+              <Field label="Website" name="website" placeholder="https://example.com" />
+              <Field label="Industry" name="industry" placeholder="Retail, HVAC, Legal..." />
+            </div>
+            <button className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white" type="submit">
+              Save account
+            </button>
+          </form>
+        </CollapsibleFormSection>
       </section>
 
       <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createContact, createDeal, logActivity } from "@/app/actions";
 import { CallLink } from "@/components/call-link";
+import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -100,34 +101,36 @@ export default async function AccountDetailPage({ params }: Props) {
       <section className="grid gap-6 lg:grid-cols-2">
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Contacts</h2>
-          <form action={createContact} className="mt-4 rounded-lg border border-slate-200 p-3">
-            <input type="hidden" name="companyId" value={company.id} />
-            <div className="grid gap-2 md:grid-cols-2">
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>First name</span>
-                <input name="firstName" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Last name</span>
-                <input name="lastName" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Email</span>
-                <input name="email" type="email" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Phone</span>
-                <input name="phone" type="tel" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Title</span>
-                <input name="title" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-              </label>
-            </div>
-            <button type="submit" className="mt-3 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white">
-              Add contact
-            </button>
-          </form>
+          <CollapsibleFormSection title="Add contact" description="Create a contact inside this account." className="mt-4">
+            <form action={createContact}>
+              <input type="hidden" name="companyId" value={company.id} />
+              <div className="grid gap-2 md:grid-cols-2">
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>First name</span>
+                  <input name="firstName" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Last name</span>
+                  <input name="lastName" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Email</span>
+                  <input name="email" type="email" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Phone</span>
+                  <input name="phone" type="tel" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Title</span>
+                  <input name="title" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+              </div>
+              <button type="submit" className="mt-3 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white">
+                Add contact
+              </button>
+            </form>
+          </CollapsibleFormSection>
           <ul className="mt-4 space-y-3">
             {companyContacts.length === 0 ? <li className="text-sm text-slate-500">No contacts yet.</li> : null}
             {companyContacts.map((contact) => (
@@ -150,54 +153,56 @@ export default async function AccountDetailPage({ params }: Props) {
 
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Opportunities</h2>
-          <form action={createDeal} className="mt-4 rounded-lg border border-slate-200 p-3">
-            <input type="hidden" name="companyId" value={company.id} />
-            <div className="grid gap-2 md:grid-cols-2">
-              <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
-                <span>Opportunity name</span>
-                <input name="name" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Stage</span>
-                <select name="stage" defaultValue="lead" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                  <option value="lead">Lead</option>
-                  <option value="qualified">Qualified</option>
-                  <option value="proposal">Proposal</option>
-                  <option value="negotiation">Negotiation</option>
-                  <option value="won">Won</option>
-                  <option value="lost">Lost</option>
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Value (USD)</span>
-                <input name="valueUsd" type="number" placeholder="5000" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Opportunity owner</span>
-                <input name="ownerName" placeholder="Justin" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
-                <span>Next step</span>
-                <input
-                  name="nextStep"
-                  required
-                  placeholder="Send proposal draft"
-                  className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Next step due</span>
-                <input name="nextStepDueDate" type="date" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Expected close</span>
-                <input name="expectedCloseDate" type="date" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-              </label>
-            </div>
-            <button type="submit" className="mt-3 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white">
-              Create Opportunity
-            </button>
-          </form>
+          <CollapsibleFormSection title="Create Opportunity" description="Add a new opportunity for this account." className="mt-4">
+            <form action={createDeal}>
+              <input type="hidden" name="companyId" value={company.id} />
+              <div className="grid gap-2 md:grid-cols-2">
+                <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
+                  <span>Opportunity name</span>
+                  <input name="name" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Stage</span>
+                  <select name="stage" defaultValue="lead" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
+                    <option value="lead">Lead</option>
+                    <option value="qualified">Qualified</option>
+                    <option value="proposal">Proposal</option>
+                    <option value="negotiation">Negotiation</option>
+                    <option value="won">Won</option>
+                    <option value="lost">Lost</option>
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Value (USD)</span>
+                  <input name="valueUsd" type="number" placeholder="5000" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Opportunity owner</span>
+                  <input name="ownerName" placeholder="Justin" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
+                  <span>Next step</span>
+                  <input
+                    name="nextStep"
+                    required
+                    placeholder="Send proposal draft"
+                    className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Next step due</span>
+                  <input name="nextStepDueDate" type="date" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Expected close</span>
+                  <input name="expectedCloseDate" type="date" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+              </div>
+              <button type="submit" className="mt-3 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white">
+                Create Opportunity
+              </button>
+            </form>
+          </CollapsibleFormSection>
           <ul className="mt-4 space-y-3">
             {companyDeals.length === 0 ? <li className="text-sm text-slate-500">No opportunities yet.</li> : null}
             {companyDeals.map((deal) => (
@@ -229,57 +234,59 @@ export default async function AccountDetailPage({ params }: Props) {
 
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900">Activity Timeline</h2>
-          <form action={logActivity} className="mt-4 rounded-lg border border-slate-200 p-3">
-            <input type="hidden" name="companyId" value={company.id} />
-            <input type="hidden" name="returnPath" value={`/accounts/${company.id}`} />
-            <div className="grid gap-2 md:grid-cols-2">
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Type</span>
-                <select name="type" defaultValue="note" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                  <option value="note">Note</option>
-                  <option value="call">Call</option>
-                  <option value="meeting">Meeting</option>
-                  <option value="email">Email</option>
-                  <option value="task">Task</option>
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Opportunity (optional)</span>
-                <select name="dealId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                  <option value="">None</option>
-                  {companyDeals.map((deal) => (
-                    <option key={deal.id} value={deal.id}>
-                      {deal.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
-                <span>Contact (optional)</span>
-                <select name="contactId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                  <option value="">None</option>
-                  {companyContacts.map((contact) => (
-                    <option key={contact.id} value={contact.id}>
-                      {contact.firstName} {contact.lastName}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
-                <span>Notes</span>
-                <textarea
-                  name="notes"
-                  required
-                  rows={3}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
-                  placeholder="Add a quick note about this account interaction."
-                />
-              </label>
-            </div>
-            <button type="submit" className="mt-3 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white">
-              Save activity
-            </button>
-          </form>
+          <CollapsibleFormSection title="Log activity" description="Capture a note, call, meeting, or email." className="mt-4">
+            <form action={logActivity}>
+              <input type="hidden" name="companyId" value={company.id} />
+              <input type="hidden" name="returnPath" value={`/accounts/${company.id}`} />
+              <div className="grid gap-2 md:grid-cols-2">
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Type</span>
+                  <select name="type" defaultValue="note" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
+                    <option value="note">Note</option>
+                    <option value="call">Call</option>
+                    <option value="meeting">Meeting</option>
+                    <option value="email">Email</option>
+                    <option value="task">Task</option>
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Opportunity (optional)</span>
+                  <select name="dealId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
+                    <option value="">None</option>
+                    {companyDeals.map((deal) => (
+                      <option key={deal.id} value={deal.id}>
+                        {deal.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
+                  <span>Contact (optional)</span>
+                  <select name="contactId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
+                    <option value="">None</option>
+                    {companyContacts.map((contact) => (
+                      <option key={contact.id} value={contact.id}>
+                        {contact.firstName} {contact.lastName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
+                  <span>Notes</span>
+                  <textarea
+                    name="notes"
+                    required
+                    rows={3}
+                    className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
+                    placeholder="Add a quick note about this account interaction."
+                  />
+                </label>
+              </div>
+              <button type="submit" className="mt-3 rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white">
+                Save activity
+              </button>
+            </form>
+          </CollapsibleFormSection>
           <ul className="mt-4 space-y-3">
             {companyActivities.length === 0 ? <li className="text-sm text-slate-500">No activity yet.</li> : null}
             {companyActivities.map((item) => (
@@ -297,4 +304,3 @@ export default async function AccountDetailPage({ params }: Props) {
     </CrmShell>
   );
 }
-

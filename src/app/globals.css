@@ -119,6 +119,10 @@ body {
   overflow-y: auto;
 }
 
+.crm-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
 @media (max-width: 767px) {
   .crm-sidebar {
     height: auto;
