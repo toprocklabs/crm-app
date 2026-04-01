@@ -5,6 +5,7 @@ import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { companyIndustries } from "@/lib/company-industries";
+import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { getDb } from "@/lib/db";
 import { companies, contacts, deals } from "@/lib/schema";
 
@@ -145,7 +146,7 @@ export default async function AccountsPage() {
                     <p className="text-slate-500">{row.website ?? "No website"}</p>
                     <p className="text-slate-500">{row.customerProjectUrl ?? "No customer project URL"}</p>
                   </td>
-                  <td className="px-3 py-2 text-slate-700">{row.industry ?? "-"}</td>
+                  <td className="px-3 py-2 text-slate-700">{normalizeCompanyIndustry(row.industry) ?? "-"}</td>
                   <td className="px-3 py-2 text-slate-700">{row.contactCount}</td>
                   <td className="px-3 py-2 text-slate-700">{row.dealCount}</td>
                   <td className="px-3 py-2 text-slate-700">${Math.round(row.pipelineCents / 100).toLocaleString()}</td>

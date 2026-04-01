@@ -10,6 +10,7 @@ import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { companyIndustries } from "@/lib/company-industries";
+import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { getDb } from "@/lib/db";
 import { activities, companies, contacts, deals, salesTasks } from "@/lib/schema";
 
@@ -63,6 +64,7 @@ export default async function AccountDetailPage({ params }: Props) {
     notFound();
   }
 
+  const normalizedIndustry = normalizeCompanyIndustry(company.industry) ?? "";
   const openTasks = companyTasks.filter((task) => task.status === "open").length;
 
   return (
@@ -79,7 +81,7 @@ export default async function AccountDetailPage({ params }: Props) {
               companyId={company.id}
               field="industry"
               label="Industry"
-              defaultValue={company.industry ?? ""}
+              defaultValue={normalizedIndustry}
               options={companyIndustries}
             />
             <AutoSaveCompanyField
