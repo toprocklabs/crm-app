@@ -96,7 +96,7 @@ export default async function AccountsPage() {
     <CrmShell
       username={session.username}
       title="Accounts"
-      description="All account records with contacts, opportunities, and total pipeline value."
+      description="All account records with contacts, opportunities, and total tracked ARR."
     >
       <section>
         <CollapsibleFormSection title="Add account" description="Create a new account record.">
@@ -123,7 +123,7 @@ export default async function AccountsPage() {
                 <th className="px-3 py-2">Industry</th>
                 <th className="px-3 py-2">Contacts</th>
                 <th className="px-3 py-2">Opportunities</th>
-                <th className="px-3 py-2">Pipeline</th>
+                <th className="px-3 py-2">Total ARR</th>
                 <th className="px-3 py-2">Created</th>
               </tr>
             </thead>

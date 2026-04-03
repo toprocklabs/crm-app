@@ -65,6 +65,8 @@ export default async function AccountDetailPage({ params }: Props) {
   }
 
   const normalizedIndustry = normalizeCompanyIndustry(company.industry) ?? "";
+  const totalIarrCents = companyDeals.reduce((sum, deal) => sum + deal.valueCents, 0);
+  const totalImplementationCostCents = companyDeals.reduce((sum, deal) => sum + deal.implementationCostCents, 0);
   const openTasks = companyTasks.filter((task) => task.status === "open").length;
 
   return (
@@ -125,9 +127,12 @@ export default async function AccountDetailPage({ params }: Props) {
           <p className="mt-1 text-2xl font-semibold text-slate-900">{openTasks}</p>
         </article>
         <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Pipeline Value</p>
+          <p className="text-xs uppercase tracking-wide text-slate-500">Total ARR</p>
           <p className="mt-1 text-2xl font-semibold text-slate-900">
-            {currency.format(Math.round(companyDeals.reduce((sum, deal) => sum + deal.valueCents, 0) / 100))}
+            {currency.format(Math.round(totalIarrCents / 100))}
+          </p>
+          <p className="mt-1 text-sm text-slate-600">
+            Implementation Cost {currency.format(Math.round(totalImplementationCostCents / 100))}
           </p>
         </article>
       </section>
