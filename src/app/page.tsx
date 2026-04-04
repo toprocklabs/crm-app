@@ -7,7 +7,7 @@ import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { activities, companies, contacts, deals, salesTasks } from "@/lib/schema";
+import { activities, companies, contacts, deals, salesTasks, users } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -125,10 +125,12 @@ export default async function Home() {
         occurredAt: activities.occurredAt,
         dealName: deals.name,
         companyName: companies.name,
+        loggedByUsername: users.username,
       })
       .from(activities)
       .leftJoin(deals, eq(activities.dealId, deals.id))
       .leftJoin(companies, eq(activities.companyId, companies.id))
+      .leftJoin(users, eq(activities.loggedByUserId, users.id))
       .orderBy(desc(activities.occurredAt))
       .limit(16),
     db
@@ -155,9 +157,9 @@ export default async function Home() {
         <Card title="Accounts" value={String(stats.companies)} subtitle="Active SMB accounts" />
         <Card title="Contacts" value={String(stats.contacts)} subtitle="People in your funnel" />
         <Card
-          title="Total IARR"
+          title="Total ARR"
           value={currency.format(Math.round((stats.pipelineCents ?? 0) / 100))}
-          subtitle="Total tracked opportunity IARR"
+          subtitle="Total tracked opportunity ARR"
         />
         <Card title="Open Tasks" value={String(stats.openTasks)} subtitle="Follow-ups due soon" />
       </section>
@@ -281,6 +283,7 @@ export default async function Home() {
                 <p className="mt-1 text-sm text-slate-600">
                   {item.dealName ?? item.companyName ?? "General"} • {new Date(item.occurredAt).toLocaleString()}
                 </p>
+                <p className="mt-1 text-xs text-slate-500">Logged by {item.loggedByUsername ?? "Unknown user"}</p>
               </li>
             ))}
           </ul>
@@ -290,9 +293,6 @@ export default async function Home() {
     </CrmShell>
   );
 }
-
-
-
 
 
 

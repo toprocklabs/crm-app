@@ -6,7 +6,7 @@ import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { activities, companies, contacts, deals, salesTasks } from "@/lib/schema";
+import { activities, companies, contacts, deals, salesTasks, users } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -70,8 +70,10 @@ export default async function OpportunityDetailPage({ params }: Props) {
         type: activities.type,
         notes: activities.notes,
         occurredAt: activities.occurredAt,
+        loggedByUsername: users.username,
       })
       .from(activities)
+      .leftJoin(users, eq(activities.loggedByUserId, users.id))
       .where(eq(activities.dealId, dealId))
       .orderBy(desc(activities.occurredAt)),
     db
@@ -324,6 +326,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
                 <p className="text-xs uppercase tracking-wide text-slate-500">{item.type}</p>
                 <p className="mt-1 font-medium text-slate-900">{item.notes}</p>
                 <p className="mt-1 text-xs text-slate-500">{new Date(item.occurredAt).toLocaleString()}</p>
+                <p className="mt-1 text-xs text-slate-500">Logged by {item.loggedByUsername ?? "Unknown user"}</p>
               </li>
             ))}
           </ul>

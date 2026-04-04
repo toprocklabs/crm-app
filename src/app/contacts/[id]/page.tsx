@@ -8,7 +8,7 @@ import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { activities, companies, contacts, deals } from "@/lib/schema";
+import { activities, companies, contacts, deals, users } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -66,9 +66,11 @@ export default async function ContactDetailPage({ params }: Props) {
         notes: activities.notes,
         occurredAt: activities.occurredAt,
         dealName: deals.name,
+        loggedByUsername: users.username,
       })
       .from(activities)
       .leftJoin(deals, eq(activities.dealId, deals.id))
+      .leftJoin(users, eq(activities.loggedByUserId, users.id))
       .where(eq(activities.contactId, contactId))
       .orderBy(desc(activities.occurredAt)),
     db
@@ -209,6 +211,7 @@ export default async function ContactDetailPage({ params }: Props) {
                 <p className="mt-1 text-sm text-slate-600">
                   {item.dealName ?? "General"} • {new Date(item.occurredAt).toLocaleString()}
                 </p>
+                <p className="mt-1 text-xs text-slate-500">Logged by {item.loggedByUsername ?? "Unknown user"}</p>
               </li>
             ))}
           </ul>

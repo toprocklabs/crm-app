@@ -13,7 +13,7 @@ import { requireUser } from "@/lib/auth";
 import { companyIndustries } from "@/lib/company-industries";
 import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { getDb } from "@/lib/db";
-import { activities, companies, contacts, deals, salesTasks } from "@/lib/schema";
+import { activities, companies, contacts, deals, salesTasks, users } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -54,9 +54,11 @@ export default async function AccountDetailPage({ params }: Props) {
         notes: activities.notes,
         occurredAt: activities.occurredAt,
         dealName: deals.name,
+        loggedByUsername: users.username,
       })
       .from(activities)
       .leftJoin(deals, eq(activities.dealId, deals.id))
+      .leftJoin(users, eq(activities.loggedByUserId, users.id))
       .where(eq(activities.companyId, companyId))
       .orderBy(desc(activities.occurredAt)),
   ]);
@@ -403,6 +405,7 @@ export default async function AccountDetailPage({ params }: Props) {
                 <p className="mt-1 text-sm text-slate-600">
                   {item.dealName ?? "General"} • {new Date(item.occurredAt).toLocaleString()}
                 </p>
+                <p className="mt-1 text-xs text-slate-500">Logged by {item.loggedByUsername ?? "Unknown user"}</p>
                 <AutoSaveActivityDateField
                   action={updateActivityDate}
                   activityId={item.id}

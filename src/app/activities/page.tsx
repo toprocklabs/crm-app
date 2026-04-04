@@ -5,7 +5,7 @@ import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { activities, companies, contacts, deals } from "@/lib/schema";
+import { activities, companies, contacts, deals, users } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -29,11 +29,13 @@ export default async function ActivitiesPage() {
         contactLastName: contacts.lastName,
         contactId: contacts.id,
         companyName: companies.name,
+        loggedByUsername: users.username,
       })
       .from(activities)
       .leftJoin(deals, eq(activities.dealId, deals.id))
       .leftJoin(contacts, eq(activities.contactId, contacts.id))
       .leftJoin(companies, eq(activities.companyId, companies.id))
+      .leftJoin(users, eq(activities.loggedByUserId, users.id))
       .orderBy(desc(activities.occurredAt)),
     db.select({ id: deals.id, name: deals.name }).from(deals).orderBy(desc(deals.createdAt)),
     db.select({ id: contacts.id, firstName: contacts.firstName, lastName: contacts.lastName }).from(contacts).orderBy(desc(contacts.createdAt)),
@@ -135,6 +137,7 @@ export default async function ActivitiesPage() {
                   ) : null}
                   {` • ${new Date(item.occurredAt).toLocaleString()}`}
                 </p>
+                <p className="mt-1 text-xs text-slate-500">Logged by {item.loggedByUsername ?? "Unknown user"}</p>
               </li>
             ))}
           </ul>

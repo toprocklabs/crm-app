@@ -96,6 +96,9 @@ export const activities = pgTable("activities", {
   id: serial("id").primaryKey(),
   type: activityType("type").default("note").notNull(),
   notes: text("notes").notNull(),
+  loggedByUserId: integer("logged_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
   companyId: integer("company_id").references(() => companies.id, {
     onDelete: "set null",
   }),

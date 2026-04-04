@@ -522,7 +522,7 @@ export async function updateActivityDate(formData: FormData) {
 }
 
 export async function logActivity(formData: FormData) {
-  await requireUser();
+  const session = await requireUser();
 
   const db = getDb();
   if (!db) {
@@ -546,6 +546,7 @@ export async function logActivity(formData: FormData) {
   await db.insert(activities).values({
     type: parsed.type,
     notes: parsed.notes,
+    loggedByUserId: session.userId,
     dealId: parsed.dealId ?? null,
     contactId: parsed.contactId ?? null,
     companyId: parsed.companyId ?? null,
