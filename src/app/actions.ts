@@ -69,6 +69,13 @@ const activitySchema = z.object({
   dealId: z.coerce.number().int().positive().optional(),
   contactId: z.coerce.number().int().positive().optional(),
   companyId: z.coerce.number().int().positive().optional(),
+  occurredOn: z.string().optional(),
+  returnPath: z.string().optional(),
+});
+
+const activityDateUpdateSchema = z.object({
+  activityId: z.coerce.number().int().positive(),
+  occurredOn: z.string().min(4),
   returnPath: z.string().optional(),
 });
 
@@ -120,6 +127,32 @@ function normalizeUsPhone(value: string | undefined) {
   }
 
   return `(${tenDigits.slice(0, 3)}) ${tenDigits.slice(3, 6)}-${tenDigits.slice(6)}`;
+}
+
+function mergeDateWithTime(dateValue: string | undefined, baseDate = new Date()) {
+  const cleaned = cleanOptionalText(dateValue);
+
+  if (!cleaned) {
+    return null;
+  }
+
+  const [year, month, day] = cleaned.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    throw new Error("Activity date must be a valid date.");
+  }
+
+  return new Date(
+    Date.UTC(
+      year,
+      month - 1,
+      day,
+      baseDate.getUTCHours(),
+      baseDate.getUTCMinutes(),
+      baseDate.getUTCSeconds(),
+      baseDate.getUTCMilliseconds(),
+    ),
+  );
 }
 
 export async function createCompany(formData: FormData) {
@@ -427,6 +460,41 @@ export async function completeTask(formData: FormData) {
   revalidatePath("/");
 }
 
+export async function updateActivityDate(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const parsed = activityDateUpdateSchema.parse({
+    activityId: formData.get("activityId"),
+    occurredOn: formData.get("occurredOn"),
+    returnPath: formData.get("returnPath"),
+  });
+
+  const existing = await db.query.activities.findFirst({
+    where: eq(activities.id, parsed.activityId),
+  });
+
+  if (!existing) {
+    throw new Error("Activity not found.");
+  }
+
+  await db
+    .update(activities)
+    .set({
+      occurredAt: mergeDateWithTime(parsed.occurredOn, existing.occurredAt),
+    })
+    .where(eq(activities.id, parsed.activityId));
+
+  revalidatePath("/activities");
+  if (parsed.returnPath?.startsWith("/")) {
+    revalidatePath(parsed.returnPath);
+  }
+}
+
 export async function logActivity(formData: FormData) {
   await requireUser();
 
@@ -445,6 +513,7 @@ export async function logActivity(formData: FormData) {
     dealId: rawDealId ? Number(rawDealId) : undefined,
     contactId: rawContactId ? Number(rawContactId) : undefined,
     companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+    occurredOn: formData.get("occurredOn"),
     returnPath: formData.get("returnPath"),
   });
 
@@ -454,6 +523,7 @@ export async function logActivity(formData: FormData) {
     dealId: parsed.dealId ?? null,
     contactId: parsed.contactId ?? null,
     companyId: parsed.companyId ?? null,
+    occurredAt: mergeDateWithTime(parsed.occurredOn) ?? undefined,
   });
 
   revalidatePath("/");

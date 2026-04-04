@@ -1,7 +1,8 @@
 ﻿import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createContact, createDeal, logActivity, updateCompanyField, updateContactField } from "@/app/actions";
+import { createContact, createDeal, logActivity, updateActivityDate, updateCompanyField, updateContactField } from "@/app/actions";
+import { AutoSaveActivityDateField } from "@/components/auto-save-activity-date-field";
 import { AutoSaveCompanyField } from "@/components/auto-save-company-field";
 import { AutoSaveCompanySelectField } from "@/components/auto-save-company-select-field";
 import { AutoSaveContactField } from "@/components/auto-save-contact-field";
@@ -64,6 +65,7 @@ export default async function AccountDetailPage({ params }: Props) {
   }
 
   const openTasks = companyTasks.filter((task) => task.status === "open").length;
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <CrmShell
@@ -328,6 +330,15 @@ export default async function AccountDetailPage({ params }: Props) {
                     ))}
                   </select>
                 </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Activity date</span>
+                  <input
+                    name="occurredOn"
+                    type="date"
+                    defaultValue={today}
+                    className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
+                  />
+                </label>
                 <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
                   <span>Notes</span>
                   <textarea
@@ -353,6 +364,12 @@ export default async function AccountDetailPage({ params }: Props) {
                 <p className="mt-1 text-sm text-slate-600">
                   {item.dealName ?? "General"} • {new Date(item.occurredAt).toLocaleString()}
                 </p>
+                <AutoSaveActivityDateField
+                  action={updateActivityDate}
+                  activityId={item.id}
+                  defaultValue={new Date(item.occurredAt).toISOString().slice(0, 10)}
+                  returnPath={`/accounts/${company.id}`}
+                />
               </li>
             ))}
           </ul>
