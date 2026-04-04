@@ -217,9 +217,9 @@ export default async function ContactDetailPage({ params }: Props) {
               occurredAt: item.occurredAt,
               loggedByUsername: item.loggedByUsername,
               contextLinks: [
-                item.dealName && item.dealId ? { label: item.dealName, href: `/opportunities/${item.dealId}` } : null,
-                contact.companyId ? { label: contact.companyName ?? "Account", href: `/accounts/${contact.companyId}` } : null,
-              ].filter((value): value is { label: string; href?: string } => Boolean(value)),
+                ...(item.dealName && item.dealId ? [{ label: item.dealName, href: `/opportunities/${item.dealId}` }] : []),
+                ...(contact.companyId ? [{ label: contact.companyName ?? "Account", href: `/accounts/${contact.companyId}` }] : []),
+              ],
             }))}
           />
         </article>

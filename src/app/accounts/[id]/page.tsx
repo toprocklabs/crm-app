@@ -558,11 +558,11 @@ export default async function AccountDetailPage({ params }: Props) {
               occurredAt: item.occurredAt,
               loggedByUsername: item.loggedByUsername,
               contextLinks: [
-                item.dealName && item.dealId ? { label: item.dealName, href: `/opportunities/${item.dealId}` } : null,
-                item.contactFirstName && item.contactId
-                  ? { label: `${item.contactFirstName} ${item.contactLastName}`, href: `/contacts/${item.contactId}` }
-                  : null,
-              ].filter((value): value is { label: string; href?: string } => Boolean(value)),
+                ...(item.dealName && item.dealId ? [{ label: item.dealName, href: `/opportunities/${item.dealId}` }] : []),
+                ...(item.contactFirstName && item.contactId
+                  ? [{ label: `${item.contactFirstName} ${item.contactLastName}`, href: `/contacts/${item.contactId}` }]
+                  : []),
+              ],
               footer: (
                 <AutoSaveActivityDateField
                   action={updateActivityDate}

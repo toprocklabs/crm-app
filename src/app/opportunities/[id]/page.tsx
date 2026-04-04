@@ -464,14 +464,14 @@ export default async function OpportunityDetailPage({ params }: Props) {
               occurredAt: item.occurredAt,
               loggedByUsername: item.loggedByUsername,
               contextLinks: [
-                opportunity.companyId ? { label: opportunity.companyName ?? "Account", href: `/accounts/${opportunity.companyId}` } : null,
-                opportunity.primaryContactId && opportunity.primaryContactFirstName
-                  ? {
+                ...(opportunity.companyId ? [{ label: opportunity.companyName ?? "Account", href: `/accounts/${opportunity.companyId}` }] : []),
+                ...(opportunity.primaryContactId && opportunity.primaryContactFirstName
+                  ? [{
                       label: `${opportunity.primaryContactFirstName} ${opportunity.primaryContactLastName}`,
                       href: `/contacts/${opportunity.primaryContactId}`,
-                    }
-                  : null,
-              ].filter((value): value is { label: string; href?: string } => Boolean(value)),
+                    }]
+                  : []),
+              ],
             }))}
           />
         </article>

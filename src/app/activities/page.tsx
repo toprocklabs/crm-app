@@ -134,12 +134,12 @@ export default async function ActivitiesPage() {
               occurredAt: item.occurredAt,
               loggedByUsername: item.loggedByUsername,
               contextLinks: [
-                item.dealName && item.dealId ? { label: item.dealName, href: `/opportunities/${item.dealId}` } : null,
-                item.companyName && item.companyId ? { label: item.companyName, href: `/accounts/${item.companyId}` } : null,
-                item.contactFirstName && item.contactId
-                  ? { label: `${item.contactFirstName} ${item.contactLastName}`, href: `/contacts/${item.contactId}` }
-                  : null,
-              ].filter((value): value is { label: string; href?: string } => Boolean(value)),
+                ...(item.dealName && item.dealId ? [{ label: item.dealName, href: `/opportunities/${item.dealId}` }] : []),
+                ...(item.companyName && item.companyId ? [{ label: item.companyName, href: `/accounts/${item.companyId}` }] : []),
+                ...(item.contactFirstName && item.contactId
+                  ? [{ label: `${item.contactFirstName} ${item.contactLastName}`, href: `/contacts/${item.contactId}` }]
+                  : []),
+              ],
             }))}
           />
         </article>
