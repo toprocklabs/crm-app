@@ -132,7 +132,7 @@ export default async function AccountDetailPage({ params }: Props) {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs uppercase tracking-wide text-slate-500">Contacts</p>
           <p className="mt-1 text-2xl font-semibold text-slate-900">{companyContacts.length}</p>
@@ -150,8 +150,11 @@ export default async function AccountDetailPage({ params }: Props) {
           <p className="mt-1 text-2xl font-semibold text-slate-900">
             {currency.format(Math.round(totalIarrCents / 100))}
           </p>
-          <p className="mt-1 text-sm text-slate-600">
-            Implementation Cost {currency.format(Math.round(totalImplementationCostCents / 100))}
+        </article>
+        <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs uppercase tracking-wide text-slate-500">Total Implementation Cost</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-900">
+            {currency.format(Math.round(totalImplementationCostCents / 100))}
           </p>
         </article>
       </section>

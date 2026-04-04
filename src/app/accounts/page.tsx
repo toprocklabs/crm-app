@@ -1,4 +1,4 @@
-﻿import { desc, eq, sql } from "drizzle-orm";
+﻿import { desc } from "drizzle-orm";
 import Link from "next/link";
 import { createCompany } from "@/app/actions";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
@@ -76,25 +76,38 @@ export default async function AccountsPage() {
 
   const today = new Date().toISOString().slice(0, 10);
 
-  const rows = await db
-    .select({
-      id: companies.id,
-      name: companies.name,
-      website: companies.website,
-      customerProjectUrl: companies.customerProjectUrl,
-      industry: companies.industry,
-      nextStep: companies.nextStep,
-      nextStepDueDate: companies.nextStepDueDate,
-      createdAt: companies.createdAt,
-      contactCount: sql<number>`count(distinct ${contacts.id})`,
-      dealCount: sql<number>`count(distinct ${deals.id})`,
-      pipelineCents: sql<number>`coalesce(sum(${deals.valueCents}), 0)`,
-    })
-    .from(companies)
-    .leftJoin(contacts, eq(contacts.companyId, companies.id))
-    .leftJoin(deals, eq(deals.companyId, companies.id))
-    .groupBy(companies.id)
-    .orderBy(desc(companies.createdAt));
+  const [accountRows, contactRows, dealRows] = await Promise.all([
+    db.select().from(companies).orderBy(desc(companies.createdAt)),
+    db.select({ id: contacts.id, companyId: contacts.companyId }).from(contacts),
+    db.select({ id: deals.id, companyId: deals.companyId, valueCents: deals.valueCents }).from(deals),
+  ]);
+
+  const contactCounts = new Map<number, number>();
+  for (const row of contactRows) {
+    if (!row.companyId) {
+      continue;
+    }
+
+    contactCounts.set(row.companyId, (contactCounts.get(row.companyId) ?? 0) + 1);
+  }
+
+  const dealCounts = new Map<number, number>();
+  const pipelineTotals = new Map<number, number>();
+  for (const row of dealRows) {
+    if (!row.companyId) {
+      continue;
+    }
+
+    dealCounts.set(row.companyId, (dealCounts.get(row.companyId) ?? 0) + 1);
+    pipelineTotals.set(row.companyId, (pipelineTotals.get(row.companyId) ?? 0) + row.valueCents);
+  }
+
+  const rows = accountRows.map((row) => ({
+    ...row,
+    contactCount: contactCounts.get(row.id) ?? 0,
+    dealCount: dealCounts.get(row.id) ?? 0,
+    pipelineCents: pipelineTotals.get(row.id) ?? 0,
+  }));
 
   return (
     <CrmShell
