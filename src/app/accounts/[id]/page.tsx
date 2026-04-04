@@ -66,9 +66,9 @@ export default async function AccountDetailPage({ params }: Props) {
   }
 
   const normalizedIndustry = normalizeCompanyIndustry(company.industry) ?? "";
+  const openTasks = companyTasks.filter((task) => task.status === "open").length;
   const totalIarrCents = companyDeals.reduce((sum, deal) => sum + deal.valueCents, 0);
   const totalImplementationCostCents = companyDeals.reduce((sum, deal) => sum + deal.implementationCostCents, 0);
-  const openTasks = companyTasks.filter((task) => task.status === "open").length;
   const today = new Date().toISOString().slice(0, 10);
 
   return (
@@ -239,8 +239,17 @@ export default async function AccountDetailPage({ params }: Props) {
                   </select>
                 </label>
                 <label className="flex flex-col gap-1 text-sm text-slate-700">
-                  <span>Value (USD)</span>
-                  <input name="valueUsd" type="number" placeholder="5000" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                  <span>IARR (USD)</span>
+                  <input name="iarrUsd" type="number" placeholder="5000" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Implementation Cost (USD)</span>
+                  <input
+                    name="implementationCostUsd"
+                    type="number"
+                    placeholder="1500"
+                    className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
+                  />
                 </label>
                 <label className="flex flex-col gap-1 text-sm text-slate-700">
                   <span>Opportunity owner</span>
@@ -275,7 +284,9 @@ export default async function AccountDetailPage({ params }: Props) {
               <li key={deal.id} className="rounded-lg border border-slate-200 p-3">
                 <p className="font-medium text-slate-900"><Link href={`/opportunities/${deal.id}`} className="underline decoration-slate-300 underline-offset-2">{deal.name}</Link></p>
                 <p className="text-sm text-slate-600">{deal.stage} • Owner: {deal.ownerName ?? "Unassigned"}</p>
-                <p className="text-sm text-slate-700">{currency.format(Math.round(deal.valueCents / 100))}</p>
+                <p className="text-sm text-slate-700">
+                  IARR: {currency.format(Math.round(deal.valueCents / 100))} • Implementation Cost: {currency.format(Math.round(deal.implementationCostCents / 100))}
+                </p>
                 <p className="mt-1 text-xs text-slate-500">Next step: {deal.nextStep || "No next step"}</p>
               </li>
             ))}
@@ -385,6 +396,3 @@ export default async function AccountDetailPage({ params }: Props) {
     </CrmShell>
   );
 }
-
-
-

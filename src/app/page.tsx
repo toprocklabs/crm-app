@@ -92,6 +92,7 @@ export default async function Home() {
         name: deals.name,
         stage: deals.stage,
         valueCents: deals.valueCents,
+        implementationCostCents: deals.implementationCostCents,
         companyName: companies.name,
         ownerName: deals.ownerName,
         nextStep: deals.nextStep,
@@ -154,9 +155,9 @@ export default async function Home() {
         <Card title="Accounts" value={String(stats.companies)} subtitle="Active SMB accounts" />
         <Card title="Contacts" value={String(stats.contacts)} subtitle="People in your funnel" />
         <Card
-          title="Pipeline Value"
+          title="Total IARR"
           value={currency.format(Math.round((stats.pipelineCents ?? 0) / 100))}
-          subtitle="Total tracked opportunity value"
+          subtitle="Total tracked opportunity IARR"
         />
         <Card title="Open Tasks" value={String(stats.openTasks)} subtitle="Follow-ups due soon" />
       </section>
@@ -216,7 +217,10 @@ export default async function Home() {
                       </p>
                       <p className="mt-2 text-sm text-slate-800">Next step: {deal.nextStep || "Not set"}</p>
                     </div>
-                    <p className="text-sm font-medium text-slate-700">{currency.format(Math.round(deal.valueCents / 100))}</p>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-slate-700">IARR {currency.format(Math.round(deal.valueCents / 100))}</p>
+                      <p className="text-xs text-slate-500">Impl. {currency.format(Math.round(deal.implementationCostCents / 100))}</p>
+                    </div>
                   </div>
                   {deal.nextStepDueDate ? (
                     <p className={`mt-2 text-xs ${stepLate ? "text-red-700" : "text-slate-500"}`}>
@@ -286,7 +290,6 @@ export default async function Home() {
     </CrmShell>
   );
 }
-
 
 
 

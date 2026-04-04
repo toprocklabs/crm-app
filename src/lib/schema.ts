@@ -75,6 +75,7 @@ export const deals = pgTable("deals", {
   name: text("name").notNull(),
   stage: dealStage("stage").default("lead").notNull(),
   valueCents: integer("value_cents").default(0).notNull(),
+  implementationCostCents: integer("implementation_cost_cents").default(0).notNull(),
   ownerName: text("owner_name"),
   nextStep: text("next_step").notNull().default(""),
   nextStepDueDate: date("next_step_due_date"),
@@ -120,4 +121,3 @@ export const salesTasks = pgTable("sales_tasks", {
 });
 
 export type DealStage = (typeof dealStage.enumValues)[number];
-

@@ -77,6 +77,7 @@ export default async function ContactDetailPage({ params }: Props) {
         name: deals.name,
         stage: deals.stage,
         valueCents: deals.valueCents,
+        implementationCostCents: deals.implementationCostCents,
         expectedCloseDate: deals.expectedCloseDate,
       })
       .from(deals)
@@ -220,7 +221,9 @@ export default async function ContactDetailPage({ params }: Props) {
               <li key={deal.id} className="rounded-lg border border-slate-200 p-3">
                 <p className="font-medium text-slate-900"><Link href={`/opportunities/${deal.id}`} className="underline decoration-slate-300 underline-offset-2">{deal.name}</Link></p>
                 <p className="text-sm text-slate-600">{deal.stage}</p>
-                <p className="text-sm text-slate-700">{currency.format(Math.round(deal.valueCents / 100))}</p>
+                <p className="text-sm text-slate-700">
+                  IARR: {currency.format(Math.round(deal.valueCents / 100))} • Implementation Cost: {currency.format(Math.round(deal.implementationCostCents / 100))}
+                </p>
               </li>
             ))}
           </ul>
@@ -229,4 +232,3 @@ export default async function ContactDetailPage({ params }: Props) {
     </CrmShell>
   );
 }
-

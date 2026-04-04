@@ -30,6 +30,7 @@ export default async function OpportunitiesPage() {
       nextStep: deals.nextStep,
       nextStepDueDate: deals.nextStepDueDate,
       valueCents: deals.valueCents,
+      implementationCostCents: deals.implementationCostCents,
       expectedCloseDate: deals.expectedCloseDate,
       companyName: companies.name,
       createdAt: deals.createdAt,
@@ -55,14 +56,15 @@ export default async function OpportunitiesPage() {
                 <th className="px-3 py-2">Stage</th>
                 <th className="px-3 py-2">Owner</th>
                 <th className="px-3 py-2">Next step</th>
-                <th className="px-3 py-2">Value</th>
+                <th className="px-3 py-2">IARR</th>
+                <th className="px-3 py-2">Implementation Cost</th>
                 <th className="px-3 py-2">Expected close</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-4 text-slate-500">
+                  <td colSpan={7} className="px-3 py-4 text-slate-500">
                     No opportunities yet.
                   </td>
                 </tr>
@@ -89,6 +91,7 @@ export default async function OpportunitiesPage() {
                       ) : null}
                     </td>
                     <td className="px-3 py-2 text-slate-700">{currency.format(Math.round(row.valueCents / 100))}</td>
+                    <td className="px-3 py-2 text-slate-700">{currency.format(Math.round(row.implementationCostCents / 100))}</td>
                     <td className="px-3 py-2 text-slate-700">{row.expectedCloseDate ?? "-"}</td>
                   </tr>
                 );

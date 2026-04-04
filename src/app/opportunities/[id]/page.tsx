@@ -41,6 +41,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
       name: deals.name,
       stage: deals.stage,
       valueCents: deals.valueCents,
+      implementationCostCents: deals.implementationCostCents,
       ownerName: deals.ownerName,
       nextStep: deals.nextStep,
       nextStepDueDate: deals.nextStepDueDate,
@@ -116,10 +117,16 @@ export default async function OpportunityDetailPage({ params }: Props) {
         </Link>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Value</p>
+          <p className="text-xs uppercase tracking-wide text-slate-500">IARR</p>
           <p className="mt-1 text-2xl font-semibold text-slate-900">{currency.format(Math.round(opportunity.valueCents / 100))}</p>
+        </article>
+        <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs uppercase tracking-wide text-slate-500">Implementation Cost</p>
+          <p className="mt-1 text-2xl font-semibold text-slate-900">
+            {currency.format(Math.round(opportunity.implementationCostCents / 100))}
+          </p>
         </article>
         <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs uppercase tracking-wide text-slate-500">Owner</p>
@@ -149,12 +156,22 @@ export default async function OpportunityDetailPage({ params }: Props) {
               <input name="name" required defaultValue={opportunity.name} className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
             </label>
             <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Value (USD)</span>
+              <span>IARR (USD)</span>
               <input
-                name="valueUsd"
+                name="iarrUsd"
                 type="number"
                 min={0}
                 defaultValue={Math.round(opportunity.valueCents / 100)}
+                className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-slate-700">
+              <span>Implementation Cost (USD)</span>
+              <input
+                name="implementationCostUsd"
+                type="number"
+                min={0}
+                defaultValue={Math.round(opportunity.implementationCostCents / 100)}
                 className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
               />
             </label>

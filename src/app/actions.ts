@@ -30,7 +30,8 @@ const contactSchema = z.object({
 const dealSchema = z.object({
   name: z.string().trim().min(2),
   stage: z.enum(["lead", "qualified", "proposal", "negotiation", "won", "lost"]),
-  valueUsd: z.coerce.number().min(0),
+  iarrUsd: z.coerce.number().min(0),
+  implementationCostUsd: z.coerce.number().min(0),
   ownerName: z.string().trim().optional(),
   nextStep: z.string().trim().min(2),
   nextStepDueDate: z.string().optional(),
@@ -41,7 +42,8 @@ const dealSchema = z.object({
 const dealUpdateSchema = z.object({
   dealId: z.coerce.number().int().positive(),
   name: z.string().trim().min(2),
-  valueUsd: z.coerce.number().min(0),
+  iarrUsd: z.coerce.number().min(0),
+  implementationCostUsd: z.coerce.number().min(0),
   ownerName: z.string().trim().optional(),
   nextStep: z.string().trim().min(2),
   nextStepDueDate: z.string().optional(),
@@ -304,7 +306,8 @@ export async function createDeal(formData: FormData) {
   const parsed = dealSchema.parse({
     name: formData.get("name"),
     stage: formData.get("stage"),
-    valueUsd: formData.get("valueUsd"),
+    iarrUsd: formData.get("iarrUsd"),
+    implementationCostUsd: formData.get("implementationCostUsd"),
     ownerName: formData.get("ownerName"),
     nextStep: formData.get("nextStep"),
     nextStepDueDate: formData.get("nextStepDueDate"),
@@ -315,7 +318,8 @@ export async function createDeal(formData: FormData) {
   await db.insert(deals).values({
     name: parsed.name,
     stage: parsed.stage,
-    valueCents: Math.round(parsed.valueUsd * 100),
+    valueCents: Math.round(parsed.iarrUsd * 100),
+    implementationCostCents: Math.round(parsed.implementationCostUsd * 100),
     ownerName: cleanOptionalText(parsed.ownerName),
     nextStep: parsed.nextStep,
     nextStepDueDate: cleanOptionalText(parsed.nextStepDueDate),
@@ -340,7 +344,8 @@ export async function updateDeal(formData: FormData) {
   const parsed = dealUpdateSchema.parse({
     dealId: formData.get("dealId"),
     name: formData.get("name"),
-    valueUsd: formData.get("valueUsd"),
+    iarrUsd: formData.get("iarrUsd"),
+    implementationCostUsd: formData.get("implementationCostUsd"),
     ownerName: formData.get("ownerName"),
     nextStep: formData.get("nextStep"),
     nextStepDueDate: formData.get("nextStepDueDate"),
@@ -353,7 +358,8 @@ export async function updateDeal(formData: FormData) {
     .update(deals)
     .set({
       name: parsed.name,
-      valueCents: Math.round(parsed.valueUsd * 100),
+      valueCents: Math.round(parsed.iarrUsd * 100),
+      implementationCostCents: Math.round(parsed.implementationCostUsd * 100),
       ownerName: cleanOptionalText(parsed.ownerName),
       nextStep: parsed.nextStep,
       nextStepDueDate: cleanOptionalText(parsed.nextStepDueDate),
