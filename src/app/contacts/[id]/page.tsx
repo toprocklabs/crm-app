@@ -46,6 +46,7 @@ export default async function ContactDetailPage({ params }: Props) {
       lastName: contacts.lastName,
       email: contacts.email,
       phone: contacts.phone,
+      linkedinProfileUrl: contacts.linkedinProfileUrl,
       title: contacts.title,
       createdAt: contacts.createdAt,
       companyId: companies.id,
@@ -110,7 +111,7 @@ export default async function ContactDetailPage({ params }: Props) {
     >
       <section className="flex flex-wrap items-start justify-between gap-4">
         <div className="w-full max-w-3xl rounded-xl border border-slate-200 bg-white p-4">
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <AutoSaveContactField
               action={updateContactField}
               contactId={contact.id}
@@ -126,6 +127,14 @@ export default async function ContactDetailPage({ params }: Props) {
               type="email"
               defaultValue={contact.email ?? ""}
             />
+            <AutoSaveContactField
+              action={updateContactField}
+              contactId={contact.id}
+              field="linkedinProfileUrl"
+              label="LinkedIn"
+              type="url"
+              defaultValue={contact.linkedinProfileUrl ?? ""}
+            />
             <div className="space-y-2">
               <AutoSaveContactField
                 action={updateContactField}
@@ -139,16 +148,28 @@ export default async function ContactDetailPage({ params }: Props) {
             </div>
           </div>
 
-          <p className="mt-3 text-sm text-slate-600">
-            Account:{" "}
-            {contact.companyId ? (
-              <Link href={`/accounts/${contact.companyId}`} className="underline decoration-slate-300 underline-offset-2">
-                {contact.companyName}
-              </Link>
-            ) : (
-              "No account"
-            )}
-          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-600">
+            <p>
+              Account:{" "}
+              {contact.companyId ? (
+                <Link href={`/accounts/${contact.companyId}`} className="underline decoration-slate-300 underline-offset-2">
+                  {contact.companyName}
+                </Link>
+              ) : (
+                "No account"
+              )}
+            </p>
+            {contact.linkedinProfileUrl ? (
+              <a
+                href={contact.linkedinProfileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+              >
+                Open LinkedIn
+              </a>
+            ) : null}
+          </div>
         </div>
 
         <div className="text-sm text-slate-600">Created: {new Date(contact.createdAt).toLocaleDateString()}</div>

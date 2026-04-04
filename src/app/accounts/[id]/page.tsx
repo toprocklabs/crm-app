@@ -303,6 +303,10 @@ export default async function AccountDetailPage({ params }: Props) {
                   <input name="phone" type="tel" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
                 </label>
                 <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>LinkedIn URL</span>
+                  <input name="linkedinProfileUrl" type="url" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
                   <span>Title</span>
                   <input name="title" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
                 </label>
@@ -348,9 +352,28 @@ export default async function AccountDetailPage({ params }: Props) {
                     defaultValue={contact.phone ?? ""}
                     returnPath={`/accounts/${company.id}`}
                   />
+                  <AutoSaveContactField
+                    action={updateContactField}
+                    contactId={contact.id}
+                    field="linkedinProfileUrl"
+                    label="LinkedIn"
+                    type="url"
+                    defaultValue={contact.linkedinProfileUrl ?? ""}
+                    returnPath={`/accounts/${company.id}`}
+                  />
                 </div>
-                <div className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-600">
                   <CallLink phone={contact.phone} />
+                  {contact.linkedinProfileUrl ? (
+                    <a
+                      href={contact.linkedinProfileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                    >
+                      LinkedIn
+                    </a>
+                  ) : null}
                 </div>
               </li>
             ))}

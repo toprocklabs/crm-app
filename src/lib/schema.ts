@@ -62,6 +62,7 @@ export const contacts = pgTable(
     lastName: text("last_name").notNull(),
     email: text("email"),
     phone: text("phone"),
+    linkedinProfileUrl: text("linkedin_profile_url"),
     title: text("title"),
     companyId: integer("company_id").references(() => companies.id, {
       onDelete: "set null",

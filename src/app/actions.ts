@@ -25,6 +25,7 @@ const contactSchema = z.object({
   lastName: z.string().trim().min(1),
   email: z.string().trim().email().optional().or(z.literal("")),
   phone: z.string().trim().optional(),
+  linkedinProfileUrl: z.string().trim().optional(),
   title: z.string().trim().optional(),
   companyId: z.coerce.number().int().positive().optional(),
 });
@@ -86,7 +87,7 @@ const activityDateUpdateSchema = z.object({
 
 const contactFieldUpdateSchema = z.object({
   contactId: z.coerce.number().int().positive(),
-  field: z.enum(["title", "email", "phone"]),
+  field: z.enum(["title", "email", "phone", "linkedinProfileUrl"]),
   value: z.string().optional(),
   returnPath: z.string().optional(),
 });
@@ -206,6 +207,7 @@ export async function createContact(formData: FormData) {
     lastName: formData.get("lastName"),
     email: formData.get("email"),
     phone: formData.get("phone"),
+    linkedinProfileUrl: formData.get("linkedinProfileUrl"),
     title: formData.get("title"),
     companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
   });
@@ -215,6 +217,7 @@ export async function createContact(formData: FormData) {
     lastName: parsed.lastName,
     email: cleanOptionalText(parsed.email),
     phone: normalizeUsPhone(parsed.phone),
+    linkedinProfileUrl: normalizeUrl(cleanOptionalText(parsed.linkedinProfileUrl)),
     title: cleanOptionalText(parsed.title),
     companyId: parsed.companyId ?? null,
   });
@@ -253,6 +256,13 @@ export async function updateContactField(formData: FormData) {
 
   if (parsed.field === "phone") {
     await db.update(contacts).set({ phone: normalizeUsPhone(parsed.value) }).where(eq(contacts.id, parsed.contactId));
+  }
+
+  if (parsed.field === "linkedinProfileUrl") {
+    await db
+      .update(contacts)
+      .set({ linkedinProfileUrl: normalizeUrl(cleanOptionalText(parsed.value)) })
+      .where(eq(contacts.id, parsed.contactId));
   }
 
   revalidatePath(`/contacts/${parsed.contactId}`);

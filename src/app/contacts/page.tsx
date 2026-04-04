@@ -23,6 +23,7 @@ export default async function ContactsPage() {
       lastName: contacts.lastName,
       email: contacts.email,
       phone: contacts.phone,
+      linkedinProfileUrl: contacts.linkedinProfileUrl,
       title: contacts.title,
       companyId: companies.id,
       companyName: companies.name,
@@ -48,12 +49,13 @@ export default async function ContactsPage() {
                 <th className="px-3 py-2">Account</th>
                 <th className="px-3 py-2">Email</th>
                 <th className="px-3 py-2">Phone</th>
+                <th className="px-3 py-2">LinkedIn</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-3 py-4 text-slate-500">No contacts yet.</td>
+                  <td colSpan={6} className="px-3 py-4 text-slate-500">No contacts yet.</td>
                 </tr>
               ) : null}
               {rows.map((row) => (
@@ -74,6 +76,20 @@ export default async function ContactsPage() {
                         <span>{row.phone}</span>
                         <CallLink phone={row.phone} />
                       </div>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-slate-700">
+                    {row.linkedinProfileUrl ? (
+                      <a
+                        href={row.linkedinProfileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                      >
+                        View
+                      </a>
                     ) : (
                       "-"
                     )}
