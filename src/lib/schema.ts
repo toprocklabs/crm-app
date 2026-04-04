@@ -127,3 +127,4 @@ export const salesTasks = pgTable("sales_tasks", {
 });
 
 export type DealStage = (typeof dealStage.enumValues)[number];
+export type ActivityType = (typeof activityType.enumValues)[number];

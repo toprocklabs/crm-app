@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createContact, createDeal, logActivity, updateActivityDate, updateCompanyField, updateContactField } from "@/app/actions";
+import { ActivityTimeline } from "@/components/activity-timeline";
 import { AutoSaveActivityDateField } from "@/components/auto-save-activity-date-field";
 import { AutoSaveCompanyField } from "@/components/auto-save-company-field";
 import { AutoSaveCompanySelectField } from "@/components/auto-save-company-select-field";
@@ -9,6 +10,7 @@ import { AutoSaveContactField } from "@/components/auto-save-contact-field";
 import { CallLink } from "@/components/call-link";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
+import { activityTypeOptions, getActivityMeta } from "@/lib/activity-ui";
 import { requireUser } from "@/lib/auth";
 import { companyIndustries } from "@/lib/company-industries";
 import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
@@ -73,11 +75,16 @@ export default async function AccountDetailPage({ params }: Props) {
         type: activities.type,
         notes: activities.notes,
         occurredAt: activities.occurredAt,
+        dealId: deals.id,
         dealName: deals.name,
+        contactId: contacts.id,
+        contactFirstName: contacts.firstName,
+        contactLastName: contacts.lastName,
         loggedByUsername: users.username,
       })
       .from(activities)
       .leftJoin(deals, eq(activities.dealId, deals.id))
+      .leftJoin(contacts, eq(activities.contactId, contacts.id))
       .leftJoin(users, eq(activities.loggedByUserId, users.id))
       .where(eq(activities.companyId, companyId))
       .orderBy(desc(activities.occurredAt)),
@@ -488,12 +495,11 @@ export default async function AccountDetailPage({ params }: Props) {
                 <label className="flex flex-col gap-1 text-sm text-slate-700">
                   <span>Type</span>
                   <select name="type" defaultValue="note" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                    <option value="note">Note</option>
-                    <option value="call">Call</option>
-                    <option value="meeting">Meeting</option>
-                    <option value="email">Email</option>
-                    <option value="linkedin">LinkedIn</option>
-                    <option value="task">Task</option>
+                    {activityTypeOptions.map((type) => (
+                      <option key={type} value={type}>
+                        {getActivityMeta(type).label}
+                      </option>
+                    ))}
                   </select>
                 </label>
                 <label className="flex flex-col gap-1 text-sm text-slate-700">
@@ -543,25 +549,30 @@ export default async function AccountDetailPage({ params }: Props) {
               </button>
             </form>
           </CollapsibleFormSection>
-          <ul className="mt-4 space-y-3">
-            {companyActivities.length === 0 ? <li className="text-sm text-slate-500">No activity yet.</li> : null}
-            {companyActivities.map((item) => (
-              <li key={item.id} className="rounded-lg border border-slate-200 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">{item.type}</p>
-                <p className="mt-1 font-medium text-slate-900">{item.notes}</p>
-                <p className="mt-1 text-sm text-slate-600">
-                  {item.dealName ?? "General"} • {new Date(item.occurredAt).toLocaleString()}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">Logged by {item.loggedByUsername ?? "Unknown user"}</p>
+          <ActivityTimeline
+            emptyMessage="No activity yet."
+            items={companyActivities.map((item) => ({
+              id: item.id,
+              type: item.type,
+              notes: item.notes,
+              occurredAt: item.occurredAt,
+              loggedByUsername: item.loggedByUsername,
+              contextLinks: [
+                item.dealName && item.dealId ? { label: item.dealName, href: `/opportunities/${item.dealId}` } : null,
+                item.contactFirstName && item.contactId
+                  ? { label: `${item.contactFirstName} ${item.contactLastName}`, href: `/contacts/${item.contactId}` }
+                  : null,
+              ].filter((value): value is { label: string; href?: string } => Boolean(value)),
+              footer: (
                 <AutoSaveActivityDateField
                   action={updateActivityDate}
                   activityId={item.id}
                   defaultValue={new Date(item.occurredAt).toISOString().slice(0, 10)}
                   returnPath={`/accounts/${company.id}`}
                 />
-              </li>
-            ))}
-          </ul>
+              ),
+            }))}
+          />
         </article>
       </section>
     </CrmShell>
