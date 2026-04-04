@@ -78,8 +78,8 @@ export default async function AccountDetailPage({ params }: Props) {
       description="Account detail with all associated people, opportunities, tasks, and timeline."
     >
       <section className="flex flex-wrap items-start justify-between gap-4">
-        <div className="w-full max-w-3xl rounded-xl border border-slate-200 bg-white p-4">
-          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.35fr)]">
+        <div className="w-full max-w-4xl rounded-xl border border-slate-200 bg-white p-4">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
             <AutoSaveCompanySelectField
               action={updateCompanyField}
               companyId={company.id}
@@ -104,6 +104,23 @@ export default async function AccountDetailPage({ params }: Props) {
               label="Customer Project URL"
               type="url"
               defaultValue={company.customerProjectUrl ?? ""}
+            />
+            <AutoSaveCompanyField
+              action={updateCompanyField}
+              companyId={company.id}
+              field="nextStep"
+              label="Account next step"
+              defaultValue={company.nextStep}
+              emptyText="No account next step"
+            />
+            <AutoSaveCompanyField
+              action={updateCompanyField}
+              companyId={company.id}
+              field="nextStepDueDate"
+              label="Account next step date"
+              type="date"
+              defaultValue={company.nextStepDueDate ?? ""}
+              emptyText="No next step date"
             />
           </div>
         </div>

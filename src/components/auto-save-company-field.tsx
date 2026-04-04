@@ -12,11 +12,11 @@ export function AutoSaveCompanyField({
   action,
 }: {
   companyId: number;
-  field: "website" | "customerProjectUrl";
+  field: "website" | "customerProjectUrl" | "nextStep" | "nextStepDueDate";
   label: string;
   defaultValue: string;
   emptyText?: string;
-  type?: "text" | "url";
+  type?: "text" | "url" | "date";
   action: (formData: FormData) => void | Promise<void>;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -51,14 +51,23 @@ export function AutoSaveCompanyField({
     setIsEditing(true);
   }
 
+  const isUrlField = field === "website" || field === "customerProjectUrl";
   const normalizedUrl =
-    displayValue && displayValue.trim()
+    isUrlField && displayValue && displayValue.trim()
       ? (displayValue.startsWith("http://") || displayValue.startsWith("https://")
           ? displayValue
           : `https://${displayValue}`)
       : null;
 
-  const fallbackText = emptyText ?? (field === "website" ? "No website" : "No customer project URL");
+  const fallbackText =
+    emptyText
+    ?? (field === "website"
+      ? "No website"
+      : field === "customerProjectUrl"
+        ? "No customer project URL"
+        : field === "nextStepDueDate"
+          ? "No next step date"
+          : "No next step");
 
   return (
     <form ref={formRef} action={action} className="space-y-1">

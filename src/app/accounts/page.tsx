@@ -74,6 +74,8 @@ export default async function AccountsPage() {
     return null;
   }
 
+  const today = new Date().toISOString().slice(0, 10);
+
   const rows = await db
     .select({
       id: companies.id,
@@ -81,6 +83,8 @@ export default async function AccountsPage() {
       website: companies.website,
       customerProjectUrl: companies.customerProjectUrl,
       industry: companies.industry,
+      nextStep: companies.nextStep,
+      nextStepDueDate: companies.nextStepDueDate,
       createdAt: companies.createdAt,
       contactCount: sql<number>`count(distinct ${contacts.id})`,
       dealCount: sql<number>`count(distinct ${deals.id})`,
@@ -101,11 +105,13 @@ export default async function AccountsPage() {
       <section>
         <CollapsibleFormSection title="Add account" description="Create a new account record.">
           <form action={createCompany}>
-            <div className="grid gap-3 md:grid-cols-4">
+            <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
               <Field label="Account name" name="name" required />
               <Field label="Website" name="website" placeholder="https://example.com" />
               <Field label="Customer Project URL" name="customerProjectUrl" placeholder="https://app.example.com/project/123" />
               <SelectField label="Industry" name="industry" options={companyIndustries} />
+              <Field label="Next step" name="nextStep" placeholder="Schedule onboarding review" />
+              <Field label="Next step date" name="nextStepDueDate" type="date" />
             </div>
             <button className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white" type="submit">
               Save account
@@ -124,35 +130,45 @@ export default async function AccountsPage() {
                 <th className="px-3 py-2">Contacts</th>
                 <th className="px-3 py-2">Opportunities</th>
                 <th className="px-3 py-2">Total ARR</th>
+                <th className="px-3 py-2">Next step</th>
+                <th className="px-3 py-2">Next step due</th>
                 <th className="px-3 py-2">Created</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-4 text-slate-500">
+                  <td colSpan={8} className="px-3 py-4 text-slate-500">
                     No accounts yet.
                   </td>
                 </tr>
               ) : null}
-              {rows.map((row) => (
-                <tr key={row.id} className="border-b border-slate-100">
-                  <td className="px-3 py-2">
-                    <p className="font-medium text-slate-900">
-                      <Link href={`/accounts/${row.id}`} className="underline decoration-slate-300 underline-offset-2">
-                        {row.name}
-                      </Link>
-                    </p>
-                    <p className="text-slate-500">{row.website ?? "No website"}</p>
-                    <p className="text-slate-500">{row.customerProjectUrl ?? "No customer project URL"}</p>
-                  </td>
-                  <td className="px-3 py-2 text-slate-700">{normalizeCompanyIndustry(row.industry) ?? "-"}</td>
-                  <td className="px-3 py-2 text-slate-700">{row.contactCount}</td>
-                  <td className="px-3 py-2 text-slate-700">{row.dealCount}</td>
-                  <td className="px-3 py-2 text-slate-700">${Math.round(row.pipelineCents / 100).toLocaleString()}</td>
-                  <td className="px-3 py-2 text-slate-500">{new Date(row.createdAt).toLocaleDateString()}</td>
-                </tr>
-              ))}
+              {rows.map((row) => {
+                const nextStepLate = Boolean(row.nextStepDueDate && row.nextStepDueDate < today);
+
+                return (
+                  <tr key={row.id} className="border-b border-slate-100">
+                    <td className="px-3 py-2">
+                      <p className="font-medium text-slate-900">
+                        <Link href={`/accounts/${row.id}`} className="underline decoration-slate-300 underline-offset-2">
+                          {row.name}
+                        </Link>
+                      </p>
+                      <p className="text-slate-500">{row.website ?? "No website"}</p>
+                      <p className="text-slate-500">{row.customerProjectUrl ?? "No customer project URL"}</p>
+                    </td>
+                    <td className="px-3 py-2 text-slate-700">{normalizeCompanyIndustry(row.industry) ?? "-"}</td>
+                    <td className="px-3 py-2 text-slate-700">{row.contactCount}</td>
+                    <td className="px-3 py-2 text-slate-700">{row.dealCount}</td>
+                    <td className="px-3 py-2 text-slate-700">${Math.round(row.pipelineCents / 100).toLocaleString()}</td>
+                    <td className="px-3 py-2 text-slate-700">{row.nextStep || "-"}</td>
+                    <td className={`px-3 py-2 ${nextStepLate ? "text-red-700" : "text-slate-500"}`}>
+                      {row.nextStepDueDate ? new Date(`${row.nextStepDueDate}T00:00:00`).toLocaleDateString("en-US") : "-"}
+                    </td>
+                    <td className="px-3 py-2 text-slate-500">{new Date(row.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

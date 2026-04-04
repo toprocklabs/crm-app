@@ -16,6 +16,8 @@ const companySchema = z.object({
   website: z.string().trim().optional(),
   customerProjectUrl: z.string().trim().optional(),
   industry: optionalCompanyIndustrySchema,
+  nextStep: z.string().trim().optional(),
+  nextStepDueDate: z.string().optional(),
 });
 
 const contactSchema = z.object({
@@ -91,7 +93,7 @@ const contactFieldUpdateSchema = z.object({
 
 const companyFieldUpdateSchema = z.object({
   companyId: z.coerce.number().int().positive(),
-  field: z.enum(["website", "customerProjectUrl", "industry"]),
+  field: z.enum(["website", "customerProjectUrl", "industry", "nextStep", "nextStepDueDate"]),
   value: z.string().optional(),
 });
 
@@ -173,6 +175,8 @@ export async function createCompany(formData: FormData) {
     website: formData.get("website"),
     customerProjectUrl: formData.get("customerProjectUrl"),
     industry: formData.get("industry"),
+    nextStep: formData.get("nextStep"),
+    nextStepDueDate: formData.get("nextStepDueDate"),
   });
 
   await db.insert(companies).values({
@@ -180,6 +184,8 @@ export async function createCompany(formData: FormData) {
     website: normalizeUrl(cleanOptionalText(parsed.website)),
     customerProjectUrl: normalizeUrl(cleanOptionalText(parsed.customerProjectUrl)),
     industry: normalizeCompanyIndustry(parsed.industry),
+    nextStep: cleanOptionalText(parsed.nextStep) ?? "",
+    nextStepDueDate: cleanOptionalText(parsed.nextStepDueDate),
   });
 
   revalidatePath("/");
@@ -282,12 +288,18 @@ export async function updateCompanyField(formData: FormData) {
     optionalCompanyIndustrySchema.parse(parsed.value ?? "");
   }
 
+  if (parsed.field === "nextStepDueDate" && cleaned) {
+    z.string().date().parse(cleaned);
+  }
+
   await db
     .update(companies)
     .set({
       website: parsed.field === "website" ? normalizedUrl : undefined,
       customerProjectUrl: parsed.field === "customerProjectUrl" ? normalizedUrl : undefined,
       industry: parsed.field === "industry" ? normalizeCompanyIndustry(parsed.value) : undefined,
+      nextStep: parsed.field === "nextStep" ? cleaned ?? "" : undefined,
+      nextStepDueDate: parsed.field === "nextStepDueDate" ? cleaned : undefined,
     })
     .where(eq(companies.id, parsed.companyId));
 

@@ -48,6 +48,8 @@ export const companies = pgTable("companies", {
   website: text("website"),
   customerProjectUrl: text("customer_project_url"),
   industry: text("industry"),
+  nextStep: text("next_step").notNull().default(""),
+  nextStepDueDate: date("next_step_due_date"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
