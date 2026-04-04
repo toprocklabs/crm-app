@@ -6,6 +6,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { companyIndustries } from "@/lib/company-industries";
+import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { activities, companies, contacts, deals, salesTasks } from "@/lib/schema";
 
 const optionalCompanyIndustrySchema = z.enum(companyIndustries).optional().or(z.literal(""));
@@ -174,7 +175,7 @@ export async function createCompany(formData: FormData) {
     name: parsed.name,
     website: normalizeUrl(cleanOptionalText(parsed.website)),
     customerProjectUrl: normalizeUrl(cleanOptionalText(parsed.customerProjectUrl)),
-    industry: cleanOptionalText(parsed.industry),
+    industry: normalizeCompanyIndustry(parsed.industry),
   });
 
   revalidatePath("/");
@@ -282,7 +283,7 @@ export async function updateCompanyField(formData: FormData) {
     .set({
       website: parsed.field === "website" ? normalizedUrl : undefined,
       customerProjectUrl: parsed.field === "customerProjectUrl" ? normalizedUrl : undefined,
-      industry: parsed.field === "industry" ? cleanOptionalText(parsed.value) : undefined,
+      industry: parsed.field === "industry" ? normalizeCompanyIndustry(parsed.value) : undefined,
     })
     .where(eq(companies.id, parsed.companyId));
 

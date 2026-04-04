@@ -5,6 +5,7 @@ import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { companyIndustries } from "@/lib/company-industries";
+import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { getDb } from "@/lib/db";
 import { companies, contacts, deals } from "@/lib/schema";
 
@@ -95,7 +96,7 @@ export default async function AccountsPage() {
     <CrmShell
       username={session.username}
       title="Accounts"
-      description="All account records with contacts, opportunities, and total pipeline value."
+      description="All account records with contacts, opportunities, and total tracked ARR."
     >
       <section>
         <CollapsibleFormSection title="Add account" description="Create a new account record.">
@@ -122,7 +123,7 @@ export default async function AccountsPage() {
                 <th className="px-3 py-2">Industry</th>
                 <th className="px-3 py-2">Contacts</th>
                 <th className="px-3 py-2">Opportunities</th>
-                <th className="px-3 py-2">Pipeline</th>
+                <th className="px-3 py-2">Total ARR</th>
                 <th className="px-3 py-2">Created</th>
               </tr>
             </thead>
@@ -145,7 +146,7 @@ export default async function AccountsPage() {
                     <p className="text-slate-500">{row.website ?? "No website"}</p>
                     <p className="text-slate-500">{row.customerProjectUrl ?? "No customer project URL"}</p>
                   </td>
-                  <td className="px-3 py-2 text-slate-700">{row.industry ?? "-"}</td>
+                  <td className="px-3 py-2 text-slate-700">{normalizeCompanyIndustry(row.industry) ?? "-"}</td>
                   <td className="px-3 py-2 text-slate-700">{row.contactCount}</td>
                   <td className="px-3 py-2 text-slate-700">{row.dealCount}</td>
                   <td className="px-3 py-2 text-slate-700">${Math.round(row.pipelineCents / 100).toLocaleString()}</td>
