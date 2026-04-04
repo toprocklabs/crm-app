@@ -19,10 +19,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-10">
       <div className="rounded-3xl border border-white/70 bg-white/85 p-8 shadow-2xl shadow-cyan-950/20 backdrop-blur">
         <p className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-cyan-900">
-          Simple CRM
+          Toprock CRM
         </p>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">Sign in</h1>
-        <p className="mt-2 text-sm text-slate-600">Use your team username and password to access your workspace.</p>
+        <p className="mt-2 text-sm text-slate-600">Use your team username and password to access the Toprock CRM workspace.</p>
 
         {errorText ? (
           <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{errorText}</p>

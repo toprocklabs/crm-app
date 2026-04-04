@@ -69,9 +69,9 @@ export default async function Home() {
   if (!db) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-6 px-6 py-10">
-        <h1 className="text-3xl font-semibold text-slate-900">Simple CRM</h1>
+        <h1 className="text-3xl font-semibold text-slate-900">Toprock CRM</h1>
         <div className="rounded-xl border border-amber-300 bg-amber-50 p-5 text-amber-900">
-          <p className="font-medium">Setup needed before the app can run.</p>
+          <p className="font-medium">Toprock CRM needs setup before it can run.</p>
           <p className="mt-2 text-sm">
             Add your Neon connection string as <code>DATABASE_URL</code>, then run
             <code className="mx-1">npm run db:generate</code> and
@@ -293,6 +293,5 @@ export default async function Home() {
     </CrmShell>
   );
 }
-
 
 
