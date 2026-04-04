@@ -132,12 +132,14 @@ function normalizeUsPhone(value: string | undefined) {
   return `(${tenDigits.slice(0, 3)}) ${tenDigits.slice(3, 6)}-${tenDigits.slice(6)}`;
 }
 
-function mergeDateWithTime(dateValue: string | undefined, baseDate = new Date()) {
+function mergeDateWithTime(dateValue: string | undefined, baseDate: Date | null = new Date()) {
   const cleaned = cleanOptionalText(dateValue);
 
   if (!cleaned) {
     return null;
   }
+
+  const resolvedBaseDate = baseDate ?? new Date();
 
   const [year, month, day] = cleaned.split("-").map(Number);
 
@@ -150,10 +152,10 @@ function mergeDateWithTime(dateValue: string | undefined, baseDate = new Date())
       year,
       month - 1,
       day,
-      baseDate.getUTCHours(),
-      baseDate.getUTCMinutes(),
-      baseDate.getUTCSeconds(),
-      baseDate.getUTCMilliseconds(),
+      resolvedBaseDate.getUTCHours(),
+      resolvedBaseDate.getUTCMinutes(),
+      resolvedBaseDate.getUTCSeconds(),
+      resolvedBaseDate.getUTCMilliseconds(),
     ),
   );
 }
@@ -489,10 +491,15 @@ export async function updateActivityDate(formData: FormData) {
     throw new Error("Activity not found.");
   }
 
+  const occurredAt = mergeDateWithTime(parsed.occurredOn, existing.occurredAt);
+  if (!occurredAt) {
+    throw new Error("Activity date must be a valid date.");
+  }
+
   await db
     .update(activities)
     .set({
-      occurredAt: mergeDateWithTime(parsed.occurredOn, existing.occurredAt),
+      occurredAt,
     })
     .where(eq(activities.id, parsed.activityId));
 
