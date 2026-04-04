@@ -11,6 +11,36 @@ import { companies, contacts, deals } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
+type SortKey = "account" | "industry" | "contacts" | "opportunities" | "arr" | "nextStep" | "nextStepDue" | "created";
+type SortDirection = "asc" | "desc";
+
+type AccountsPageProps = {
+  searchParams: Promise<{
+    sort?: string;
+    dir?: string;
+  }>;
+};
+
+const sortLabels: Record<SortKey, string> = {
+  account: "Account",
+  industry: "Industry",
+  contacts: "Contacts",
+  opportunities: "Opportunities",
+  arr: "Total ARR",
+  nextStep: "Next step",
+  nextStepDue: "Next step due",
+  created: "Created",
+};
+
+function getSortKey(value: string | undefined): SortKey {
+  const keys: SortKey[] = ["account", "industry", "contacts", "opportunities", "arr", "nextStep", "nextStepDue", "created"];
+  return keys.includes(value as SortKey) ? (value as SortKey) : "created";
+}
+
+function getSortDirection(value: string | undefined): SortDirection {
+  return value === "asc" ? "asc" : "desc";
+}
+
 function Field({
   label,
   name,
@@ -66,7 +96,7 @@ function SelectField({
   );
 }
 
-export default async function AccountsPage() {
+export default async function AccountsPage({ searchParams }: AccountsPageProps) {
   const session = await requireUser();
   const db = getDb();
 
@@ -74,6 +104,9 @@ export default async function AccountsPage() {
     return null;
   }
 
+  const params = await searchParams;
+  const sort = getSortKey(params.sort);
+  const dir = getSortDirection(params.dir);
   const today = new Date().toISOString().slice(0, 10);
 
   const [accountRows, contactRows, dealRows] = await Promise.all([
@@ -109,6 +142,43 @@ export default async function AccountsPage() {
     pipelineCents: pipelineTotals.get(row.id) ?? 0,
   }));
 
+  rows.sort((a, b) => {
+    const direction = dir === "asc" ? 1 : -1;
+
+    switch (sort) {
+      case "account":
+        return a.name.localeCompare(b.name) * direction;
+      case "industry":
+        return (a.industry ?? "").localeCompare(b.industry ?? "") * direction;
+      case "contacts":
+        return (a.contactCount - b.contactCount) * direction;
+      case "opportunities":
+        return (a.dealCount - b.dealCount) * direction;
+      case "arr":
+        return (a.pipelineCents - b.pipelineCents) * direction;
+      case "nextStep":
+        return (a.nextStep ?? "").localeCompare(b.nextStep ?? "") * direction;
+      case "nextStepDue":
+        return (a.nextStepDueDate ?? "").localeCompare(b.nextStepDueDate ?? "") * direction;
+      case "created":
+      default:
+        return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * direction;
+    }
+  });
+
+  function sortHref(key: SortKey) {
+    const nextDir: SortDirection = sort === key && dir === "asc" ? "desc" : "asc";
+    return `/accounts?sort=${key}&dir=${nextDir}`;
+  }
+
+  function sortIndicator(key: SortKey) {
+    if (sort !== key) {
+      return "↕";
+    }
+
+    return dir === "asc" ? "↑" : "↓";
+  }
+
   return (
     <CrmShell
       username={session.username}
@@ -138,14 +208,14 @@ export default async function AccountsPage() {
           <table className="min-w-full text-sm">
             <thead className="border-b border-slate-200 text-left text-slate-500">
               <tr>
-                <th className="px-3 py-2">Account</th>
-                <th className="px-3 py-2">Industry</th>
-                <th className="px-3 py-2">Contacts</th>
-                <th className="px-3 py-2">Opportunities</th>
-                <th className="px-3 py-2">Total ARR</th>
-                <th className="px-3 py-2">Next step</th>
-                <th className="px-3 py-2">Next step due</th>
-                <th className="px-3 py-2">Created</th>
+                {(["account", "industry", "contacts", "opportunities", "arr", "nextStep", "nextStepDue", "created"] as SortKey[]).map((key) => (
+                  <th key={key} className="px-3 py-2">
+                    <Link href={sortHref(key)} className="inline-flex items-center gap-1 hover:text-slate-700">
+                      <span>{sortLabels[key]}</span>
+                      <span className="text-xs">{sortIndicator(key)}</span>
+                    </Link>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>

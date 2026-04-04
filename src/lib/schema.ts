@@ -23,6 +23,7 @@ export const activityType = pgEnum("activity_type", [
   "call",
   "meeting",
   "email",
+  "linkedin",
   "task",
 ]);
 

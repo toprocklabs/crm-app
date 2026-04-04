@@ -69,7 +69,7 @@ const taskSchema = z.object({
 });
 
 const activitySchema = z.object({
-  type: z.enum(["note", "call", "meeting", "email", "task"]),
+  type: z.enum(["note", "call", "meeting", "email", "linkedin", "task"]),
   notes: z.string().trim().min(2),
   dealId: z.coerce.number().int().positive().optional(),
   contactId: z.coerce.number().int().positive().optional(),

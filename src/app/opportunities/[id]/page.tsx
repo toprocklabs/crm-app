@@ -296,6 +296,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
                     <option value="call">Call</option>
                     <option value="meeting">Meeting</option>
                     <option value="email">Email</option>
+                    <option value="linkedin">LinkedIn</option>
                     <option value="task">Task</option>
                   </select>
                 </label>
