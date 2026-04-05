@@ -45,6 +45,14 @@ function getSortDirection(value: string | undefined): SortDirection {
   return value === "asc" ? "asc" : "desc";
 }
 
+function getUrlLabel(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
 function Field({
   label,
   name,
@@ -286,8 +294,30 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                           {row.name}
                         </Link>
                       </p>
-                      <p className="text-slate-500">{row.website ?? "No website"}</p>
-                      <p className="text-slate-500">{row.customerProjectUrl ?? "No customer project URL"}</p>
+                      <p className="text-slate-500">
+                        {row.website ? (
+                          <a
+                            href={row.website}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="underline decoration-slate-300 underline-offset-2 hover:text-slate-700"
+                          >
+                            {getUrlLabel(row.website)}
+                          </a>
+                        ) : "No website"}
+                      </p>
+                      <p className="text-slate-500">
+                        {row.customerProjectUrl ? (
+                          <a
+                            href={row.customerProjectUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="underline decoration-slate-300 underline-offset-2 hover:text-slate-700"
+                          >
+                            {getUrlLabel(row.customerProjectUrl)}
+                          </a>
+                        ) : "No customer project URL"}
+                      </p>
                     </td>
                     <td className="px-3 py-3">
                       <AutoSaveCompanySelectField
