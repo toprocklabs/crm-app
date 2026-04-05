@@ -1,6 +1,5 @@
 import { desc, eq, sql } from "drizzle-orm";
-import { completeTask, createTask } from "@/app/actions";
-import { CollapsibleFormSection } from "@/components/collapsible-form-section";
+import { completeTask } from "@/app/actions";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -32,33 +31,6 @@ function Card({
   );
 }
 
-function Field({
-  label,
-  name,
-  type = "text",
-  required = false,
-  placeholder,
-}: {
-  label: string;
-  name: string;
-  type?: string;
-  required?: boolean;
-  placeholder?: string;
-}) {
-  return (
-    <label className="flex flex-col gap-1 text-sm text-slate-700">
-      <span>{label}</span>
-      <input
-        className="rounded-md border border-slate-300 px-3 py-2 text-slate-900 shadow-xs outline-none transition focus:border-slate-500"
-        name={name}
-        type={type}
-        required={required}
-        placeholder={placeholder}
-      />
-    </label>
-  );
-}
-
 export default async function Home() {
   const session = await requireUser();
   const db = getDb();
@@ -81,8 +53,7 @@ export default async function Home() {
 
   const today = new Date().toISOString().slice(0, 10);
 
-  const [companyRows, dealRows, taskRows, activityRows, statsRows] = await Promise.all([
-    db.select().from(companies).orderBy(desc(companies.createdAt)).limit(10),
+  const [dealRows, taskRows, activityRows, statsRows] = await Promise.all([
     db
       .select({
         id: deals.id,
@@ -149,7 +120,7 @@ export default async function Home() {
       title="Dashboard"
       description="Track pipeline, enforce next steps, and run a clean follow-up cadence for your SMB opportunities."
     >
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.9fr)]">
+      <section>
         <article className="gong-panel rounded-[1.9rem] p-6">
           <div className="flex flex-wrap items-start justify-between gap-5">
             <div>
@@ -173,48 +144,6 @@ export default async function Home() {
                 <span className="inline-flex rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-800 ring-1 ring-cyan-200">Pipeline hygiene</span>
               </div>
             </div>
-          </div>
-        </article>
-
-        <article className="gong-panel rounded-[1.9rem] p-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Quick Capture</p>
-          <h2 className="mt-2 text-xl font-semibold text-slate-950">Create follow-up task</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">Log action items without leaving the workspace.</p>
-          <div className="mt-4">
-            <CollapsibleFormSection title="Open task form" description="Add a task tied to an account or opportunity.">
-              <form action={createTask}>
-                <div className="space-y-3">
-                  <Field label="Task title" name="title" required placeholder="Call procurement manager" />
-                  <Field label="Due date" name="dueDate" type="date" required />
-                  <Field label="Assigned to" name="assignedTo" placeholder="Austin" />
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>Opportunity</span>
-                    <select name="dealId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                      <option value="">None</option>
-                      {dealRows.map((deal) => (
-                        <option key={deal.id} value={deal.id}>
-                          {deal.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>Account</span>
-                    <select name="companyId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                      <option value="">None</option>
-                      {companyRows.map((company) => (
-                        <option key={company.id} value={company.id}>
-                          {company.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-                <button className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white" type="submit">
-                  Save task
-                </button>
-              </form>
-            </CollapsibleFormSection>
           </div>
         </article>
       </section>
@@ -297,7 +226,7 @@ export default async function Home() {
                     {task.status === "open" ? (
                       <form action={completeTask}>
                         <input type="hidden" name="taskId" value={task.id} />
-                        <button type="submit" className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
+                        <button type="submit" className="task-complete-button rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
                           Mark done
                         </button>
                       </form>

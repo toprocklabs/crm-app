@@ -175,6 +175,27 @@ body {
   transform: translateY(0);
 }
 
+.crm-shell .task-complete-button,
+.crm-shell button[type="submit"].task-complete-button {
+  border: 1px solid rgb(15 23 42 / 0.96) !important;
+  background: rgb(15 23 42 / 1) !important;
+  color: rgb(255 255 255 / 1) !important;
+  box-shadow: 0 10px 18px -14px rgb(15 23 42 / 0.55) !important;
+}
+
+.crm-shell .task-complete-button:hover,
+.crm-shell button[type="submit"].task-complete-button:hover {
+  transform: none;
+  background: rgb(30 41 59 / 1) !important;
+  color: rgb(255 255 255 / 1) !important;
+  box-shadow: 0 12px 20px -14px rgb(15 23 42 / 0.65) !important;
+}
+
+.crm-shell .task-complete-button:active,
+.crm-shell button[type="submit"].task-complete-button:active {
+  transform: none;
+}
+
 .crm-shell table {
   border-collapse: separate;
   border-spacing: 0;

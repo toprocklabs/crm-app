@@ -111,7 +111,7 @@ export default async function TasksPage() {
                     {task.status === "open" ? (
                       <form action={completeTask}>
                         <input type="hidden" name="taskId" value={task.id} />
-                        <button type="submit" className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700">
+                        <button type="submit" className="task-complete-button rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700">
                           Mark done
                         </button>
                       </form>
