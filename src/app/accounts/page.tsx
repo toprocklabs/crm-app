@@ -213,9 +213,6 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="inline-flex rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">{rows.length} accounts</span>
-            <span className="inline-flex rounded-full bg-cyan-50 px-3 py-1.5 text-xs font-semibold text-cyan-800 ring-1 ring-cyan-200">
-              Sorted by {sortLabels[sort]} {dir.toUpperCase()}
-            </span>
           </div>
         </div>
         <div className="mt-4">

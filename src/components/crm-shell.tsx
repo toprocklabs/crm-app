@@ -43,7 +43,6 @@ export function CrmShell({
             <div className="mt-4 rounded-2xl border border-white/8 bg-white/5 px-3 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Operator</p>
               <p className="mt-1 text-base font-semibold text-white">{username}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-400">Account context, pipeline movement, and team follow-through in one place.</p>
             </div>
           </div>
 
@@ -89,24 +88,9 @@ export function CrmShell({
 
         <section className="min-w-0 px-4 py-4 md:px-6 md:py-5">
           <header className="rounded-[2rem] border border-[var(--panel-border)] bg-[var(--panel-bg)] px-5 py-5 shadow-[0_24px_50px_-42px_rgba(15,23,42,0.35)] md:px-7">
-            <div className="flex flex-wrap items-start justify-between gap-5">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-700">Revenue Command</p>
-                <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{title}</h1>
-                {description ? <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{description}</p> : null}
-              </div>
-              <div className="flex min-w-[220px] flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Live workspace</p>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-slate-600">Signed in as</span>
-                  <span className="font-semibold text-slate-950">{username}</span>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-slate-600">Mode</span>
-                  <span className="inline-flex rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-800 ring-1 ring-cyan-200">Focused</span>
-                </div>
-              </div>
-            </div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-700">Revenue Command</p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{title}</h1>
+            {description ? <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{description}</p> : null}
           </header>
 
           <div className="mt-5 space-y-6">{children}</div>
