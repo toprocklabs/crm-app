@@ -5,6 +5,7 @@ export const activityTypeOptions: ActivityType[] = [
   "call",
   "meeting",
   "email",
+  "instagram",
   "linkedin",
   "task",
 ];
@@ -28,6 +29,12 @@ export function getActivityMeta(type: ActivityType) {
         icon: "EM",
         label: "Email",
         tone: "bg-violet-100 text-violet-800",
+      };
+    case "instagram":
+      return {
+        icon: "IG",
+        label: "Instagram",
+        tone: "bg-pink-100 text-pink-800",
       };
     case "linkedin":
       return {
