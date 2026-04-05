@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 export function AutoSaveCompanySelectField({
   companyId,
@@ -8,46 +9,69 @@ export function AutoSaveCompanySelectField({
   label,
   defaultValue,
   options,
+  emptyOptionLabel,
   action,
 }: {
   companyId: number;
-  field: "industry";
+  field: "industry" | "stage";
   label: string;
   defaultValue: string;
-  options: readonly string[];
+  options: ReadonlyArray<{ value: string; label: string }>;
+  emptyOptionLabel?: string;
   action: (formData: FormData) => void | Promise<void>;
 }) {
-  const formRef = useRef<HTMLFormElement>(null);
   const lastSubmittedValueRef = useRef(defaultValue);
+  const router = useRouter();
+  const [value, setValue] = useState(defaultValue);
+  const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (defaultValue !== lastSubmittedValueRef.current) {
+      return;
+    }
+
+    setValue(defaultValue);
+  }, [defaultValue]);
+
+  function submitValue(current: string) {
+    const formData = new FormData();
+    formData.append("companyId", String(companyId));
+    formData.append("field", field);
+    formData.append("value", current);
+
+    startTransition(() => {
+      void Promise.resolve(action(formData)).then(() => {
+        router.refresh();
+      });
+    });
+  }
 
   return (
-    <form ref={formRef} action={action} className="space-y-1">
-      <input type="hidden" name="companyId" value={companyId} />
-      <input type="hidden" name="field" value={field} />
+    <div className="space-y-1">
       <label className="text-xs uppercase tracking-wide text-slate-500">{label}</label>
       <select
-        name="value"
-        defaultValue={defaultValue}
+        value={value}
         onChange={(event) => {
           const current = event.currentTarget.value;
+          setValue(current);
 
           if (current === lastSubmittedValueRef.current) {
             return;
           }
 
           lastSubmittedValueRef.current = current;
-          formRef.current?.requestSubmit();
+          submitValue(current);
         }}
         className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
       >
-        <option value="">No industry</option>
+        {emptyOptionLabel ? <option value="">{emptyOptionLabel}</option> : null}
         {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
+          <option key={option.value} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>
       <p className="text-[11px] text-slate-500">Auto-saves when you change the selection.</p>
-    </form>
+    </div>
   );
 }

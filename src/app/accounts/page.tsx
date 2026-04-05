@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createCompany } from "@/app/actions";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
+import { accountStageOptions, getAccountStageLabel, getAccountStageTone } from "@/lib/account-stage";
 import { requireUser } from "@/lib/auth";
 import { companyIndustries } from "@/lib/company-industries";
 import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
@@ -11,8 +12,9 @@ import { companies, contacts, deals } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
-type SortKey = "account" | "industry" | "contacts" | "opportunities" | "arr" | "nextStep" | "nextStepDue" | "created";
+type SortKey = "account" | "stage" | "industry" | "contacts" | "opportunities" | "arr" | "nextStep" | "nextStepDue" | "created";
 type SortDirection = "asc" | "desc";
+type SelectOption = { value: string; label: string };
 
 type AccountsPageProps = {
   searchParams: Promise<{
@@ -23,6 +25,7 @@ type AccountsPageProps = {
 
 const sortLabels: Record<SortKey, string> = {
   account: "Account",
+  stage: "Stage",
   industry: "Industry",
   contacts: "Contacts",
   opportunities: "Opportunities",
@@ -33,7 +36,7 @@ const sortLabels: Record<SortKey, string> = {
 };
 
 function getSortKey(value: string | undefined): SortKey {
-  const keys: SortKey[] = ["account", "industry", "contacts", "opportunities", "arr", "nextStep", "nextStepDue", "created"];
+  const keys: SortKey[] = ["account", "stage", "industry", "contacts", "opportunities", "arr", "nextStep", "nextStepDue", "created"];
   return keys.includes(value as SortKey) ? (value as SortKey) : "created";
 }
 
@@ -72,10 +75,12 @@ function SelectField({
   label,
   name,
   options,
+  defaultValue,
 }: {
   label: string;
   name: string;
-  options: readonly string[];
+  options: readonly SelectOption[];
+  defaultValue?: string;
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm text-slate-700">
@@ -83,12 +88,12 @@ function SelectField({
       <select
         className="rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-xs outline-none transition focus:border-slate-500"
         name={name}
-        defaultValue=""
+        defaultValue={defaultValue ?? ""}
       >
-        <option value="">Select industry</option>
+        {defaultValue ? null : <option value="">Select {label.toLowerCase()}</option>}
         {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
+          <option key={option.value} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>
@@ -108,6 +113,14 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
   const sort = getSortKey(params.sort);
   const dir = getSortDirection(params.dir);
   const today = new Date().toISOString().slice(0, 10);
+  const accountStageSelectOptions = accountStageOptions.map((stage) => ({
+    value: stage,
+    label: getAccountStageLabel(stage),
+  }));
+  const industrySelectOptions = companyIndustries.map((industry) => ({
+    value: industry,
+    label: industry,
+  }));
 
   const [accountRows, contactRows, dealRows] = await Promise.all([
     db.select().from(companies).orderBy(desc(companies.createdAt)),
@@ -148,6 +161,8 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
     switch (sort) {
       case "account":
         return a.name.localeCompare(b.name) * direction;
+      case "stage":
+        return a.stage.localeCompare(b.stage) * direction;
       case "industry":
         return (a.industry ?? "").localeCompare(b.industry ?? "") * direction;
       case "contacts":
@@ -190,9 +205,10 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
           <form action={createCompany}>
             <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
               <Field label="Account name" name="name" required />
+              <SelectField label="Stage" name="stage" options={accountStageSelectOptions} defaultValue="new_lead" />
               <Field label="Website" name="website" placeholder="https://example.com" />
               <Field label="Customer Project URL" name="customerProjectUrl" placeholder="https://app.example.com/project/123" />
-              <SelectField label="Industry" name="industry" options={companyIndustries} />
+              <SelectField label="Industry" name="industry" options={industrySelectOptions} />
               <Field label="Next step" name="nextStep" placeholder="Schedule onboarding review" />
               <Field label="Next step date" name="nextStepDueDate" type="date" />
             </div>
@@ -208,7 +224,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
           <table className="min-w-full text-sm">
             <thead className="border-b border-slate-200 text-left text-slate-500">
               <tr>
-                {(["account", "industry", "contacts", "opportunities", "arr", "nextStep", "nextStepDue", "created"] as SortKey[]).map((key) => (
+                {(["account", "stage", "industry", "contacts", "opportunities", "arr", "nextStep", "nextStepDue", "created"] as SortKey[]).map((key) => (
                   <th key={key} className="px-3 py-2">
                     <Link href={sortHref(key)} className="inline-flex items-center gap-1 hover:text-slate-700">
                       <span>{sortLabels[key]}</span>
@@ -221,7 +237,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-3 py-4 text-slate-500">
+                  <td colSpan={9} className="px-3 py-4 text-slate-500">
                     No accounts yet.
                   </td>
                 </tr>
@@ -239,6 +255,11 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                       </p>
                       <p className="text-slate-500">{row.website ?? "No website"}</p>
                       <p className="text-slate-500">{row.customerProjectUrl ?? "No customer project URL"}</p>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getAccountStageTone(row.stage)}`}>
+                        {getAccountStageLabel(row.stage)}
+                      </span>
                     </td>
                     <td className="px-3 py-2 text-slate-700">{normalizeCompanyIndustry(row.industry) ?? "-"}</td>
                     <td className="px-3 py-2 text-slate-700">{row.contactCount}</td>

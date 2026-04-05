@@ -11,6 +11,7 @@ import { CallLink } from "@/components/call-link";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { activityTypeOptions, getActivityMeta } from "@/lib/activity-ui";
+import { accountStageOptions, getAccountStageLabel, getAccountStageTone } from "@/lib/account-stage";
 import { requireUser } from "@/lib/auth";
 import { companyIndustries } from "@/lib/company-industries";
 import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
@@ -95,6 +96,14 @@ export default async function AccountDetailPage({ params }: Props) {
   }
 
   const normalizedIndustry = normalizeCompanyIndustry(company.industry) ?? "";
+  const accountStageSelectOptions = accountStageOptions.map((stage) => ({
+    value: stage,
+    label: getAccountStageLabel(stage),
+  }));
+  const industrySelectOptions = companyIndustries.map((industry) => ({
+    value: industry,
+    label: industry,
+  }));
   const openTasks = companyTasks.filter((task) => task.status === "open").length;
   const totalIarrCents = companyDeals.reduce((sum, deal) => sum + deal.valueCents, 0);
   const totalImplementationCostCents = companyDeals.reduce((sum, deal) => sum + deal.implementationCostCents, 0);
@@ -123,6 +132,9 @@ export default async function AccountDetailPage({ params }: Props) {
             <div className="flex flex-wrap items-center gap-2">
               <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${accountHealthTone}`}>
                 {accountHealthLabel}
+              </span>
+              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getAccountStageTone(company.stage)}`}>
+                {getAccountStageLabel(company.stage)}
               </span>
               <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getDueTone(company.nextStepDueDate, today)}`}>
                 Next step due {formatDate(company.nextStepDueDate)}
@@ -224,14 +236,23 @@ export default async function AccountDetailPage({ params }: Props) {
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]">
+            <AutoSaveCompanySelectField
+              action={updateCompanyField}
+              companyId={company.id}
+              field="stage"
+              label="Stage"
+              defaultValue={company.stage}
+              options={accountStageSelectOptions}
+            />
             <AutoSaveCompanySelectField
               action={updateCompanyField}
               companyId={company.id}
               field="industry"
               label="Industry"
               defaultValue={normalizedIndustry}
-              options={companyIndustries}
+              options={industrySelectOptions}
+              emptyOptionLabel="No industry"
             />
             <AutoSaveCompanyField
               action={updateCompanyField}

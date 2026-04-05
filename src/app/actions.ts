@@ -4,15 +4,18 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
+import { accountStageOptions } from "@/lib/account-stage";
 import { getDb } from "@/lib/db";
 import { companyIndustries } from "@/lib/company-industries";
 import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { activities, companies, contacts, deals, salesTasks } from "@/lib/schema";
 
 const optionalCompanyIndustrySchema = z.enum(companyIndustries).optional().or(z.literal(""));
+const accountStageSchema = z.enum(accountStageOptions);
 
 const companySchema = z.object({
   name: z.string().trim().min(2),
+  stage: accountStageSchema,
   website: z.string().trim().optional(),
   customerProjectUrl: z.string().trim().optional(),
   industry: optionalCompanyIndustrySchema,
@@ -94,7 +97,7 @@ const contactFieldUpdateSchema = z.object({
 
 const companyFieldUpdateSchema = z.object({
   companyId: z.coerce.number().int().positive(),
-  field: z.enum(["website", "customerProjectUrl", "industry", "nextStep", "nextStepDueDate"]),
+  field: z.enum(["stage", "website", "customerProjectUrl", "industry", "nextStep", "nextStepDueDate"]),
   value: z.string().optional(),
 });
 
@@ -173,6 +176,7 @@ export async function createCompany(formData: FormData) {
 
   const parsed = companySchema.parse({
     name: formData.get("name"),
+    stage: formData.get("stage"),
     website: formData.get("website"),
     customerProjectUrl: formData.get("customerProjectUrl"),
     industry: formData.get("industry"),
@@ -182,6 +186,7 @@ export async function createCompany(formData: FormData) {
 
   await db.insert(companies).values({
     name: parsed.name,
+    stage: parsed.stage,
     website: normalizeUrl(cleanOptionalText(parsed.website)),
     customerProjectUrl: normalizeUrl(cleanOptionalText(parsed.customerProjectUrl)),
     industry: normalizeCompanyIndustry(parsed.industry),
@@ -298,13 +303,20 @@ export async function updateCompanyField(formData: FormData) {
     optionalCompanyIndustrySchema.parse(parsed.value ?? "");
   }
 
+  if (parsed.field === "stage") {
+    accountStageSchema.parse(parsed.value);
+  }
+
   if (parsed.field === "nextStepDueDate" && cleaned) {
     z.string().date().parse(cleaned);
   }
 
+  const stageValue = parsed.field === "stage" ? accountStageSchema.parse(parsed.value) : undefined;
+
   await db
     .update(companies)
     .set({
+      stage: stageValue,
       website: parsed.field === "website" ? normalizedUrl : undefined,
       customerProjectUrl: parsed.field === "customerProjectUrl" ? normalizedUrl : undefined,
       industry: parsed.field === "industry" ? normalizeCompanyIndustry(parsed.value) : undefined,

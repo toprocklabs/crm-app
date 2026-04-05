@@ -28,6 +28,14 @@ export const activityType = pgEnum("activity_type", [
   "task",
 ]);
 
+export const accountStage = pgEnum("account_stage", [
+  "new_lead",
+  "attempting_to_engage",
+  "engaged",
+  "in_pipeline",
+  "customer",
+]);
+
 export const taskStatus = pgEnum("task_status", ["open", "done"]);
 
 export const users = pgTable(
@@ -47,6 +55,7 @@ export const users = pgTable(
 export const companies = pgTable("companies", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  stage: accountStage("stage").default("new_lead").notNull(),
   website: text("website"),
   customerProjectUrl: text("customer_project_url"),
   industry: text("industry"),
@@ -130,3 +139,4 @@ export const salesTasks = pgTable("sales_tasks", {
 
 export type DealStage = (typeof dealStage.enumValues)[number];
 export type ActivityType = (typeof activityType.enumValues)[number];
+export type AccountStage = (typeof accountStage.enumValues)[number];
