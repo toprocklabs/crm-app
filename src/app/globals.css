@@ -94,6 +94,53 @@ body {
     0 1px 2px rgb(15 23 42 / 0.03);
 }
 
+.crm-shell .crm-stage-select-shell {
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.45);
+}
+
+.crm-shell select.crm-stage-select {
+  appearance: none;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  border-radius: 0 !important;
+}
+
+.crm-shell select.crm-stage-select:focus {
+  box-shadow: none !important;
+}
+
+.crm-shell .crm-stage-select-shell[data-stage="new_lead"] {
+  background: linear-gradient(180deg, rgb(248 250 252 / 0.98), rgb(241 245 249 / 0.96)) !important;
+  border-color: rgb(203 213 225 / 0.95) !important;
+  color: rgb(51 65 85) !important;
+}
+
+.crm-shell .crm-stage-select-shell[data-stage="attempting_to_engage"] {
+  background: rgb(254 243 199 / 1) !important;
+  border-color: rgb(252 211 77 / 0.9) !important;
+  color: rgb(146 64 14) !important;
+}
+
+.crm-shell .crm-stage-select-shell[data-stage="engaged"] {
+  background: rgb(224 242 254 / 1) !important;
+  border-color: rgb(125 211 252 / 0.95) !important;
+  color: rgb(7 89 133) !important;
+}
+
+.crm-shell .crm-stage-select-shell[data-stage="in_pipeline"] {
+  background: rgb(224 231 255 / 1) !important;
+  border-color: rgb(165 180 252 / 0.95) !important;
+  color: rgb(55 48 163) !important;
+}
+
+.crm-shell .crm-stage-select-shell[data-stage="customer"] {
+  background: rgb(209 250 229 / 1) !important;
+  border-color: rgb(110 231 183 / 0.95) !important;
+  color: rgb(6 95 70) !important;
+}
+
 .crm-shell input:focus,
 .crm-shell select:focus,
 .crm-shell textarea:focus {

@@ -1,9 +1,10 @@
 import { desc } from "drizzle-orm";
 import Link from "next/link";
-import { createCompany } from "@/app/actions";
+import { createCompany, updateCompanyField } from "@/app/actions";
+import { AutoSaveCompanySelectField } from "@/components/auto-save-company-select-field";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
-import { accountStageOptions, getAccountStageLabel, getAccountStageTone } from "@/lib/account-stage";
+import { accountStageOptions, getAccountStageLabel } from "@/lib/account-stage";
 import { requireUser } from "@/lib/auth";
 import { companyIndustries } from "@/lib/company-industries";
 import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
@@ -289,9 +290,17 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                       <p className="text-slate-500">{row.customerProjectUrl ?? "No customer project URL"}</p>
                     </td>
                     <td className="px-3 py-3">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getAccountStageTone(row.stage)}`}>
-                        {getAccountStageLabel(row.stage)}
-                      </span>
+                      <AutoSaveCompanySelectField
+                        action={updateCompanyField}
+                        companyId={row.id}
+                        field="stage"
+                        label="Stage"
+                        defaultValue={row.stage}
+                        options={accountStageSelectOptions}
+                        helperText={null}
+                        labelClassName="sr-only"
+                        stageToneStyle
+                      />
                     </td>
                     <td className="px-3 py-3 text-slate-700">{normalizeCompanyIndustry(row.industry) ?? "-"}</td>
                     <td className="px-3 py-3 text-slate-700">{row.contactCount}</td>
