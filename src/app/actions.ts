@@ -8,7 +8,7 @@ import { accountStageOptions } from "@/lib/account-stage";
 import { getDb } from "@/lib/db";
 import { companyIndustries } from "@/lib/company-industries";
 import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
-import { activities, companies, contacts, deals, salesTasks } from "@/lib/schema";
+import { activities, companies, contacts, deals, salesTasks, users } from "@/lib/schema";
 
 const optionalCompanyIndustrySchema = z.enum(companyIndustries).optional().or(z.literal(""));
 const accountStageSchema = z.enum(accountStageOptions);
@@ -477,10 +477,21 @@ export async function createTask(formData: FormData) {
     companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
   });
 
+  const cleanedAssignedTo = cleanOptionalText(parsed.assignedTo);
+
+  if (cleanedAssignedTo) {
+    const userRows = await db.select({ username: users.username }).from(users);
+    const usernames = new Set(userRows.map((row) => row.username));
+
+    if (!usernames.has(cleanedAssignedTo)) {
+      throw new Error("Assigned user is invalid.");
+    }
+  }
+
   await db.insert(salesTasks).values({
     title: parsed.title,
     dueDate: parsed.dueDate,
-    assignedTo: cleanOptionalText(parsed.assignedTo),
+    assignedTo: cleanedAssignedTo,
     dealId: parsed.dealId ?? null,
     companyId: parsed.companyId ?? null,
   });

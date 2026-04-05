@@ -4,7 +4,7 @@ import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { companies, deals, salesTasks } from "@/lib/schema";
+import { companies, deals, salesTasks, users } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export default async function TasksPage() {
     return null;
   }
 
-  const [taskRows, dealRows, companyRows] = await Promise.all([
+  const [taskRows, dealRows, companyRows, userRows] = await Promise.all([
     db
       .select({
         id: salesTasks.id,
@@ -33,6 +33,7 @@ export default async function TasksPage() {
       .orderBy(salesTasks.dueDate, desc(salesTasks.createdAt)),
     db.select({ id: deals.id, name: deals.name }).from(deals).orderBy(desc(deals.createdAt)),
     db.select({ id: companies.id, name: companies.name }).from(companies).orderBy(desc(companies.createdAt)),
+    db.select({ id: users.id, username: users.username, displayName: users.displayName }).from(users).orderBy(users.username),
   ]);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -61,7 +62,18 @@ export default async function TasksPage() {
               </label>
               <label className="flex flex-col gap-1 text-sm text-slate-700">
                 <span>Assigned to</span>
-                <input name="assignedTo" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                <select
+                  name="assignedTo"
+                  defaultValue={session.username}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
+                >
+                  <option value="">Unassigned</option>
+                  {userRows.map((user) => (
+                    <option key={user.id} value={user.username}>
+                      {user.displayName ? `${user.displayName} (${user.username})` : user.username}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="flex flex-col gap-1 text-sm text-slate-700">
                 <span>Opportunity</span>
