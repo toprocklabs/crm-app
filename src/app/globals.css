@@ -1,17 +1,21 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 
 :root {
-  --background: #edf3f4;
+  --background: #f4f7fb;
   --foreground: #0f1723;
-  --surface-primary: rgb(255 255 255 / 0.94);
-  --surface-secondary: rgb(247 250 252 / 0.9);
-  --surface-tertiary: rgb(241 245 249 / 0.88);
-  --border-strong: rgb(100 116 139 / 0.24);
-  --border-soft: rgb(148 163 184 / 0.18);
+  --surface-primary: rgb(255 255 255 / 0.98);
+  --surface-secondary: rgb(248 250 252 / 0.98);
+  --surface-tertiary: rgb(241 245 249 / 0.98);
+  --border-strong: rgb(148 163 184 / 0.28);
+  --border-soft: rgb(148 163 184 / 0.16);
   --text-muted: #475569;
   --text-subtle: #64748b;
-  --accent-strong: #0f766e;
-  --accent-soft: #ccfbf1;
+  --accent-strong: #0f6cbd;
+  --accent-soft: #d9efff;
+  --app-bg: #f3f6fb;
+  --sidebar-bg: #07111f;
+  --panel-bg: #ffffff;
+  --panel-border: rgb(226 232 240 / 0.95);
 }
 
 @theme inline {
@@ -31,9 +35,9 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), "Segoe UI", sans-serif;
   background:
-    radial-gradient(circle at 10% 0%, rgb(45 212 191 / 0.18), transparent 28%),
-    radial-gradient(circle at 100% 12%, rgb(14 165 233 / 0.14), transparent 24%),
-    linear-gradient(180deg, #eef3f3 0%, #f7faf9 38%, #edf3f5 100%);
+    radial-gradient(circle at 14% 0%, rgb(14 165 233 / 0.12), transparent 24%),
+    radial-gradient(circle at 100% 10%, rgb(56 189 248 / 0.08), transparent 22%),
+    linear-gradient(180deg, #f6f8fc 0%, #f3f7fb 38%, #f7f9fc 100%);
 }
 
 .crm-shell {
@@ -44,12 +48,12 @@ body {
   content: "";
   position: fixed;
   inset: -16% auto auto -10%;
-  width: 34rem;
-  height: 34rem;
+  width: 42rem;
+  height: 42rem;
   pointer-events: none;
   border-radius: 999px;
-  background: radial-gradient(circle, rgb(45 212 191 / 0.15) 0%, transparent 62%);
-  filter: blur(24px);
+  background: radial-gradient(circle, rgb(56 189 248 / 0.12) 0%, transparent 62%);
+  filter: blur(36px);
   z-index: -1;
 }
 
@@ -64,11 +68,11 @@ body {
 .crm-shell .rounded-2xl.border.border-slate-200.bg-slate-50,
 .crm-shell .rounded-2xl.border.border-slate-200.bg-slate-50\/80 {
   border-color: var(--border-strong) !important;
-  background: linear-gradient(180deg, var(--surface-primary), rgb(255 255 255 / 0.88)) !important;
+  background: linear-gradient(180deg, var(--surface-primary), rgb(255 255 255 / 0.98)) !important;
   box-shadow:
-    0 24px 42px -30px rgb(15 23 42 / 0.35),
-    0 1px 0 rgb(255 255 255 / 0.9) inset !important;
-  backdrop-filter: blur(10px);
+    0 24px 42px -36px rgb(15 23 42 / 0.24),
+    0 1px 0 rgb(255 255 255 / 0.96) inset !important;
+  backdrop-filter: blur(6px);
 }
 
 .crm-shell article.rounded-2xl.border.border-slate-200.bg-slate-50\/80,
@@ -79,23 +83,23 @@ body {
 .crm-shell input,
 .crm-shell select,
 .crm-shell textarea {
-  border-radius: 0.75rem !important;
-  border-color: rgb(148 163 184 / 0.42) !important;
-  background: rgb(255 255 255 / 0.96) !important;
+  border-radius: 0.95rem !important;
+  border-color: rgb(203 213 225 / 0.95) !important;
+  background: rgb(255 255 255 / 1) !important;
   color: var(--foreground) !important;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.92),
-    0 1px 2px rgb(15 23 42 / 0.04);
+    inset 0 1px 0 rgb(255 255 255 / 0.98),
+    0 1px 2px rgb(15 23 42 / 0.03);
 }
 
 .crm-shell input:focus,
 .crm-shell select:focus,
 .crm-shell textarea:focus {
   outline: none;
-  border-color: rgb(13 148 136 / 0.72) !important;
+  border-color: rgb(59 130 246 / 0.78) !important;
   box-shadow:
-    0 0 0 3px rgb(20 184 166 / 0.14),
-    inset 0 1px 0 rgb(255 255 255 / 0.95);
+    0 0 0 4px rgb(59 130 246 / 0.11),
+    inset 0 1px 0 rgb(255 255 255 / 0.98);
 }
 
 .crm-shell button,
@@ -107,14 +111,14 @@ body {
 .crm-shell button[type="submit"],
 .crm-shell .bg-slate-900.text-white {
   border: none !important;
-  background: linear-gradient(135deg, #0f172a 0%, #115e59 100%) !important;
-  box-shadow: 0 10px 22px -14px rgb(17 94 89 / 0.7);
+  background: linear-gradient(135deg, #0f172a 0%, #0f6cbd 100%) !important;
+  box-shadow: 0 14px 28px -18px rgb(15 108 189 / 0.52);
 }
 
 .crm-shell button[type="submit"]:hover,
 .crm-shell .bg-slate-900.text-white:hover {
   transform: translateY(-1px);
-  box-shadow: 0 16px 28px -14px rgb(17 94 89 / 0.72);
+  box-shadow: 0 20px 32px -18px rgb(15 108 189 / 0.48);
 }
 
 .crm-shell button[type="submit"]:active,
@@ -130,8 +134,8 @@ body {
 .crm-shell th {
   font-size: 0.74rem;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgb(51 65 85);
+  letter-spacing: 0.14em;
+  color: rgb(100 116 139);
 }
 
 .crm-shell td {
@@ -145,8 +149,8 @@ body {
 }
 
 .crm-shell tbody tr:hover {
-  background: rgb(226 232 240 / 0.32);
-  box-shadow: inset 3px 0 0 rgb(20 184 166 / 0.42);
+  background: rgb(248 250 252 / 1);
+  box-shadow: inset 3px 0 0 rgb(14 165 233 / 0.6);
 }
 
 .crm-shell p.text-slate-500,
@@ -162,7 +166,7 @@ body {
 }
 
 .crm-shell .bg-slate-100 {
-  background: linear-gradient(180deg, rgb(241 245 249 / 0.92), rgb(226 232 240 / 0.82)) !important;
+  background: linear-gradient(180deg, rgb(248 250 252 / 0.98), rgb(241 245 249 / 0.96)) !important;
 }
 
 .crm-shell .bg-emerald-100,
@@ -176,6 +180,26 @@ body {
 
 .crm-shell .rounded-full {
   letter-spacing: 0.01em;
+}
+
+.crm-shell .gong-panel {
+  border: 1px solid rgb(226 232 240 / 0.95);
+  background: #fff;
+  box-shadow: 0 24px 40px -36px rgb(15 23 42 / 0.18);
+}
+
+.crm-shell .gong-kpi {
+  position: relative;
+  overflow: hidden;
+}
+
+.crm-shell .gong-kpi::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, rgb(14 165 233), rgb(59 130 246), transparent 85%);
 }
 
 .crm-sidebar {
