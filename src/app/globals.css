@@ -3,6 +3,8 @@
 :root {
   --background: #f4f7fb;
   --foreground: #0f1723;
+  --font-geist-sans: "Avenir Next", "Segoe UI", sans-serif;
+  --font-geist-mono: "SFMono-Regular", "SF Mono", "Menlo", monospace;
   --surface-primary: rgb(255 255 255 / 0.98);
   --surface-secondary: rgb(248 250 252 / 0.98);
   --surface-tertiary: rgb(241 245 249 / 0.98);
