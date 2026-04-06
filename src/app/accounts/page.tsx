@@ -9,11 +9,11 @@ import { requireUser } from "@/lib/auth";
 import { companyIndustries } from "@/lib/company-industries";
 import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { getDb } from "@/lib/db";
-import { companies, contacts, deals } from "@/lib/schema";
+import { companies, deals } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
-type SortKey = "account" | "stage" | "industry" | "contacts" | "opportunities" | "arr" | "nextStep" | "nextStepDue" | "created";
+type SortKey = "account" | "stage" | "industry" | "opportunities" | "arr" | "nextStep" | "nextStepDue" | "created";
 type SortDirection = "asc" | "desc";
 type SelectOption = { value: string; label: string };
 
@@ -28,7 +28,6 @@ const sortLabels: Record<SortKey, string> = {
   account: "Account",
   stage: "Stage",
   industry: "Industry",
-  contacts: "Contacts",
   opportunities: "Opportunities",
   arr: "Total ARR",
   nextStep: "Next step",
@@ -37,7 +36,7 @@ const sortLabels: Record<SortKey, string> = {
 };
 
 function getSortKey(value: string | undefined): SortKey {
-  const keys: SortKey[] = ["account", "stage", "industry", "contacts", "opportunities", "arr", "nextStep", "nextStepDue", "created"];
+  const keys: SortKey[] = ["account", "stage", "industry", "opportunities", "arr", "nextStep", "nextStepDue", "created"];
   return keys.includes(value as SortKey) ? (value as SortKey) : "created";
 }
 
@@ -135,20 +134,10 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
     label: industry,
   }));
 
-  const [accountRows, contactRows, dealRows] = await Promise.all([
+  const [accountRows, dealRows] = await Promise.all([
     db.select().from(companies).orderBy(desc(companies.createdAt)),
-    db.select({ id: contacts.id, companyId: contacts.companyId }).from(contacts),
     db.select({ id: deals.id, companyId: deals.companyId, valueCents: deals.valueCents }).from(deals),
   ]);
-
-  const contactCounts = new Map<number, number>();
-  for (const row of contactRows) {
-    if (!row.companyId) {
-      continue;
-    }
-
-    contactCounts.set(row.companyId, (contactCounts.get(row.companyId) ?? 0) + 1);
-  }
 
   const dealCounts = new Map<number, number>();
   const pipelineTotals = new Map<number, number>();
@@ -163,7 +152,6 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
 
   const rows = accountRows.map((row) => ({
     ...row,
-    contactCount: contactCounts.get(row.id) ?? 0,
     dealCount: dealCounts.get(row.id) ?? 0,
     pipelineCents: pipelineTotals.get(row.id) ?? 0,
   }));
@@ -178,8 +166,6 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
         return a.stage.localeCompare(b.stage) * direction;
       case "industry":
         return (a.industry ?? "").localeCompare(b.industry ?? "") * direction;
-      case "contacts":
-        return (a.contactCount - b.contactCount) * direction;
       case "opportunities":
         return (a.dealCount - b.dealCount) * direction;
       case "arr":
@@ -211,7 +197,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
     <CrmShell
       username={session.username}
       title="Accounts"
-      description="All account records with contacts, opportunities, and total tracked ARR."
+      description="All account records with opportunities and total tracked ARR."
     >
       <section className="gong-panel rounded-[1.9rem] p-6">
         <div className="flex flex-wrap items-start justify-between gap-5">
@@ -265,7 +251,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
           <table className="min-w-full text-sm">
             <thead className="border-b border-slate-200 text-left text-slate-500">
               <tr>
-                {(["account", "stage", "industry", "contacts", "opportunities", "arr", "nextStep", "nextStepDue", "created"] as SortKey[]).map((key) => (
+                {(["account", "stage", "industry", "opportunities", "arr", "nextStep", "nextStepDue", "created"] as SortKey[]).map((key) => (
                   <th key={key} className="px-3 py-2">
                     <Link href={sortHref(key)} className="inline-flex items-center gap-1 hover:text-slate-700">
                       <span>{sortLabels[key]}</span>
@@ -278,7 +264,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-3 py-4 text-slate-500">
+                  <td colSpan={8} className="px-3 py-4 text-slate-500">
                     No accounts yet.
                   </td>
                 </tr>
@@ -333,7 +319,6 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                       />
                     </td>
                     <td className="px-3 py-3 text-slate-700">{normalizeCompanyIndustry(row.industry) ?? "-"}</td>
-                    <td className="px-3 py-3 text-slate-700">{row.contactCount}</td>
                     <td className="px-3 py-3 text-slate-700">{row.dealCount}</td>
                     <td className="px-3 py-3 text-slate-700">${Math.round(row.pipelineCents / 100).toLocaleString()}</td>
                     <td className="px-3 py-3 text-slate-700">{row.nextStep || "-"}</td>
