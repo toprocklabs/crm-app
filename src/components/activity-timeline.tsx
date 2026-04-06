@@ -65,7 +65,7 @@ export function ActivityTimeline({
   }, []);
 
   return (
-    <div className="mt-4 space-y-5">
+    <div className="mt-4 space-y-6">
       {groups.map((group) => (
         <section key={group.dateKey}>
           <div className="flex items-center gap-3">
@@ -75,7 +75,7 @@ export function ActivityTimeline({
             <div className="h-px flex-1 bg-slate-200" />
           </div>
 
-          <ul className="mt-3 space-y-3">
+          <ul className="mt-4 space-y-4 border-l border-slate-200/90 pl-4">
             {group.items.map((item) => {
               const meta = getActivityMeta(item.type);
               const isStageChange = item.notes.startsWith("Stage changed:");
@@ -83,14 +83,14 @@ export function ActivityTimeline({
               return (
                 <li
                   key={item.id}
-                  className={`rounded-2xl border p-4 ${
+                  className={`relative rounded-[1.4rem] border p-4 before:absolute before:-left-[1.3rem] before:top-6 before:h-3 before:w-3 before:rounded-full before:border before:border-white before:bg-slate-300 ${
                     isStageChange
-                      ? "border-cyan-200 bg-cyan-50/70"
-                      : "border-slate-200 bg-white"
+                      ? "border-cyan-200 bg-cyan-50/70 before:bg-cyan-400"
+                      : "border-slate-200 bg-white before:bg-slate-300"
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-xs font-semibold ${meta.tone}`}>
+                    <div className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xs font-semibold shadow-sm ${meta.tone}`}>
                       {meta.icon}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -103,10 +103,12 @@ export function ActivityTimeline({
                             Stage update
                           </span>
                         ) : null}
-                        <span className="text-xs text-slate-500">{formatTime(item.occurredAt)}</span>
+                        <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                          {formatTime(item.occurredAt)}
+                        </span>
                       </div>
 
-                      <p className="mt-2 text-sm font-medium leading-6 text-slate-900">{item.notes}</p>
+                      <p className="mt-3 text-sm font-medium leading-6 text-slate-900">{item.notes}</p>
 
                       {item.contextLinks?.length ? (
                         <div className="mt-3 flex flex-wrap gap-2">
@@ -131,7 +133,7 @@ export function ActivityTimeline({
                         </div>
                       ) : null}
 
-                      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-3 text-xs text-slate-500">
                         <span>Logged by {item.loggedByUsername ?? "Unknown user"}</span>
                         {item.footer}
                       </div>
