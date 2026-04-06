@@ -6,6 +6,7 @@ export const accountStageOptions: AccountStage[] = [
   "engaged",
   "in_pipeline",
   "customer",
+  "closed_lost",
 ];
 
 export function getAccountStageLabel(stage: AccountStage) {
@@ -20,6 +21,8 @@ export function getAccountStageLabel(stage: AccountStage) {
       return "In-Pipeline";
     case "customer":
       return "Customer";
+    case "closed_lost":
+      return "Closed Lost";
     default:
       return stage;
   }
@@ -37,6 +40,8 @@ export function getAccountStageTone(stage: AccountStage) {
       return "bg-indigo-100 text-indigo-800";
     case "customer":
       return "bg-emerald-100 text-emerald-800";
+    case "closed_lost":
+      return "bg-rose-100 text-rose-800";
     default:
       return "bg-slate-100 text-slate-700";
   }

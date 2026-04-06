@@ -34,6 +34,7 @@ export const accountStage = pgEnum("account_stage", [
   "engaged",
   "in_pipeline",
   "customer",
+  "closed_lost",
 ]);
 
 export const taskStatus = pgEnum("task_status", ["open", "done"]);

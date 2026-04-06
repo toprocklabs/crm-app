@@ -415,6 +415,25 @@ export default async function AccountDetailPage({ params }: Props) {
                 <p className="font-medium text-slate-900">Recent touch</p>
                 <p className="mt-1">{activitySummary}</p>
               </div>
+              <form action={updateCompanyField} className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-3">
+                <input type="hidden" name="companyId" value={company.id} />
+                <input type="hidden" name="field" value="stage" />
+                <input type="hidden" name="value" value="closed_lost" />
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-rose-950">Archive as Closed Lost</p>
+                    <p className="mt-1 text-rose-800">
+                      Move this account out of active coverage and into the closed-lost archive section.
+                    </p>
+                  </div>
+                  <button
+                    type="submit"
+                    className="rounded-xl border border-rose-300 bg-white px-3 py-2 text-sm font-medium text-rose-900 hover:bg-rose-100"
+                  >
+                    Mark closed lost
+                  </button>
+                </div>
+              </form>
             </div>
           </aside>
         </div>

@@ -180,6 +180,9 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
     }
   });
 
+  const activeRows = rows.filter((row) => row.stage !== "closed_lost");
+  const closedLostRows = rows.filter((row) => row.stage === "closed_lost");
+
   function sortHref(key: SortKey) {
     const nextDir: SortDirection = sort === key && dir === "asc" ? "desc" : "asc";
     return `/accounts?sort=${key}&dir=${nextDir}`;
@@ -191,6 +194,96 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
     }
 
     return dir === "asc" ? "↑" : "↓";
+  }
+
+  function renderAccountsTable(tableRows: typeof rows, emptyLabel: string) {
+    return (
+      <div className="mt-4 overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead className="border-b border-slate-200 text-left text-slate-500">
+            <tr>
+              {(["account", "stage", "industry", "opportunities", "arr", "nextStep", "nextStepDue", "created"] as SortKey[]).map((key) => (
+                <th key={key} className="px-3 py-2">
+                  <Link href={sortHref(key)} className="inline-flex items-center gap-1 hover:text-slate-700">
+                    <span>{sortLabels[key]}</span>
+                    <span className="text-xs">{sortIndicator(key)}</span>
+                  </Link>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {tableRows.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-3 py-4 text-slate-500">
+                  {emptyLabel}
+                </td>
+              </tr>
+            ) : null}
+            {tableRows.map((row) => {
+              const nextStepLate = Boolean(row.nextStepDueDate && row.nextStepDueDate < today);
+
+              return (
+                <tr key={row.id} className="border-b border-slate-100">
+                  <td className="px-3 py-3">
+                    <p className="font-medium text-slate-900">
+                      <Link href={`/accounts/${row.id}`} className="underline decoration-slate-300 underline-offset-2">
+                        {row.name}
+                      </Link>
+                    </p>
+                    <p className="text-slate-500">
+                      {row.website ? (
+                        <a
+                          href={row.website}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline decoration-slate-300 underline-offset-2 hover:text-slate-700"
+                        >
+                          {getUrlLabel(row.website)}
+                        </a>
+                      ) : "No website"}
+                    </p>
+                    <p className="text-slate-500">
+                      {row.customerProjectUrl ? (
+                        <a
+                          href={row.customerProjectUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline decoration-slate-300 underline-offset-2 hover:text-slate-700"
+                        >
+                          {getUrlLabel(row.customerProjectUrl)}
+                        </a>
+                      ) : "No customer project URL"}
+                    </p>
+                  </td>
+                  <td className="px-3 py-3">
+                    <AutoSaveCompanySelectField
+                      action={updateCompanyField}
+                      companyId={row.id}
+                      field="stage"
+                      label="Stage"
+                      defaultValue={row.stage}
+                      options={accountStageSelectOptions}
+                      helperText={null}
+                      labelClassName="sr-only"
+                      stageToneStyle
+                    />
+                  </td>
+                  <td className="px-3 py-3 text-slate-700">{normalizeCompanyIndustry(row.industry) ?? "-"}</td>
+                  <td className="px-3 py-3 text-slate-700">{row.dealCount}</td>
+                  <td className="px-3 py-3 text-slate-700">${Math.round(row.pipelineCents / 100).toLocaleString()}</td>
+                  <td className="px-3 py-3 text-slate-700">{row.nextStep || "-"}</td>
+                  <td className={`px-3 py-3 ${nextStepLate ? "text-red-700" : "text-slate-500"}`}>
+                    {row.nextStepDueDate ? new Date(`${row.nextStepDueDate}T00:00:00`).toLocaleDateString("en-US") : "-"}
+                  </td>
+                  <td className="px-3 py-3 text-slate-500">{new Date(row.createdAt).toLocaleDateString()}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
   }
 
   return (
@@ -208,6 +301,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="inline-flex rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">{rows.length} accounts</span>
+            <span className="inline-flex rounded-full bg-rose-100 px-3 py-1.5 text-xs font-semibold text-rose-800">{closedLostRows.length} closed lost</span>
           </div>
         </div>
         <div className="mt-4">
@@ -244,93 +338,28 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
         <div className="border-b border-slate-200 pb-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Account Table</p>
-            <h2 className="mt-2 text-lg font-semibold text-slate-950">Revenue-side account coverage</h2>
+            <h2 className="mt-2 text-lg font-semibold text-slate-950">Active account coverage</h2>
           </div>
         </div>
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="border-b border-slate-200 text-left text-slate-500">
-              <tr>
-                {(["account", "stage", "industry", "opportunities", "arr", "nextStep", "nextStepDue", "created"] as SortKey[]).map((key) => (
-                  <th key={key} className="px-3 py-2">
-                    <Link href={sortHref(key)} className="inline-flex items-center gap-1 hover:text-slate-700">
-                      <span>{sortLabels[key]}</span>
-                      <span className="text-xs">{sortIndicator(key)}</span>
-                    </Link>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-3 py-4 text-slate-500">
-                    No accounts yet.
-                  </td>
-                </tr>
-              ) : null}
-              {rows.map((row) => {
-                const nextStepLate = Boolean(row.nextStepDueDate && row.nextStepDueDate < today);
+        {renderAccountsTable(activeRows, "No active accounts yet.")}
+      </section>
 
-                return (
-                  <tr key={row.id} className="border-b border-slate-100">
-                    <td className="px-3 py-3">
-                      <p className="font-medium text-slate-900">
-                        <Link href={`/accounts/${row.id}`} className="underline decoration-slate-300 underline-offset-2">
-                          {row.name}
-                        </Link>
-                      </p>
-                      <p className="text-slate-500">
-                        {row.website ? (
-                          <a
-                            href={row.website}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="underline decoration-slate-300 underline-offset-2 hover:text-slate-700"
-                          >
-                            {getUrlLabel(row.website)}
-                          </a>
-                        ) : "No website"}
-                      </p>
-                      <p className="text-slate-500">
-                        {row.customerProjectUrl ? (
-                          <a
-                            href={row.customerProjectUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="underline decoration-slate-300 underline-offset-2 hover:text-slate-700"
-                          >
-                            {getUrlLabel(row.customerProjectUrl)}
-                          </a>
-                        ) : "No customer project URL"}
-                      </p>
-                    </td>
-                    <td className="px-3 py-3">
-                      <AutoSaveCompanySelectField
-                        action={updateCompanyField}
-                        companyId={row.id}
-                        field="stage"
-                        label="Stage"
-                        defaultValue={row.stage}
-                        options={accountStageSelectOptions}
-                        helperText={null}
-                        labelClassName="sr-only"
-                        stageToneStyle
-                      />
-                    </td>
-                    <td className="px-3 py-3 text-slate-700">{normalizeCompanyIndustry(row.industry) ?? "-"}</td>
-                    <td className="px-3 py-3 text-slate-700">{row.dealCount}</td>
-                    <td className="px-3 py-3 text-slate-700">${Math.round(row.pipelineCents / 100).toLocaleString()}</td>
-                    <td className="px-3 py-3 text-slate-700">{row.nextStep || "-"}</td>
-                    <td className={`px-3 py-3 ${nextStepLate ? "text-red-700" : "text-slate-500"}`}>
-                      {row.nextStepDueDate ? new Date(`${row.nextStepDueDate}T00:00:00`).toLocaleDateString("en-US") : "-"}
-                    </td>
-                    <td className="px-3 py-3 text-slate-500">{new Date(row.createdAt).toLocaleDateString()}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      <section className="gong-panel rounded-[1.9rem] p-5">
+        <div className="border-b border-slate-200 pb-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Archive</p>
+            <h2 className="mt-2 text-lg font-semibold text-slate-950">Closed Lost</h2>
+            <p className="mt-2 text-sm text-slate-600">Archived accounts stay editable here without crowding the active coverage table.</p>
+          </div>
+        </div>
+        <div className="mt-4">
+          <CollapsibleFormSection
+            title={`View closed-lost accounts (${closedLostRows.length})`}
+            description="Expand to review or update archived accounts."
+            className="border-slate-200 bg-slate-50/70"
+          >
+            {renderAccountsTable(closedLostRows, "No closed-lost accounts yet.")}
+          </CollapsibleFormSection>
         </div>
       </section>
     </CrmShell>
