@@ -161,6 +161,8 @@ export default async function AccountDetailPage({ params }: Props) {
     label: industry,
   }));
   const openTasks = companyTasks.filter((task) => task.status === "open").length;
+  const openCompanyTasks = companyTasks.filter((task) => task.status === "open");
+  const completedCompanyTasks = companyTasks.filter((task) => task.status === "done");
   const totalIarrCents = companyDeals.reduce((sum, deal) => sum + deal.valueCents, 0);
   const totalImplementationCostCents = companyDeals.reduce((sum, deal) => sum + deal.implementationCostCents, 0);
   const today = new Date().toISOString().slice(0, 10);
@@ -723,8 +725,8 @@ export default async function AccountDetailPage({ params }: Props) {
             </div>
           </div>
           <ul className="mt-4 space-y-3">
-            {companyTasks.length === 0 ? <li className="text-sm text-slate-500">No tasks yet.</li> : null}
-            {companyTasks.map((task) => (
+            {openCompanyTasks.length === 0 ? <li className="text-sm text-slate-500">No open tasks right now.</li> : null}
+            {openCompanyTasks.map((task) => (
               <li key={task.id} className="rounded-[1.25rem] border border-slate-200 bg-slate-50/70 p-4">
                 <p className="font-medium text-slate-900">{task.title}</p>
                 <p className="text-sm text-slate-600">Due {task.dueDate} • {task.assignedTo ?? "Unassigned"}</p>
@@ -740,6 +742,26 @@ export default async function AccountDetailPage({ params }: Props) {
               </li>
             ))}
           </ul>
+          <CollapsibleFormSection
+            title={`Completed tasks (${completedCompanyTasks.length})`}
+            description="Expand to review finished follow-ups on this account."
+            className="mt-5 border-slate-200 bg-slate-50/70"
+          >
+            <ul className="space-y-3">
+              {completedCompanyTasks.length === 0 ? <li className="text-sm text-slate-500">No completed tasks yet.</li> : null}
+              {completedCompanyTasks.map((task) => (
+                <li key={task.id} className="rounded-[1.25rem] border border-slate-200 bg-white p-4">
+                  <p className="font-medium text-slate-900">{task.title}</p>
+                  <p className="text-sm text-slate-600">Due {task.dueDate} • {task.assignedTo ?? "Unassigned"}</p>
+                  <p className="mt-1">
+                    <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800">
+                      done
+                    </span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </CollapsibleFormSection>
         </article>
 
         <article id="account-activity" className="gong-panel rounded-[1.8rem] p-5">

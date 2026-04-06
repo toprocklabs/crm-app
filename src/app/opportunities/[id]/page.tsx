@@ -131,6 +131,8 @@ export default async function OpportunityDetailPage({ params }: Props) {
   ]);
 
   const stageHistory = activityRows.filter((item) => item.notes.startsWith("Stage changed:"));
+  const openTaskRows = taskRows.filter((task) => task.status === "open");
+  const completedTaskRows = taskRows.filter((task) => task.status === "done");
   const today = new Date().toISOString().slice(0, 10);
   const nextStepLate = Boolean(
     opportunity.nextStepDueDate &&
@@ -484,12 +486,12 @@ export default async function OpportunityDetailPage({ params }: Props) {
               <p className="mt-1 text-sm text-slate-600">Use linked tasks to enforce the next action outside the timeline.</p>
             </div>
             <div className="rounded-2xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
-              {taskRows.length} linked
+              {openTaskRows.length} open
             </div>
           </div>
           <ul className="mt-4 space-y-3">
-            {taskRows.length === 0 ? <li className="text-sm text-slate-500">No tasks linked to this opportunity.</li> : null}
-            {taskRows.map((task) => (
+            {openTaskRows.length === 0 ? <li className="text-sm text-slate-500">No open tasks linked to this opportunity.</li> : null}
+            {openTaskRows.map((task) => (
               <li key={task.id} className="rounded-lg border border-slate-200 p-3">
                 <p className="font-medium text-slate-900">{task.title}</p>
                 <p className="text-sm text-slate-600">Due {task.dueDate}</p>
@@ -506,6 +508,27 @@ export default async function OpportunityDetailPage({ params }: Props) {
               </li>
             ))}
           </ul>
+          <CollapsibleFormSection
+            title={`Completed tasks (${completedTaskRows.length})`}
+            description="Expand to review finished opportunity tasks."
+            className="mt-5 border-slate-200 bg-slate-50/70"
+          >
+            <ul className="space-y-3">
+              {completedTaskRows.length === 0 ? <li className="text-sm text-slate-500">No completed tasks yet.</li> : null}
+              {completedTaskRows.map((task) => (
+                <li key={task.id} className="rounded-lg border border-slate-200 bg-white p-3">
+                  <p className="font-medium text-slate-900">{task.title}</p>
+                  <p className="text-sm text-slate-600">Due {task.dueDate}</p>
+                  <p className="mt-1 text-xs text-slate-500">{task.assignedTo ?? "Unassigned"}</p>
+                  <p className="mt-2">
+                    <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800">
+                      done
+                    </span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </CollapsibleFormSection>
         </article>
       </section>
     </CrmShell>

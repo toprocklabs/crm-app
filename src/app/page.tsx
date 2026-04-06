@@ -1,5 +1,6 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { completeTask } from "@/app/actions";
+import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -113,6 +114,8 @@ export default async function Home() {
   ]);
 
   const stats = statsRows[0] ?? { companies: 0, contacts: 0, pipelineCents: 0, openTasks: 0 };
+  const openTaskRows = taskRows.filter((task) => task.status === "open");
+  const completedTaskRows = taskRows.filter((task) => task.status === "done");
 
   return (
     <CrmShell
@@ -205,11 +208,11 @@ export default async function Home() {
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Execution Queue</p>
               <h2 className="mt-2 text-lg font-semibold text-slate-950">Task reminders</h2>
             </div>
-            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{taskRows.length} items</span>
+            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{openTaskRows.length} open</span>
           </div>
           <ul className="mt-4 space-y-3">
-            {taskRows.length === 0 ? <li className="text-sm text-slate-500">No tasks yet.</li> : null}
-            {taskRows.map((task) => {
+            {openTaskRows.length === 0 ? <li className="text-sm text-slate-500">No open tasks right now.</li> : null}
+            {openTaskRows.map((task) => {
               const overdue = task.status === "open" && task.dueDate < today;
               return (
                 <li key={task.id} className="rounded-[1.25rem] border border-slate-200 bg-slate-50/70 p-4">
@@ -238,6 +241,29 @@ export default async function Home() {
               );
             })}
           </ul>
+          <CollapsibleFormSection
+            title={`Completed tasks (${completedTaskRows.length})`}
+            description="Expand to review finished reminders."
+            className="mt-5 border-slate-200 bg-slate-50/70"
+          >
+            <ul className="space-y-3">
+              {completedTaskRows.length === 0 ? <li className="text-sm text-slate-500">No completed tasks yet.</li> : null}
+              {completedTaskRows.map((task) => (
+                <li key={task.id} className="rounded-[1.25rem] border border-slate-200 bg-white p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-slate-900">{task.title}</p>
+                      <p className="text-sm text-slate-600">
+                        {task.dealName ?? task.companyName ?? "General"} • {task.assignedTo ?? "Unassigned"}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">Due {task.dueDate}</p>
+                    </div>
+                    <span className="rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">Done</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CollapsibleFormSection>
         </article>
       </section>
 

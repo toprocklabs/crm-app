@@ -37,6 +37,8 @@ export default async function TasksPage() {
   ]);
 
   const today = new Date().toISOString().slice(0, 10);
+  const openTasks = taskRows.filter((task) => task.status === "open");
+  const completedTasks = taskRows.filter((task) => task.status === "done");
 
   return (
     <CrmShell
@@ -105,10 +107,18 @@ export default async function TasksPage() {
         </CollapsibleFormSection>
 
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
-          <h2 className="text-lg font-semibold text-slate-900">All reminders</h2>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Open reminders</h2>
+              <p className="mt-1 text-sm text-slate-600">Work the active follow-ups here. Completed tasks stay tucked away below.</p>
+            </div>
+            <span className="rounded-2xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
+              {openTasks.length} open
+            </span>
+          </div>
           <ul className="mt-4 space-y-3">
-            {taskRows.length === 0 ? <li className="text-sm text-slate-500">No tasks yet.</li> : null}
-            {taskRows.map((task) => {
+            {openTasks.length === 0 ? <li className="text-sm text-slate-500">No open tasks right now.</li> : null}
+            {openTasks.map((task) => {
               const overdue = task.status === "open" && task.dueDate < today;
               return (
                 <li key={task.id} className="rounded-lg border border-slate-200 p-3">
@@ -135,6 +145,29 @@ export default async function TasksPage() {
               );
             })}
           </ul>
+          <CollapsibleFormSection
+            title={`Completed tasks (${completedTasks.length})`}
+            description="Expand to review finished follow-ups."
+            className="mt-5 border-slate-200 bg-slate-50/70"
+          >
+            <ul className="space-y-3">
+              {completedTasks.length === 0 ? <li className="text-sm text-slate-500">No completed tasks yet.</li> : null}
+              {completedTasks.map((task) => (
+                <li key={task.id} className="rounded-lg border border-slate-200 bg-white p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-slate-900">{task.title}</p>
+                      <p className="text-sm text-slate-600">
+                        {task.dealName ?? task.companyName ?? "General"} • {task.assignedTo ?? "Unassigned"}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">Due {task.dueDate}</p>
+                    </div>
+                    <span className="rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">Done</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CollapsibleFormSection>
         </article>
       </section>
     </CrmShell>
