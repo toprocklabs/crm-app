@@ -13,6 +13,29 @@ const currency = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
+function formatStageLabel(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, " ");
+}
+
+function getStageTone(stage: string) {
+  switch (stage) {
+    case "won":
+      return "bg-emerald-100 text-emerald-800";
+    case "lost":
+      return "bg-rose-100 text-rose-800";
+    case "negotiation":
+      return "bg-amber-100 text-amber-800";
+    case "proposal":
+      return "bg-sky-100 text-sky-800";
+    case "qualified":
+      return "bg-cyan-100 text-cyan-800";
+    case "lead":
+      return "bg-slate-100 text-slate-700";
+    default:
+      return "bg-slate-100 text-slate-700";
+  }
+}
+
 export default async function OpportunitiesPage() {
   const session = await requireUser();
   const db = getDb();
@@ -82,7 +105,11 @@ export default async function OpportunitiesPage() {
                       </p>
                       <p className="text-slate-500">{row.companyName ?? "No account"}</p>
                     </td>
-                    <td className="px-3 py-2 text-slate-700">{row.stage}</td>
+                    <td className="px-3 py-2">
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStageTone(row.stage)}`}>
+                        {formatStageLabel(row.stage)}
+                      </span>
+                    </td>
                     <td className="px-3 py-2 text-slate-700">{row.ownerName ?? "Unassigned"}</td>
                     <td className="px-3 py-2">
                       <p className="text-slate-800">{row.nextStep || "No next step"}</p>
@@ -92,7 +119,7 @@ export default async function OpportunitiesPage() {
                     </td>
                     <td className="px-3 py-2 text-slate-700">{currency.format(Math.round(row.valueCents / 100))}</td>
                     <td className="px-3 py-2 text-slate-700">{currency.format(Math.round(row.implementationCostCents / 100))}</td>
-                    <td className="px-3 py-2 text-slate-700">{row.expectedCloseDate ?? "-"}</td>
+                    <td className="px-3 py-2 text-slate-700">{row.expectedCloseDate ? new Date(`${row.expectedCloseDate}T00:00:00`).toLocaleDateString("en-US") : "-"}</td>
                   </tr>
                 );
               })}

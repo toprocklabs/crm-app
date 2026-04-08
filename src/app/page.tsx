@@ -1,5 +1,6 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { completeTask } from "@/app/actions";
+import { ActivityTimeline } from "@/components/activity-timeline";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
@@ -92,7 +93,9 @@ export default async function Home() {
         type: activities.type,
         notes: activities.notes,
         occurredAt: activities.occurredAt,
+        dealId: deals.id,
         dealName: deals.name,
+        companyId: companies.id,
         companyName: companies.name,
         loggedByUsername: users.username,
       })
@@ -116,6 +119,28 @@ export default async function Home() {
   const stats = statsRows[0] ?? { companies: 0, contacts: 0, pipelineCents: 0, openTasks: 0 };
   const openTaskRows = taskRows.filter((task) => task.status === "open");
   const completedTaskRows = taskRows.filter((task) => task.status === "done");
+  const overdueTasks = openTaskRows.filter((task) => task.dueDate < today);
+
+  function getDealStageTone(stage: string) {
+    switch (stage) {
+      case "won":
+        return "bg-emerald-100 text-emerald-800";
+      case "lost":
+        return "bg-rose-100 text-rose-800";
+      case "negotiation":
+        return "bg-amber-100 text-amber-800";
+      case "proposal":
+        return "bg-sky-100 text-sky-800";
+      case "qualified":
+        return "bg-cyan-100 text-cyan-800";
+      default:
+        return "bg-slate-100 text-slate-700";
+    }
+  }
+
+  function formatStageLabel(value: string) {
+    return value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, " ");
+  }
 
   return (
     <CrmShell
@@ -143,8 +168,10 @@ export default async function Home() {
                 <span className="font-semibold text-slate-950">{stats.openTasks}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-slate-500">Latest focus</span>
-                <span className="inline-flex rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-800 ring-1 ring-cyan-200">Pipeline hygiene</span>
+                <span className="text-slate-500">Overdue tasks</span>
+                <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${overdueTasks.length > 0 ? "bg-rose-100 text-rose-800" : "bg-emerald-100 text-emerald-800"}`}>
+                  {overdueTasks.length}
+                </span>
               </div>
             </div>
           </div>
@@ -181,9 +208,15 @@ export default async function Home() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="font-medium text-slate-900">{deal.name}</p>
-                      <p className="text-sm text-slate-600">
-                        {deal.companyName ?? "No account"} • {deal.stage} • Owner: {deal.ownerName ?? "Unassigned"}
-                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-slate-600">
+                        <span>{deal.companyName ?? "No account"}</span>
+                        <span>•</span>
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${getDealStageTone(deal.stage)}`}>
+                          {formatStageLabel(deal.stage)}
+                        </span>
+                        <span>•</span>
+                        <span>{deal.ownerName ?? "Unassigned"}</span>
+                      </div>
                       <p className="mt-2 text-sm text-slate-800">Next step: {deal.nextStep || "Not set"}</p>
                     </div>
                     <div className="text-right">
@@ -273,21 +306,22 @@ export default async function Home() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Signals</p>
             <h2 className="mt-2 text-lg font-semibold text-slate-950">Recent activity timeline</h2>
           </div>
-          <span className="inline-flex rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-800 ring-1 ring-cyan-200">Live feed</span>
+          <span className="inline-flex rounded-full bg-cyan-100 px-2.5 py-1 text-xs font-semibold text-cyan-800">Live feed</span>
         </div>
-        <ul className="mt-4 space-y-3">
-          {activityRows.length === 0 ? <li className="text-sm text-slate-500">No activity logged yet.</li> : null}
-          {activityRows.map((item) => (
-            <li key={item.id} className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
-              <p className="text-sm uppercase tracking-wide text-slate-500">{item.type}</p>
-              <p className="mt-1 font-medium text-slate-900">{item.notes}</p>
-              <p className="mt-1 text-sm text-slate-600">
-                {item.dealName ?? item.companyName ?? "General"} • {new Date(item.occurredAt).toLocaleString()}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">Logged by {item.loggedByUsername ?? "Unknown user"}</p>
-            </li>
-          ))}
-        </ul>
+        <ActivityTimeline
+          emptyMessage="No activity logged yet."
+          items={activityRows.map((item) => ({
+            id: item.id,
+            type: item.type,
+            notes: item.notes,
+            occurredAt: item.occurredAt,
+            loggedByUsername: item.loggedByUsername,
+            contextLinks: [
+              ...(item.dealName && item.dealId ? [{ label: item.dealName, href: `/opportunities/${item.dealId}` }] : []),
+              ...(item.companyName && item.companyId ? [{ label: item.companyName, href: `/accounts/${item.companyId}` }] : []),
+            ],
+          }))}
+        />
       </section>
     </CrmShell>
   );

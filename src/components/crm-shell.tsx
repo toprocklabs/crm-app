@@ -87,7 +87,7 @@ export function CrmShell({
   return (
     <main className="crm-shell min-h-screen bg-[var(--app-bg)] text-slate-950">
       <div className="mx-auto grid min-h-screen w-full max-w-[1500px] gap-0 md:grid-cols-[240px_minmax(0,1fr)]">
-        <aside className="crm-sidebar border-r border-[var(--panel-border)] bg-[var(--sidebar-bg)] px-3 py-4 text-slate-100 md:sticky md:top-0 md:h-screen">
+        <aside className="crm-sidebar border-r border-slate-200/95 bg-[var(--sidebar-bg)] px-3 py-4 text-slate-100 md:sticky md:top-0 md:h-screen">
           <div className="flex items-center gap-2.5 px-2">
             <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-400 text-xs font-bold tracking-[0.15em] text-slate-950">
               TR
@@ -142,7 +142,7 @@ export function CrmShell({
         </aside>
 
         <section className="min-w-0 px-4 py-4 md:px-6 md:py-5">
-          <header className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] px-5 py-4 shadow-sm md:px-6">
+          <header className="rounded-xl border border-slate-200/95 bg-white px-5 py-4 shadow-sm md:px-6">
             <h1 className="text-xl font-semibold tracking-tight text-slate-950">{title}</h1>
             {description ? <p className="mt-1 max-w-3xl text-sm text-slate-500">{description}</p> : null}
           </header>

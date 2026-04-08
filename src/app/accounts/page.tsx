@@ -190,10 +190,27 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
 
   function sortIndicator(key: SortKey) {
     if (sort !== key) {
-      return "↕";
+      return (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+          <path d="M7 15l5 5 5-5" />
+          <path d="M7 9l5-5 5 5" />
+        </svg>
+      );
     }
 
-    return dir === "asc" ? "↑" : "↓";
+    if (dir === "asc") {
+      return (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-700">
+          <path d="M18 15l-6-6-6 6" />
+        </svg>
+      );
+    }
+
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-700">
+        <path d="M6 9l6 6 6-6" />
+      </svg>
+    );
   }
 
   function renderAccountsTable(tableRows: typeof rows, emptyLabel: string) {
@@ -206,7 +223,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                 <th key={key} className="px-3 py-2">
                   <Link href={sortHref(key)} className="inline-flex items-center gap-1 hover:text-slate-700">
                     <span>{sortLabels[key]}</span>
-                    <span className="text-xs">{sortIndicator(key)}</span>
+                    {sortIndicator(key)}
                   </Link>
                 </th>
               ))}
