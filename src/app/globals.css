@@ -60,32 +60,25 @@ body {
 }
 
 .crm-shell article.rounded-xl,
-.crm-shell article.rounded-2xl,
-.crm-shell article.rounded-3xl,
 .crm-shell section.rounded-xl,
-.crm-shell section.rounded-2xl,
-.crm-shell section.rounded-3xl,
 .crm-shell details.rounded-xl,
-.crm-shell .rounded-xl.border.border-slate-200.bg-white,
-.crm-shell .rounded-2xl.border.border-slate-200.bg-slate-50,
-.crm-shell .rounded-2xl.border.border-slate-200.bg-slate-50\/80 {
+.crm-shell .rounded-xl.border.border-slate-200.bg-white {
   border-color: var(--border-strong) !important;
   background: linear-gradient(180deg, var(--surface-primary), rgb(255 255 255 / 0.98)) !important;
   box-shadow:
-    0 24px 42px -36px rgb(15 23 42 / 0.24),
+    0 1px 3px rgb(15 23 42 / 0.06),
     0 1px 0 rgb(255 255 255 / 0.96) inset !important;
-  backdrop-filter: blur(6px);
 }
 
-.crm-shell article.rounded-2xl.border.border-slate-200.bg-slate-50\/80,
-.crm-shell .rounded-2xl.border.border-slate-200.bg-slate-50 {
+.crm-shell article.rounded-xl.border.border-slate-200.bg-slate-50\/80,
+.crm-shell .rounded-xl.border.border-slate-200.bg-slate-50 {
   background: linear-gradient(180deg, var(--surface-secondary), var(--surface-tertiary)) !important;
 }
 
 .crm-shell input,
 .crm-shell select,
 .crm-shell textarea {
-  border-radius: 0.95rem !important;
+  border-radius: 0.5rem !important;
   border-color: rgb(203 213 225 / 0.95) !important;
   background: rgb(255 255 255 / 1) !important;
   color: var(--foreground) !important;
@@ -255,7 +248,7 @@ body {
 .crm-shell .gong-panel {
   border: 1px solid rgb(226 232 240 / 0.95);
   background: #fff;
-  box-shadow: 0 24px 40px -36px rgb(15 23 42 / 0.18);
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.06);
 }
 
 .crm-shell .gong-kpi {

@@ -157,7 +157,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
       title={opportunity.name}
       description="Opportunity detail with editable fields, stage management, and timeline."
     >
-      <section className="rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-sm">
+      <section className="gong-panel rounded-xl p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -198,25 +198,25 @@ export default async function OpportunityDetailPage({ params }: Props) {
         </div>
 
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          <article className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+          <article className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">IARR</p>
             <p className="mt-1 text-2xl font-semibold text-slate-900">{currency.format(Math.round(opportunity.valueCents / 100))}</p>
           </article>
-          <article className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+          <article className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Implementation Cost</p>
             <p className="mt-1 text-2xl font-semibold text-slate-900">
               {currency.format(Math.round(opportunity.implementationCostCents / 100))}
             </p>
           </article>
-          <article className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+          <article className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Owner</p>
             <p className="mt-1 text-lg font-semibold text-slate-900">{opportunity.ownerName ?? "Unassigned"}</p>
           </article>
-          <article className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+          <article className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Account</p>
             <p className="mt-1 text-lg font-semibold text-slate-900">{opportunity.companyName ?? "None"}</p>
           </article>
-          <article className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+          <article className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
             <p className="text-xs uppercase tracking-wide text-slate-500">Primary Contact</p>
             <p className="mt-1 text-lg font-semibold text-slate-900">
               {opportunity.primaryContactFirstName
@@ -227,7 +227,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
         </div>
       </section>
 
-      <section className="sticky top-4 z-10 rounded-2xl border border-white/80 bg-white/90 p-3 shadow-lg shadow-slate-900/5 backdrop-blur">
+      <section className="sticky top-4 z-10 rounded-xl border border-white/80 bg-white/90 p-3 shadow-lg shadow-slate-900/5 backdrop-blur">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <a href="#opportunity-overview" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">Overview</a>
@@ -242,14 +242,14 @@ export default async function OpportunityDetailPage({ params }: Props) {
         </div>
       </section>
 
-      <section id="opportunity-overview" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section id="opportunity-overview" className="gong-panel rounded-xl p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-500">Overview</p>
             <h2 className="mt-1 text-xl font-semibold text-slate-900">Deal Snapshot</h2>
             <p className="mt-1 text-sm text-slate-600">Review owner, timing, and relationship context before editing the record.</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
             <p>Created: {new Date(opportunity.createdAt).toLocaleDateString()}</p>
             <p className="mt-1">Next step due: {formatDate(opportunity.nextStepDueDate)}</p>
           </div>
@@ -257,14 +257,14 @@ export default async function OpportunityDetailPage({ params }: Props) {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <article id="opportunity-details" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <article id="opportunity-details" className="gong-panel rounded-xl p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-500">Details</p>
               <h2 className="mt-1 text-lg font-semibold text-slate-900">Opportunity Details</h2>
               <p className="mt-1 text-sm text-slate-600">Update commercial fields, owner, and relationship mapping.</p>
             </div>
-            <div className="rounded-2xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
+            <div className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
               {formatStageLabel(opportunity.stage)}
             </div>
           </div>
@@ -356,14 +356,14 @@ export default async function OpportunityDetailPage({ params }: Props) {
           </form>
         </article>
 
-        <article id="opportunity-stage" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <article id="opportunity-stage" className="gong-panel rounded-xl p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-500">Stage</p>
               <h2 className="mt-1 text-lg font-semibold text-slate-900">Stage Workflow</h2>
               <p className="mt-1 text-sm text-slate-600">Keep stage changes explicit and document why the deal moved.</p>
             </div>
-            <div className={`rounded-2xl px-3 py-2 text-sm font-medium ${getStageTone(opportunity.stage)}`}>
+            <div className={`rounded-lg px-3 py-2 text-sm font-medium ${getStageTone(opportunity.stage)}`}>
               {formatStageLabel(opportunity.stage)}
             </div>
           </div>
@@ -408,14 +408,14 @@ export default async function OpportunityDetailPage({ params }: Props) {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <article id="opportunity-activity" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <article id="opportunity-activity" className="gong-panel rounded-xl p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-500">Activity</p>
               <h2 className="mt-1 text-lg font-semibold text-slate-900">Timeline</h2>
               <p className="mt-1 text-sm text-slate-600">Log interactions and keep the deal narrative current.</p>
             </div>
-            <div className="rounded-2xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
+            <div className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
               {activityRows.length} entries
             </div>
           </div>
@@ -478,14 +478,14 @@ export default async function OpportunityDetailPage({ params }: Props) {
           />
         </article>
 
-        <article id="opportunity-tasks" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <article id="opportunity-tasks" className="gong-panel rounded-xl p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-500">Tasks</p>
               <h2 className="mt-1 text-lg font-semibold text-slate-900">Linked Tasks</h2>
               <p className="mt-1 text-sm text-slate-600">Use linked tasks to enforce the next action outside the timeline.</p>
             </div>
-            <div className="rounded-2xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
+            <div className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
               {openTaskRows.length} open
             </div>
           </div>

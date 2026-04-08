@@ -197,7 +197,7 @@ export default async function AccountDetailPage({ params }: Props) {
       title={company.name}
       description="Account detail with all associated people, opportunities, tasks, and timeline."
     >
-      <section className="gong-panel rounded-[2rem] p-6">
+      <section className="gong-panel rounded-xl p-6">
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.85fr)]">
           <div className="rounded-[1.75rem] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(240,249,255,0.88))] p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -287,22 +287,22 @@ export default async function AccountDetailPage({ params }: Props) {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
-            <article className="gong-kpi rounded-[1.6rem] p-5">
+            <article className="gong-kpi rounded-lg p-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Stakeholders</p>
               <p className="mt-2 text-3xl font-semibold text-slate-950">{companyContacts.length}</p>
               <p className="mt-1 text-sm text-slate-600">{reachableContacts} reachable across phone, email, or LinkedIn</p>
             </article>
-            <article className="gong-kpi rounded-[1.6rem] p-5">
+            <article className="gong-kpi rounded-lg p-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Open Pipeline ARR</p>
               <p className="mt-2 text-3xl font-semibold text-slate-950">{currency.format(Math.round(totalIarrCents / 100))}</p>
               <p className="mt-1 text-sm text-slate-600">{companyDeals.length} opportunities on this account</p>
             </article>
-            <article className="gong-kpi rounded-[1.6rem] p-5">
+            <article className="gong-kpi rounded-lg p-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Follow-up Queue</p>
               <p className="mt-2 text-3xl font-semibold text-slate-950">{openTasks}</p>
               <p className="mt-1 text-sm text-slate-600">Open tasks protecting the next action</p>
             </article>
-            <article className="gong-kpi rounded-[1.6rem] p-5">
+            <article className="gong-kpi rounded-lg p-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Implementation Cost</p>
               <p className="mt-2 text-3xl font-semibold text-slate-950">
                 {currency.format(Math.round(totalImplementationCostCents / 100))}
@@ -330,14 +330,14 @@ export default async function AccountDetailPage({ params }: Props) {
         </div>
       </section>
 
-      <section id="account-overview" className="gong-panel rounded-[1.8rem] p-5">
+      <section id="account-overview" className="gong-panel rounded-xl p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Overview</p>
             <h2 className="mt-2 text-xl font-semibold text-slate-900">Account Details</h2>
             <p className="mt-2 text-sm text-slate-600">Keep account metadata, links, and the top-level next step current without leaving the workspace.</p>
           </div>
-          <div className="grid gap-2 rounded-[1.4rem] border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600 md:grid-cols-3">
+          <div className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600 md:grid-cols-3">
             <p>Website: {company.website ? "Connected" : "Missing"}</p>
             <p>Customer project: {company.customerProjectUrl ? "Connected" : "Missing"}</p>
             <p>Created: {new Date(company.createdAt).toLocaleDateString()}</p>
@@ -398,7 +398,7 @@ export default async function AccountDetailPage({ params }: Props) {
               emptyText="No next step date"
             />
           </div>
-          <aside className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+          <aside className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Account Signals</p>
             <div className="mt-3 space-y-3 text-sm text-slate-600">
               <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
@@ -423,7 +423,7 @@ export default async function AccountDetailPage({ params }: Props) {
       </section>
 
       <section id="account-people" className="grid gap-6 lg:grid-cols-2">
-        <article className="gong-panel rounded-[1.8rem] p-5">
+        <article className="gong-panel rounded-xl p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">People</p>
@@ -555,7 +555,7 @@ export default async function AccountDetailPage({ params }: Props) {
           </ul>
         </article>
 
-        <article id="account-pipeline" className="gong-panel rounded-[1.8rem] p-5">
+        <article id="account-pipeline" className="gong-panel rounded-xl p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Pipeline</p>
@@ -694,7 +694,7 @@ export default async function AccountDetailPage({ params }: Props) {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <article id="account-tasks" className="gong-panel rounded-[1.8rem] p-5">
+        <article id="account-tasks" className="gong-panel rounded-xl p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Tasks</p>
@@ -708,7 +708,7 @@ export default async function AccountDetailPage({ params }: Props) {
           <ul className="mt-4 space-y-3">
             {openCompanyTasks.length === 0 ? <li className="text-sm text-slate-500">No open tasks right now.</li> : null}
             {openCompanyTasks.map((task) => (
-              <li key={task.id} className="rounded-[1.25rem] border border-slate-200 bg-slate-50/70 p-4">
+              <li key={task.id} className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
                 <p className="font-medium text-slate-900">{task.title}</p>
                 <p className="text-sm text-slate-600">Due {task.dueDate} • {task.assignedTo ?? "Unassigned"}</p>
                 <p className="mt-1">
@@ -731,7 +731,7 @@ export default async function AccountDetailPage({ params }: Props) {
             <ul className="space-y-3">
               {completedCompanyTasks.length === 0 ? <li className="text-sm text-slate-500">No completed tasks yet.</li> : null}
               {completedCompanyTasks.map((task) => (
-                <li key={task.id} className="rounded-[1.25rem] border border-slate-200 bg-white p-4">
+                <li key={task.id} className="rounded-lg border border-slate-200 bg-white p-4">
                   <p className="font-medium text-slate-900">{task.title}</p>
                   <p className="text-sm text-slate-600">Due {task.dueDate} • {task.assignedTo ?? "Unassigned"}</p>
                   <p className="mt-1">
@@ -745,7 +745,7 @@ export default async function AccountDetailPage({ params }: Props) {
           </CollapsibleFormSection>
         </article>
 
-        <article id="account-activity" className="gong-panel rounded-[1.8rem] p-5">
+        <article id="account-activity" className="gong-panel rounded-xl p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Activity</p>

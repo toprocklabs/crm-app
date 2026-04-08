@@ -180,7 +180,7 @@ export default async function ContactDetailPage({ params }: Props) {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <article className="gong-panel rounded-xl p-5">
           <h2 className="text-lg font-semibold text-slate-900">Activity Timeline</h2>
           <CollapsibleFormSection title="Log activity" description="Capture a note, call, meeting, or email." className="mt-4">
             <form action={logActivity}>
@@ -245,7 +245,7 @@ export default async function ContactDetailPage({ params }: Props) {
           />
         </article>
 
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <article className="gong-panel rounded-xl p-5">
           <h2 className="text-lg font-semibold text-slate-900">Related Opportunities</h2>
           <ul className="mt-4 space-y-3">
             {relatedDeals.length === 0 ? <li className="text-sm text-slate-500">No opportunities set with this as primary contact yet.</li> : null}

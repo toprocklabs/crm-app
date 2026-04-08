@@ -47,7 +47,7 @@ export default async function OpportunitiesPage() {
       title="Opportunities"
       description="Complete opportunity pipeline with owner accountability and next-step deadlines."
     >
-      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="gong-panel rounded-xl p-5">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="border-b border-slate-200 text-left text-slate-500">

@@ -292,7 +292,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
       title="Accounts"
       description="All account records with opportunities and total tracked ARR."
     >
-      <section className="gong-panel rounded-[1.9rem] p-6">
+      <section className="gong-panel rounded-xl p-6">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Quick Capture</p>
@@ -334,7 +334,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
         </div>
       </section>
 
-      <section className="gong-panel rounded-[1.9rem] p-5">
+      <section className="gong-panel rounded-xl p-5">
         <div className="border-b border-slate-200 pb-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Account Table</p>
@@ -344,7 +344,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
         {renderAccountsTable(activeRows, "No active accounts yet.")}
       </section>
 
-      <section className="gong-panel rounded-[1.9rem] p-5">
+      <section className="gong-panel rounded-xl p-5">
         <div className="border-b border-slate-200 pb-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Archive</p>

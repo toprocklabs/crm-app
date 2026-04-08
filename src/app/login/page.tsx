@@ -17,7 +17,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-10">
-      <div className="rounded-3xl border border-white/70 bg-white/85 p-8 shadow-2xl shadow-cyan-950/20 backdrop-blur">
+      <div className="rounded-xl border border-white/70 bg-white/85 p-8 shadow-2xl shadow-cyan-950/20 backdrop-blur">
         <p className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-cyan-900">
           Toprock CRM
         </p>

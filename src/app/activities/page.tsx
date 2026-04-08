@@ -123,7 +123,7 @@ export default async function ActivitiesPage() {
           </form>
         </CollapsibleFormSection>
 
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
+        <article className="gong-panel rounded-xl p-5 lg:col-span-2">
           <h2 className="text-lg font-semibold text-slate-900">Timeline</h2>
           <ActivityTimeline
             emptyMessage="No activity yet."

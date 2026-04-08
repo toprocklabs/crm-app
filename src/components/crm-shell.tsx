@@ -5,12 +5,70 @@ import { usePathname } from "next/navigation";
 import { logout } from "@/app/login/actions";
 
 const links = [
-  { href: "/", label: "Dashboard", icon: "DS" },
-  { href: "/accounts", label: "Accounts", icon: "AC" },
-  { href: "/contacts", label: "Contacts", icon: "CT" },
-  { href: "/opportunities", label: "Opportunities", icon: "OP" },
-  { href: "/tasks", label: "Tasks", icon: "TS" },
-  { href: "/activities", label: "Activities", icon: "AT" },
+  {
+    href: "/",
+    label: "Dashboard",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
+      </svg>
+    ),
+  },
+  {
+    href: "/accounts",
+    label: "Accounts",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </svg>
+    ),
+  },
+  {
+    href: "/contacts",
+    label: "Contacts",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+  },
+  {
+    href: "/opportunities",
+    label: "Opportunities",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="20" x2="12" y2="10" />
+        <line x1="18" y1="20" x2="18" y2="4" />
+        <line x1="6" y1="20" x2="6" y2="16" />
+      </svg>
+    ),
+  },
+  {
+    href: "/tasks",
+    label: "Tasks",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 11l3 3L22 4" />
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+      </svg>
+    ),
+  },
+  {
+    href: "/activities",
+    label: "Activities",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+      </svg>
+    ),
+  },
 ];
 
 export function CrmShell({
@@ -28,58 +86,55 @@ export function CrmShell({
 
   return (
     <main className="crm-shell min-h-screen bg-[var(--app-bg)] text-slate-950">
-      <div className="mx-auto grid min-h-screen w-full max-w-[1500px] gap-0 md:grid-cols-[264px_minmax(0,1fr)]">
-        <aside className="crm-sidebar border-r border-[var(--panel-border)] bg-[var(--sidebar-bg)] px-4 py-5 text-slate-100 md:sticky md:top-0 md:h-screen">
-          <div className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-4 shadow-[0_24px_50px_-36px_rgba(15,23,42,0.9)]">
-            <div className="flex items-center gap-3">
-              <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-300 text-sm font-bold tracking-[0.2em] text-slate-950">
-                TR
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-cyan-200">Toprock CRM</p>
-                <p className="mt-1 text-sm text-slate-300">Revenue workspace</p>
-              </div>
+      <div className="mx-auto grid min-h-screen w-full max-w-[1500px] gap-0 md:grid-cols-[240px_minmax(0,1fr)]">
+        <aside className="crm-sidebar border-r border-[var(--panel-border)] bg-[var(--sidebar-bg)] px-3 py-4 text-slate-100 md:sticky md:top-0 md:h-screen">
+          <div className="flex items-center gap-2.5 px-2">
+            <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-400 text-xs font-bold tracking-[0.15em] text-slate-950">
+              TR
             </div>
-            <div className="mt-4 rounded-2xl border border-white/8 bg-white/5 px-3 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Operator</p>
-              <p className="mt-1 text-base font-semibold text-white">{username}</p>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-200">Toprock</p>
             </div>
           </div>
 
-          <div className="mt-6">
-            <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Workspace</p>
+          <div className="mt-4 px-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{username}</p>
           </div>
 
-          <nav className="mt-3 grid gap-1.5">
+          <div className="mt-5 px-2">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Workspace</p>
+          </div>
+
+          <nav className="mt-2 grid gap-0.5">
             {links.map((link) => {
               const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition ${
+                  className={`group flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm transition ${
                     isActive
-                      ? "bg-white text-slate-950 shadow-[0_20px_32px_-24px_rgba(14,165,233,0.85)]"
-                      : "text-slate-300 hover:bg-white/6 hover:text-white"
+                      ? "bg-white/12 text-white"
+                      : "text-slate-400 hover:bg-white/6 hover:text-white"
                   }`}
                 >
                   <span
-                    className={`inline-flex h-9 w-9 items-center justify-center rounded-xl text-[10px] font-semibold tracking-[0.12em] ${
-                      isActive ? "bg-slate-950 text-cyan-300" : "bg-white/8 text-slate-200 group-hover:bg-white/12"
+                    className={`inline-flex h-7 w-7 items-center justify-center rounded-md ${
+                      isActive ? "text-cyan-300" : "text-slate-500 group-hover:text-slate-300"
                     }`}
                   >
                     {link.icon}
                   </span>
-                  <span className="font-medium">{link.label}</span>
+                  <span className={`font-medium ${isActive ? "text-white" : ""}`}>{link.label}</span>
                 </Link>
               );
             })}
           </nav>
 
-          <form action={logout} className="mt-6">
+          <form action={logout} className="mt-6 px-1">
             <button
               type="submit"
-              className="w-full rounded-2xl border border-white/10 bg-white/6 px-3 py-2.5 text-sm text-slate-200 transition hover:bg-white/10 hover:text-white"
+              className="w-full rounded-lg border border-white/8 bg-white/4 px-3 py-2 text-sm text-slate-400 transition hover:bg-white/8 hover:text-white"
             >
               Log out
             </button>
@@ -87,10 +142,9 @@ export function CrmShell({
         </aside>
 
         <section className="min-w-0 px-4 py-4 md:px-6 md:py-5">
-          <header className="rounded-[2rem] border border-[var(--panel-border)] bg-[var(--panel-bg)] px-5 py-5 shadow-[0_24px_50px_-42px_rgba(15,23,42,0.35)] md:px-7">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-700">Revenue Command</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{title}</h1>
-            {description ? <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{description}</p> : null}
+          <header className="rounded-xl border border-[var(--panel-border)] bg-[var(--panel-bg)] px-5 py-4 shadow-sm md:px-6">
+            <h1 className="text-xl font-semibold tracking-tight text-slate-950">{title}</h1>
+            {description ? <p className="mt-1 max-w-3xl text-sm text-slate-500">{description}</p> : null}
           </header>
 
           <div className="mt-5 space-y-6">{children}</div>

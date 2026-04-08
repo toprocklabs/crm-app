@@ -83,7 +83,7 @@ export function ActivityTimeline({
               return (
                 <li
                   key={item.id}
-                  className={`relative rounded-[1.4rem] border p-4 before:absolute before:-left-[1.3rem] before:top-6 before:h-3 before:w-3 before:rounded-full before:border before:border-white before:bg-slate-300 ${
+                  className={`relative rounded-lg border p-4 before:absolute before:-left-[1.3rem] before:top-6 before:h-3 before:w-3 before:rounded-full before:border before:border-white before:bg-slate-300 ${
                     isStageChange
                       ? "border-cyan-200 bg-cyan-50/70 before:bg-cyan-400"
                       : "border-slate-200 bg-white before:bg-slate-300"
