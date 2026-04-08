@@ -1,7 +1,7 @@
 ﻿import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { logActivity, updateDeal, updateDealStage } from "@/app/actions";
+import { completeTask, logActivity, updateDeal, updateDealStage } from "@/app/actions";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
@@ -493,18 +493,19 @@ export default async function OpportunityDetailPage({ params }: Props) {
             {openTaskRows.length === 0 ? <li className="text-sm text-slate-500">No open tasks linked to this opportunity.</li> : null}
             {openTaskRows.map((task) => (
               <li key={task.id} className="rounded-lg border border-slate-200 p-3">
-                <p className="font-medium text-slate-900">{task.title}</p>
-                <p className="text-sm text-slate-600">Due {task.dueDate}</p>
-                <p className="mt-1 text-xs text-slate-500">{task.assignedTo ?? "Unassigned"}</p>
-                <p className="mt-2">
-                  <span
-                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-                      task.status === "open" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"
-                    }`}
-                  >
-                    {task.status}
-                  </span>
-                </p>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-slate-900">{task.title}</p>
+                    <p className="text-sm text-slate-600">Due {task.dueDate}</p>
+                    <p className="mt-1 text-xs text-slate-500">{task.assignedTo ?? "Unassigned"}</p>
+                  </div>
+                  <form action={completeTask}>
+                    <input type="hidden" name="taskId" value={task.id} />
+                    <button type="submit" className="task-complete-button rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
+                      Mark done
+                    </button>
+                  </form>
+                </div>
               </li>
             ))}
           </ul>

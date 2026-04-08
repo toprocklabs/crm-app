@@ -1,6 +1,8 @@
-﻿import { desc, eq } from "drizzle-orm";
+﻿import { desc, eq, isNull, ne, or } from "drizzle-orm";
 import Link from "next/link";
+import { createContact } from "@/app/actions";
 import { CallLink } from "@/components/call-link";
+import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -16,22 +18,30 @@ export default async function ContactsPage() {
     return null;
   }
 
-  const rows = await db
-    .select({
-      id: contacts.id,
-      firstName: contacts.firstName,
-      lastName: contacts.lastName,
-      email: contacts.email,
-      phone: contacts.phone,
-      linkedinProfileUrl: contacts.linkedinProfileUrl,
-      title: contacts.title,
-      companyId: companies.id,
-      companyName: companies.name,
-      createdAt: contacts.createdAt,
-    })
-    .from(contacts)
-    .leftJoin(companies, eq(contacts.companyId, companies.id))
-    .orderBy(desc(contacts.createdAt));
+  const [rows, companyRows] = await Promise.all([
+    db
+      .select({
+        id: contacts.id,
+        firstName: contacts.firstName,
+        lastName: contacts.lastName,
+        email: contacts.email,
+        phone: contacts.phone,
+        linkedinProfileUrl: contacts.linkedinProfileUrl,
+        title: contacts.title,
+        companyId: companies.id,
+        companyName: companies.name,
+        createdAt: contacts.createdAt,
+      })
+      .from(contacts)
+      .leftJoin(companies, eq(contacts.companyId, companies.id))
+      .where(or(isNull(contacts.companyId), ne(companies.stage, "closed_lost")))
+      .orderBy(desc(contacts.createdAt)),
+    db
+      .select({ id: companies.id, name: companies.name })
+      .from(companies)
+      .where(ne(companies.stage, "closed_lost"))
+      .orderBy(desc(companies.createdAt)),
+  ]);
 
   return (
     <CrmShell
@@ -39,6 +49,53 @@ export default async function ContactsPage() {
       title="Contacts"
       description="Every person in your CRM with linked account context."
     >
+      <section className="gong-panel rounded-xl p-5">
+        <CollapsibleFormSection title="Add contact" description="Create a new contact and optionally assign to an account.">
+          <form action={createContact}>
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>First name</span>
+                <input name="firstName" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>Last name</span>
+                <input name="lastName" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>Email</span>
+                <input name="email" type="email" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>Phone</span>
+                <input name="phone" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>Title</span>
+                <input name="title" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>Account</span>
+                <select name="companyId" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900">
+                  <option value="">None</option>
+                  {companyRows.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
+                <span>LinkedIn URL</span>
+                <input name="linkedinProfileUrl" placeholder="https://linkedin.com/in/..." className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+              </label>
+            </div>
+            <button type="submit" className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+              Save contact
+            </button>
+          </form>
+        </CollapsibleFormSection>
+      </section>
+
       <section className="gong-panel rounded-xl p-5">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">

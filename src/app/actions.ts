@@ -228,6 +228,7 @@ export async function createContact(formData: FormData) {
   });
 
   revalidatePath("/");
+  revalidatePath("/contacts");
 }
 
 export async function updateContactField(formData: FormData) {
@@ -364,6 +365,7 @@ export async function createDeal(formData: FormData) {
   });
 
   revalidatePath("/");
+  revalidatePath("/opportunities");
 }
 
 export async function updateDeal(formData: FormData) {

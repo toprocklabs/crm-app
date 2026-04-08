@@ -2,6 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  completeTask,
   createContact,
   createDeal,
   logActivity,
@@ -709,17 +710,18 @@ export default async function AccountDetailPage({ params }: Props) {
             {openCompanyTasks.length === 0 ? <li className="text-sm text-slate-500">No open tasks right now.</li> : null}
             {openCompanyTasks.map((task) => (
               <li key={task.id} className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
-                <p className="font-medium text-slate-900">{task.title}</p>
-                <p className="text-sm text-slate-600">Due {task.dueDate} • {task.assignedTo ?? "Unassigned"}</p>
-                <p className="mt-1">
-                  <span
-                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-                      task.status === "open" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"
-                    }`}
-                  >
-                    {task.status}
-                  </span>
-                </p>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-slate-900">{task.title}</p>
+                    <p className="text-sm text-slate-600">Due {task.dueDate} • {task.assignedTo ?? "Unassigned"}</p>
+                  </div>
+                  <form action={completeTask}>
+                    <input type="hidden" name="taskId" value={task.id} />
+                    <button type="submit" className="task-complete-button rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
+                      Mark done
+                    </button>
+                  </form>
+                </div>
               </li>
             ))}
           </ul>

@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { completeTask } from "@/app/actions";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
@@ -109,7 +109,7 @@ export default async function Home() {
       .select({
         companies: sql<number>`count(distinct ${companies.id})`,
         contacts: sql<number>`(select count(*) from ${contacts})`,
-        pipelineCents: sql<number>`coalesce(sum(${deals.valueCents}), 0)`,
+        pipelineCents: sql<number>`coalesce(sum(${deals.valueCents}) filter (where ${deals.stage} not in ('won', 'lost')), 0)`,
         openTasks: sql<number>`(select count(*) from ${salesTasks} where ${salesTasks.status} = 'open')`,
       })
       .from(companies)
@@ -182,9 +182,9 @@ export default async function Home() {
         <Card title="Accounts" value={String(stats.companies)} subtitle="Active SMB accounts" />
         <Card title="Contacts" value={String(stats.contacts)} subtitle="People in your funnel" />
         <Card
-          title="Total ARR"
+          title="Pipeline ARR"
           value={currency.format(Math.round((stats.pipelineCents ?? 0) / 100))}
-          subtitle="Total tracked opportunity ARR"
+          subtitle="Active pipeline (excl. won/lost)"
         />
         <Card title="Open Tasks" value={String(stats.openTasks)} subtitle="Follow-ups due soon" />
       </section>
