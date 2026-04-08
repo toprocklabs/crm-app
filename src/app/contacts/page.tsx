@@ -4,13 +4,18 @@ import { createContact } from "@/app/actions";
 import { CallLink } from "@/components/call-link";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
+import { SearchInput } from "@/components/search-input";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { companies, contacts } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
-export default async function ContactsPage() {
+type ContactsPageProps = {
+  searchParams: Promise<{ q?: string }>;
+};
+
+export default async function ContactsPage({ searchParams }: ContactsPageProps) {
   const session = await requireUser();
   const db = getDb();
 
@@ -42,6 +47,16 @@ export default async function ContactsPage() {
       .where(ne(companies.stage, "closed_lost"))
       .orderBy(desc(companies.createdAt)),
   ]);
+
+  const params = await searchParams;
+  const search = (params.q ?? "").trim().toLowerCase();
+  const filtered = rows.filter((row) => {
+    if (!search) return true;
+    const name = `${row.firstName} ${row.lastName}`.toLowerCase();
+    const email = (row.email ?? "").toLowerCase();
+    const company = (row.companyName ?? "").toLowerCase();
+    return name.includes(search) || email.includes(search) || company.includes(search);
+  });
 
   return (
     <CrmShell
@@ -97,7 +112,11 @@ export default async function ContactsPage() {
       </section>
 
       <section className="gong-panel rounded-xl p-5">
-        <div className="overflow-x-auto">
+        <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
+          <p className="text-sm font-semibold text-slate-700">{filtered.length} contacts</p>
+          <SearchInput placeholder="Search contacts..." />
+        </div>
+        <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="border-b border-slate-200 text-left text-slate-500">
               <tr>
@@ -110,12 +129,12 @@ export default async function ContactsPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 ? (
+              {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-4 text-slate-500">No contacts yet.</td>
+                  <td colSpan={6} className="px-3 py-4 text-slate-500">{search ? `No contacts matching "${search}".` : "No contacts yet."}</td>
                 </tr>
               ) : null}
-              {rows.map((row) => (
+              {filtered.map((row) => (
                 <tr key={row.id} className="border-b border-slate-100">
                   <td className="px-3 py-2">
                     <Link href={`/contacts/${row.id}`} className="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2">

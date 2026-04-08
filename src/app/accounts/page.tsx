@@ -4,6 +4,8 @@ import { createCompany, updateCompanyField } from "@/app/actions";
 import { AutoSaveCompanySelectField } from "@/components/auto-save-company-select-field";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
+import { SearchInput } from "@/components/search-input";
+import { StageFilter } from "@/components/stage-filter";
 import { accountStageOptions, getAccountStageLabel } from "@/lib/account-stage";
 import { requireUser } from "@/lib/auth";
 import { companyIndustries } from "@/lib/company-industries";
@@ -21,6 +23,8 @@ type AccountsPageProps = {
   searchParams: Promise<{
     sort?: string;
     dir?: string;
+    q?: string;
+    stage?: string;
   }>;
 };
 
@@ -124,6 +128,8 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
   const params = await searchParams;
   const sort = getSortKey(params.sort);
   const dir = getSortDirection(params.dir);
+  const search = (params.q ?? "").trim().toLowerCase();
+  const stageFilter = params.stage ?? "";
   const today = new Date().toISOString().slice(0, 10);
   const accountStageSelectOptions = accountStageOptions.map((stage) => ({
     value: stage,
@@ -180,12 +186,27 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
     }
   });
 
-  const activeRows = rows.filter((row) => row.stage !== "closed_lost");
-  const closedLostRows = rows.filter((row) => row.stage === "closed_lost");
+  const filtered = rows.filter((row) => {
+    if (search && !row.name.toLowerCase().includes(search) && !(row.industry ?? "").toLowerCase().includes(search)) {
+      return false;
+    }
+    if (stageFilter && row.stage !== stageFilter) {
+      return false;
+    }
+    return true;
+  });
+
+  const activeRows = filtered.filter((row) => row.stage !== "closed_lost");
+  const closedLostRows = filtered.filter((row) => row.stage === "closed_lost");
 
   function sortHref(key: SortKey) {
     const nextDir: SortDirection = sort === key && dir === "asc" ? "desc" : "asc";
-    return `/accounts?sort=${key}&dir=${nextDir}`;
+    const p = new URLSearchParams();
+    p.set("sort", key);
+    p.set("dir", nextDir);
+    if (search) p.set("q", search);
+    if (stageFilter) p.set("stage", stageFilter);
+    return `/accounts?${p.toString()}`;
   }
 
   function sortIndicator(key: SortKey) {
@@ -352,10 +373,14 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
       </section>
 
       <section className="gong-panel rounded-xl p-5">
-        <div className="border-b border-slate-200 pb-4">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Account Table</p>
             <h2 className="mt-2 text-lg font-semibold text-slate-950">Active account coverage</h2>
+          </div>
+          <div className="flex items-center gap-3">
+            <SearchInput placeholder="Search accounts..." />
+            <StageFilter options={accountStageSelectOptions} />
           </div>
         </div>
         {renderAccountsTable(activeRows, "No active accounts yet.")}

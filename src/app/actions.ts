@@ -3,6 +3,7 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { setFlashToast } from "@/lib/flash";
 import { requireUser } from "@/lib/auth";
 import { accountStageOptions } from "@/lib/account-stage";
 import { getDb } from "@/lib/db";
@@ -195,6 +196,8 @@ export async function createCompany(formData: FormData) {
   });
 
   revalidatePath("/");
+  revalidatePath("/accounts");
+  await setFlashToast("Account created");
 }
 
 export async function createContact(formData: FormData) {
@@ -229,6 +232,7 @@ export async function createContact(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/contacts");
+  await setFlashToast("Contact created");
 }
 
 export async function updateContactField(formData: FormData) {
@@ -366,6 +370,7 @@ export async function createDeal(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/opportunities");
+  await setFlashToast("Opportunity created");
 }
 
 export async function updateDeal(formData: FormData) {
@@ -410,6 +415,7 @@ export async function updateDeal(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${parsed.dealId}`);
+  await setFlashToast("Opportunity updated");
 }
 
 export async function updateDealStage(formData: FormData) {
@@ -458,6 +464,7 @@ export async function updateDealStage(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${parsed.dealId}`);
+  await setFlashToast(`Opportunity marked ${parsed.stage}`);
 }
 
 export async function createTask(formData: FormData) {
@@ -499,6 +506,8 @@ export async function createTask(formData: FormData) {
   });
 
   revalidatePath("/");
+  revalidatePath("/tasks");
+  await setFlashToast("Task created");
 }
 
 export async function completeTask(formData: FormData) {
@@ -514,6 +523,8 @@ export async function completeTask(formData: FormData) {
   await db.update(salesTasks).set({ status: "done" }).where(eq(salesTasks.id, taskId));
 
   revalidatePath("/");
+  revalidatePath("/tasks");
+  await setFlashToast("Task completed");
 }
 
 export async function updateActivityDate(formData: FormData) {
@@ -592,4 +603,5 @@ export async function logActivity(formData: FormData) {
   if (parsed.returnPath?.startsWith("/")) {
     revalidatePath(parsed.returnPath);
   }
+  await setFlashToast("Activity logged");
 }

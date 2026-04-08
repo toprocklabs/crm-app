@@ -3,6 +3,8 @@ import Link from "next/link";
 import { createDeal } from "@/app/actions";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
+import { SearchInput } from "@/components/search-input";
+import { StageFilter } from "@/components/stage-filter";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { companies, deals } from "@/lib/schema";
@@ -38,7 +40,20 @@ function getStageTone(stage: string) {
   }
 }
 
-export default async function OpportunitiesPage() {
+const stageOptions = [
+  { value: "lead", label: "Lead" },
+  { value: "qualified", label: "Qualified" },
+  { value: "proposal", label: "Proposal" },
+  { value: "negotiation", label: "Negotiation" },
+  { value: "won", label: "Won" },
+  { value: "lost", label: "Lost" },
+];
+
+type OpportunitiesPageProps = {
+  searchParams: Promise<{ q?: string; stage?: string }>;
+};
+
+export default async function OpportunitiesPage({ searchParams }: OpportunitiesPageProps) {
   const session = await requireUser();
   const db = getDb();
 
@@ -68,6 +83,19 @@ export default async function OpportunitiesPage() {
   ]);
 
   const today = new Date().toISOString().slice(0, 10);
+
+  const params = await searchParams;
+  const search = (params.q ?? "").trim().toLowerCase();
+  const stageFilterValue = params.stage ?? "";
+  const filtered = rows.filter((row) => {
+    if (search && !row.name.toLowerCase().includes(search) && !(row.companyName ?? "").toLowerCase().includes(search) && !(row.ownerName ?? "").toLowerCase().includes(search)) {
+      return false;
+    }
+    if (stageFilterValue && row.stage !== stageFilterValue) {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <CrmShell
@@ -138,7 +166,14 @@ export default async function OpportunitiesPage() {
       </section>
 
       <section className="gong-panel rounded-xl p-5">
-        <div className="overflow-x-auto">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-4">
+          <p className="text-sm font-semibold text-slate-700">{filtered.length} opportunities</p>
+          <div className="flex items-center gap-3">
+            <SearchInput placeholder="Search opportunities..." />
+            <StageFilter options={stageOptions} />
+          </div>
+        </div>
+        <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="border-b border-slate-200 text-left text-slate-500">
               <tr>
@@ -152,14 +187,14 @@ export default async function OpportunitiesPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 ? (
+              {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-3 py-4 text-slate-500">
-                    No opportunities yet.
+                    {search || stageFilterValue ? `No opportunities matching your filters.` : "No opportunities yet."}
                   </td>
                 </tr>
               ) : null}
-              {rows.map((row) => {
+              {filtered.map((row) => {
                 const overdue = Boolean(row.nextStepDueDate && row.nextStepDueDate < today && row.stage !== "won" && row.stage !== "lost");
 
                 return (
