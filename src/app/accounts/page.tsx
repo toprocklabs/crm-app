@@ -364,7 +364,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                     className="md:col-span-2"
                   />
                 </div>
-                <button className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white" type="submit">
+                <button type="submit" className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
                   Save account
                 </button>
               </form>
