@@ -6,6 +6,7 @@ export function Toast({ message }: { message: string }) {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
+    document.cookie = "flash_toast=; Max-Age=0; Path=/; SameSite=Lax";
     const timer = setTimeout(() => setVisible(false), 3000);
     return () => clearTimeout(timer);
   }, []);

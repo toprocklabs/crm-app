@@ -14,9 +14,5 @@ export async function setFlashToast(message: string) {
 
 export async function getFlashToast(): Promise<string | null> {
   const cookieStore = await cookies();
-  const value = cookieStore.get(FLASH_COOKIE)?.value ?? null;
-  if (value) {
-    cookieStore.delete(FLASH_COOKIE);
-  }
-  return value;
+  return cookieStore.get(FLASH_COOKIE)?.value ?? null;
 }
