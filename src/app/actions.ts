@@ -71,6 +71,7 @@ const taskSchema = z.object({
   assignedTo: z.string().trim().optional(),
   dealId: z.coerce.number().int().positive().optional(),
   companyId: z.coerce.number().int().positive().optional(),
+  returnPath: z.string().optional(),
 });
 
 const completeTaskSchema = z.object({
@@ -489,16 +490,17 @@ export async function createTask(formData: FormData) {
     assignedTo: formData.get("assignedTo"),
     dealId: rawDealId ? Number(rawDealId) : undefined,
     companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+    returnPath: formData.get("returnPath"),
   });
 
-  const cleanedAssignedTo = cleanOptionalText(parsed.assignedTo);
+  let cleanedAssignedTo = cleanOptionalText(parsed.assignedTo);
 
   if (cleanedAssignedTo) {
     const userRows = await db.select({ username: users.username }).from(users);
     const usernames = new Set(userRows.map((row) => row.username));
 
     if (!usernames.has(cleanedAssignedTo)) {
-      throw new Error("Assigned user is invalid.");
+      cleanedAssignedTo = null;
     }
   }
 
@@ -512,6 +514,9 @@ export async function createTask(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/tasks");
+  if (parsed.returnPath?.startsWith("/")) {
+    revalidatePath(parsed.returnPath);
+  }
   await setFlashToast("Task created");
 }
 

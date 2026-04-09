@@ -53,6 +53,7 @@ export default async function TasksPage() {
           className="lg:col-span-1"
         >
           <form action={createTask}>
+            <input type="hidden" name="returnPath" value="/tasks" />
             <div className="space-y-3">
               <label className="flex flex-col gap-1 text-sm text-slate-700">
                 <span>Title</span>
