@@ -178,7 +178,7 @@ export default async function AccountDetailPage({ params }: Props) {
     >
       <section className="gong-panel rounded-xl p-6">
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.85fr)]">
-          <div className="rounded-[1.75rem] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(240,249,255,0.88))] p-5">
+          <div className="rounded-xl border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(240,249,255,0.88))] p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center gap-2">
@@ -209,7 +209,7 @@ export default async function AccountDetailPage({ params }: Props) {
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  <div className="rounded-2xl border border-slate-200 bg-white/90 p-4">
+                  <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Execution</p>
                     <p className="mt-2 text-lg font-semibold text-slate-950">
                       {company.nextStepDueDate ? formatDate(company.nextStepDueDate) : "Set due date"}
@@ -218,14 +218,14 @@ export default async function AccountDetailPage({ params }: Props) {
                       {accountNextStepLate ? "Account next step is overdue." : company.nextStep ? "Next action is active." : "No active next step yet."}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white/90 p-4">
+                  <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Last Activity</p>
                     <p className="mt-2 text-lg font-semibold text-slate-950">{activitySummary}</p>
                     <p className="mt-1 text-sm text-slate-600">
                       {latestActivity ? new Date(latestActivity.occurredAt).toLocaleDateString() : "Use the timeline to capture context."}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white/90 p-4">
+                  <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Opportunity Risk</p>
                     <p className="mt-2 text-lg font-semibold text-slate-950">{overdueOpportunities} overdue</p>
                     <p className="mt-1 text-sm text-slate-600">
@@ -292,7 +292,7 @@ export default async function AccountDetailPage({ params }: Props) {
         </div>
       </section>
 
-      <section className="sticky top-4 z-10 rounded-2xl border border-white/80 bg-white/90 p-3 shadow-lg shadow-slate-900/5 backdrop-blur">
+      <section className="sticky top-4 z-10 rounded-xl border border-white/80 bg-white/90 p-3 shadow-lg shadow-slate-900/5 backdrop-blur">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <a href="#account-overview" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">Overview</a>
@@ -409,7 +409,7 @@ export default async function AccountDetailPage({ params }: Props) {
               <h2 className="mt-2 text-lg font-semibold text-slate-900">Stakeholders</h2>
               <p className="mt-2 text-sm text-slate-600">Keep account stakeholders current, reachable, and easy to hand off.</p>
             </div>
-            <div className="rounded-2xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
+            <div className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
               {companyContacts.length} total
             </div>
           </div>
@@ -452,10 +452,10 @@ export default async function AccountDetailPage({ params }: Props) {
           <ul className="mt-4 space-y-3">
             {companyContacts.length === 0 ? <li className="text-sm text-slate-500">No contacts yet.</li> : null}
             {companyContacts.map((contact) => (
-              <li key={contact.id} className="rounded-[1.35rem] border border-slate-200 bg-slate-50/70 p-4">
+              <li key={contact.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-start gap-3">
-                    <div className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-sm font-semibold tracking-[0.12em] text-cyan-300">
+                    <div className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold tracking-[0.12em] text-cyan-300">
                       {getContactInitials(contact.firstName, contact.lastName)}
                     </div>
                     <div className="min-w-0">
@@ -541,7 +541,7 @@ export default async function AccountDetailPage({ params }: Props) {
               <h2 className="mt-2 text-lg font-semibold text-slate-900">Opportunities</h2>
               <p className="mt-2 text-sm text-slate-600">Track every revenue motion tied to this account and make the next step obvious.</p>
             </div>
-            <div className="rounded-2xl bg-slate-100 px-3 py-2 text-right text-sm font-medium text-slate-700">
+            <div className="rounded-xl bg-slate-100 px-3 py-2 text-right text-sm font-medium text-slate-700">
               <p>{companyDeals.length} tracked</p>
               <p className="text-xs text-slate-500">{currency.format(Math.round(totalIarrCents / 100))} total ARR</p>
             </div>
@@ -615,7 +615,7 @@ export default async function AccountDetailPage({ params }: Props) {
               );
 
               return (
-                <li key={deal.id} className="rounded-[1.35rem] border border-slate-200 bg-slate-50/70 p-4">
+                <li key={deal.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -680,7 +680,7 @@ export default async function AccountDetailPage({ params }: Props) {
               <h2 className="mt-2 text-lg font-semibold text-slate-900">Follow-up Queue</h2>
               <p className="mt-2 text-sm text-slate-600">Use this list to protect the next action on the account.</p>
             </div>
-            <div className="rounded-2xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
+            <div className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
               {openTasks} open
             </div>
           </div>
@@ -733,7 +733,7 @@ export default async function AccountDetailPage({ params }: Props) {
               <h2 className="mt-2 text-lg font-semibold text-slate-900">Timeline</h2>
               <p className="mt-2 text-sm text-slate-600">Capture context so the whole team can pick up the thread.</p>
             </div>
-            <div className="rounded-2xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
+            <div className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
               {companyActivities.length} entries
             </div>
           </div>

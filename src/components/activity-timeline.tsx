@@ -90,7 +90,7 @@ export function ActivityTimeline({
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xs font-semibold shadow-sm ${meta.tone}`}>
+                    <div className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xs font-semibold shadow-sm ${meta.tone}`}>
                       {meta.icon}
                     </div>
                     <div className="min-w-0 flex-1">
