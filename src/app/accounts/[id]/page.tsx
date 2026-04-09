@@ -18,6 +18,7 @@ import { AutoSaveContactField } from "@/components/auto-save-contact-field";
 import { CallLink } from "@/components/call-link";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
+import { EmptyState } from "@/components/empty-state";
 import { activityTypeOptions, getActivityMeta } from "@/lib/activity-ui";
 import { accountStageOptions, getAccountStageLabel, getAccountStageTone } from "@/lib/account-stage";
 import { requireUser } from "@/lib/auth";
@@ -450,7 +451,7 @@ export default async function AccountDetailPage({ params }: Props) {
             </CollapsibleFormSection>
           </div>
           <ul className="mt-4 space-y-3">
-            {companyContacts.length === 0 ? <li className="text-sm text-slate-500">No contacts yet.</li> : null}
+            {companyContacts.length === 0 ? <li><EmptyState icon="contact" message="No contacts yet. Add a contact to build your account coverage." /></li> : null}
             {companyContacts.map((contact) => (
               <li key={contact.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -608,7 +609,7 @@ export default async function AccountDetailPage({ params }: Props) {
             </CollapsibleFormSection>
           </div>
           <ul className="mt-4 space-y-3">
-            {companyDeals.length === 0 ? <li className="text-sm text-slate-500">No opportunities yet.</li> : null}
+            {companyDeals.length === 0 ? <li><EmptyState icon="opportunity" message="No opportunities yet. Create one to start tracking pipeline." /></li> : null}
             {companyDeals.map((deal) => {
               const opportunityOverdue = Boolean(
                 deal.nextStepDueDate && deal.nextStepDueDate < today && deal.stage !== "won" && deal.stage !== "lost",
@@ -685,7 +686,7 @@ export default async function AccountDetailPage({ params }: Props) {
             </div>
           </div>
           <ul className="mt-4 space-y-3">
-            {openCompanyTasks.length === 0 ? <li className="text-sm text-slate-500">No open tasks right now.</li> : null}
+            {openCompanyTasks.length === 0 ? <li><EmptyState icon="task" message="No open tasks right now." /></li> : null}
             {openCompanyTasks.map((task) => (
               <li key={task.id} className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -710,7 +711,7 @@ export default async function AccountDetailPage({ params }: Props) {
             className="mt-5 border-slate-200 bg-slate-50/70"
           >
             <ul className="space-y-3">
-              {completedCompanyTasks.length === 0 ? <li className="text-sm text-slate-500">No completed tasks yet.</li> : null}
+              {completedCompanyTasks.length === 0 ? <li><EmptyState icon="task" message="No completed tasks yet." /></li> : null}
               {completedCompanyTasks.map((task) => (
                 <li key={task.id} className="rounded-lg border border-slate-200 bg-white p-4">
                   <p className="font-medium text-slate-900">{task.title}</p>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createDeal } from "@/app/actions";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
+import { EmptyState } from "@/components/empty-state";
 import { SearchInput } from "@/components/search-input";
 import { StageFilter } from "@/components/stage-filter";
 import { requireUser } from "@/lib/auth";
@@ -163,8 +164,8 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-4 text-slate-500">
-                    {search || stageFilterValue ? `No opportunities matching your filters.` : "No opportunities yet."}
+                  <td colSpan={7} className="px-3 py-4">
+                    <EmptyState icon={search || stageFilterValue ? "search" : "opportunity"} message={search || stageFilterValue ? "No opportunities matching your filters." : "No opportunities yet."} action={search || stageFilterValue ? undefined : { label: "Create opportunity", href: "/opportunities" }} />
                   </td>
                 </tr>
               ) : null}

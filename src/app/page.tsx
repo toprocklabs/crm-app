@@ -3,6 +3,7 @@ import { completeTask } from "@/app/actions";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
+import { EmptyState } from "@/components/empty-state";
 import { requireUser } from "@/lib/auth";
 import { getDealStageLabel, getDealStageTone } from "@/lib/deal-stage";
 import { getDb } from "@/lib/db";
@@ -128,37 +129,7 @@ export default async function Home() {
       title="Dashboard"
       description="Track pipeline, enforce next steps, and run a clean follow-up cadence for your SMB opportunities."
     >
-      <section>
-        <article className="gong-panel rounded-xl p-6">
-          <div className="flex flex-wrap items-start justify-between gap-5">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">Executive Summary</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Revenue motion at a glance</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                Prioritize open revenue, overdue next steps, and the follow-up work blocking pipeline movement.
-              </p>
-            </div>
-            <div className="grid min-w-[250px] gap-2 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-slate-500">Active accounts</span>
-                <span className="font-semibold text-slate-950">{stats.companies}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-slate-500">Open tasks</span>
-                <span className="font-semibold text-slate-950">{stats.openTasks}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-slate-500">Overdue tasks</span>
-                <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${overdueTasks.length > 0 ? "bg-rose-100 text-rose-800" : "bg-emerald-100 text-emerald-800"}`}>
-                  {overdueTasks.length}
-                </span>
-              </div>
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-5">
         <Card title="Accounts" value={String(stats.companies)} subtitle="Active SMB accounts" />
         <Card title="Contacts" value={String(stats.contacts)} subtitle="People in your funnel" />
         <Card
@@ -167,6 +138,11 @@ export default async function Home() {
           subtitle="Active pipeline (excl. won/lost)"
         />
         <Card title="Open Tasks" value={String(stats.openTasks)} subtitle="Follow-ups due soon" />
+        <Card
+          title="Overdue"
+          value={String(overdueTasks.length)}
+          subtitle={overdueTasks.length > 0 ? "Tasks past due date" : "Everything on schedule"}
+        />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
@@ -179,7 +155,7 @@ export default async function Home() {
             <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{dealRows.length} tracked</span>
           </div>
           <ul className="mt-4 space-y-3">
-            {dealRows.length === 0 ? <li className="text-sm text-slate-500">No opportunities yet.</li> : null}
+            {dealRows.length === 0 ? <li><EmptyState icon="opportunity" message="No opportunities yet." action={{ label: "Create opportunity", href: "/opportunities" }} /></li> : null}
             {dealRows.map((deal) => {
               const stepLate = Boolean(deal.nextStepDueDate && deal.nextStepDueDate < today && deal.stage !== "won" && deal.stage !== "lost");
 
@@ -224,7 +200,7 @@ export default async function Home() {
             <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{openTaskRows.length} open</span>
           </div>
           <ul className="mt-4 space-y-3">
-            {openTaskRows.length === 0 ? <li className="text-sm text-slate-500">No open tasks right now.</li> : null}
+            {openTaskRows.length === 0 ? <li><EmptyState icon="task" message="No open tasks right now." /></li> : null}
             {openTaskRows.map((task) => {
               const overdue = task.status === "open" && task.dueDate < today;
               return (
@@ -261,7 +237,7 @@ export default async function Home() {
             className="mt-5 border-slate-200 bg-slate-50/70"
           >
             <ul className="space-y-3">
-              {completedTaskRows.length === 0 ? <li className="text-sm text-slate-500">No completed tasks yet.</li> : null}
+              {completedTaskRows.length === 0 ? <li><EmptyState icon="task" message="No completed tasks yet." /></li> : null}
               {completedTaskRows.map((task) => (
                 <li key={task.id} className="rounded-lg border border-slate-200 bg-white p-4">
                   <div className="flex items-start justify-between gap-3">

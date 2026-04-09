@@ -4,6 +4,7 @@ import { createContact } from "@/app/actions";
 import { CallLink } from "@/components/call-link";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
+import { EmptyState } from "@/components/empty-state";
 import { SearchInput } from "@/components/search-input";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -131,7 +132,9 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-4 text-slate-500">{search ? `No contacts matching "${search}".` : "No contacts yet."}</td>
+                  <td colSpan={6} className="px-3 py-4">
+                    <EmptyState icon={search ? "search" : "contact"} message={search ? `No contacts matching "${search}".` : "No contacts yet."} action={search ? undefined : { label: "Add contact", href: "/contacts" }} />
+                  </td>
                 </tr>
               ) : null}
               {filtered.map((row) => (

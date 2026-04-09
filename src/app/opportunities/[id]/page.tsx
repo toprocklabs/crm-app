@@ -5,6 +5,7 @@ import { completeTask, logActivity, updateDeal, updateDealStage } from "@/app/ac
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
+import { EmptyState } from "@/components/empty-state";
 import { activityTypeOptions, getActivityMeta } from "@/lib/activity-ui";
 import { requireUser } from "@/lib/auth";
 import { getDealStageLabel, getDealStageTone } from "@/lib/deal-stage";
@@ -376,7 +377,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
 
           <h3 className="mt-6 text-sm font-semibold uppercase tracking-wide text-slate-500">Stage History</h3>
           <ul className="mt-2 space-y-2">
-            {stageHistory.length === 0 ? <li className="text-sm text-slate-500">No stage changes logged yet.</li> : null}
+            {stageHistory.length === 0 ? <li><EmptyState icon="activity" message="No stage changes logged yet." /></li> : null}
             {stageHistory.map((entry) => (
               <li key={entry.id} className="rounded-lg border border-slate-200 p-3">
                 <p className="text-sm text-slate-900">{entry.notes}</p>
@@ -470,7 +471,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
             </div>
           </div>
           <ul className="mt-4 space-y-3">
-            {openTaskRows.length === 0 ? <li className="text-sm text-slate-500">No open tasks linked to this opportunity.</li> : null}
+            {openTaskRows.length === 0 ? <li><EmptyState icon="task" message="No open tasks linked to this opportunity." /></li> : null}
             {openTaskRows.map((task) => (
               <li key={task.id} className="rounded-lg border border-slate-200 p-3">
                 <div className="flex items-start justify-between gap-3">
@@ -496,7 +497,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
             className="mt-5 border-slate-200 bg-slate-50/70"
           >
             <ul className="space-y-3">
-              {completedTaskRows.length === 0 ? <li className="text-sm text-slate-500">No completed tasks yet.</li> : null}
+              {completedTaskRows.length === 0 ? <li><EmptyState icon="task" message="No completed tasks yet." /></li> : null}
               {completedTaskRows.map((task) => (
                 <li key={task.id} className="rounded-lg border border-slate-200 bg-white p-3">
                   <p className="font-medium text-slate-900">{task.title}</p>

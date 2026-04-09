@@ -4,6 +4,7 @@ import { createCompany, updateCompanyField } from "@/app/actions";
 import { AutoSaveCompanySelectField } from "@/components/auto-save-company-select-field";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
+import { EmptyState } from "@/components/empty-state";
 import { SearchInput } from "@/components/search-input";
 import { StageFilter } from "@/components/stage-filter";
 import { accountStageOptions, getAccountStageLabel } from "@/lib/account-stage";
@@ -253,8 +254,8 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
           <tbody>
             {tableRows.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-3 py-4 text-slate-500">
-                  {emptyLabel}
+                <td colSpan={8} className="px-3 py-4">
+                  <EmptyState icon="account" message={emptyLabel} />
                 </td>
               </tr>
             ) : null}

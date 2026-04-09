@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { EmptyState } from "@/components/empty-state";
 import { getActivityMeta } from "@/lib/activity-ui";
 import type { ActivityType } from "@/lib/schema";
 
@@ -48,7 +49,7 @@ export function ActivityTimeline({
   emptyMessage: string;
 }) {
   if (items.length === 0) {
-    return <p className="mt-4 text-sm text-slate-500">{emptyMessage}</p>;
+    return <EmptyState icon="activity" message={emptyMessage} className="mt-4" />;
   }
 
   const groups = items.reduce<Array<{ dateKey: string; items: ActivityItem[] }>>((acc, item) => {

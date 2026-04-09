@@ -2,6 +2,7 @@
 import { completeTask, createTask } from "@/app/actions";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
+import { EmptyState } from "@/components/empty-state";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { companies, deals, salesTasks, users } from "@/lib/schema";
@@ -118,7 +119,7 @@ export default async function TasksPage() {
             </span>
           </div>
           <ul className="mt-4 space-y-3">
-            {openTasks.length === 0 ? <li className="text-sm text-slate-500">No open tasks right now.</li> : null}
+            {openTasks.length === 0 ? <li><EmptyState icon="task" message="No open tasks right now." /></li> : null}
             {openTasks.map((task) => {
               const overdue = task.status === "open" && task.dueDate < today;
               return (
@@ -153,7 +154,7 @@ export default async function TasksPage() {
             className="mt-5 border-slate-200 bg-slate-50/70"
           >
             <ul className="space-y-3">
-              {completedTasks.length === 0 ? <li className="text-sm text-slate-500">No completed tasks yet.</li> : null}
+              {completedTasks.length === 0 ? <li><EmptyState icon="task" message="No completed tasks yet." /></li> : null}
               {completedTasks.map((task) => (
                 <li key={task.id} className="rounded-lg border border-slate-200 bg-white p-3">
                   <div className="flex items-start justify-between gap-3">
