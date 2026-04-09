@@ -73,6 +73,11 @@ const taskSchema = z.object({
   companyId: z.coerce.number().int().positive().optional(),
 });
 
+const completeTaskSchema = z.object({
+  taskId: z.coerce.number().int().positive(),
+  returnPath: z.string().optional(),
+});
+
 const activitySchema = z.object({
   type: z.enum(["note", "call", "meeting", "email", "instagram", "linkedin", "task"]),
   notes: z.string().trim().min(2),
@@ -518,12 +523,18 @@ export async function completeTask(formData: FormData) {
     throw new Error("DATABASE_URL is not set.");
   }
 
-  const taskId = z.coerce.number().int().positive().parse(formData.get("taskId"));
+  const parsed = completeTaskSchema.parse({
+    taskId: formData.get("taskId"),
+    returnPath: formData.get("returnPath"),
+  });
 
-  await db.update(salesTasks).set({ status: "done" }).where(eq(salesTasks.id, taskId));
+  await db.update(salesTasks).set({ status: "done" }).where(eq(salesTasks.id, parsed.taskId));
 
   revalidatePath("/");
   revalidatePath("/tasks");
+  if (parsed.returnPath?.startsWith("/")) {
+    revalidatePath(parsed.returnPath);
+  }
   await setFlashToast("Task completed");
 }
 
