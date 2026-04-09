@@ -1,4 +1,4 @@
-﻿import { desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { completeTask, logActivity, updateDeal, updateDealStage } from "@/app/actions";
@@ -7,6 +7,7 @@ import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { activityTypeOptions, getActivityMeta } from "@/lib/activity-ui";
 import { requireUser } from "@/lib/auth";
+import { getDealStageLabel, getDealStageTone } from "@/lib/deal-stage";
 import { getDb } from "@/lib/db";
 import { activities, companies, contacts, deals, salesTasks, users } from "@/lib/schema";
 
@@ -24,27 +25,6 @@ function formatDate(value: string | null | undefined) {
   }
 
   return new Date(`${value}T00:00:00`).toLocaleDateString("en-US");
-}
-
-function formatStageLabel(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function getStageTone(stage: string) {
-  switch (stage) {
-    case "won":
-      return "bg-emerald-100 text-emerald-800";
-    case "lost":
-      return "bg-rose-100 text-rose-800";
-    case "negotiation":
-      return "bg-amber-100 text-amber-800";
-    case "proposal":
-      return "bg-sky-100 text-sky-800";
-    case "qualified":
-      return "bg-cyan-100 text-cyan-800";
-    default:
-      return "bg-slate-100 text-slate-700";
-  }
 }
 
 type Props = {
@@ -161,8 +141,8 @@ export default async function OpportunityDetailPage({ params }: Props) {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStageTone(opportunity.stage)}`}>
-                {formatStageLabel(opportunity.stage)}
+              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getDealStageTone(opportunity.stage)}`}>
+                {getDealStageLabel(opportunity.stage)}
               </span>
               <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${healthTone}`}>
                 {healthLabel}
@@ -265,7 +245,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
               <p className="mt-1 text-sm text-slate-600">Update commercial fields, owner, and relationship mapping.</p>
             </div>
             <div className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
-              {formatStageLabel(opportunity.stage)}
+              {getDealStageLabel(opportunity.stage)}
             </div>
           </div>
           <form action={updateDeal} className="mt-4 space-y-3">
@@ -363,8 +343,8 @@ export default async function OpportunityDetailPage({ params }: Props) {
               <h2 className="mt-1 text-lg font-semibold text-slate-900">Stage Workflow</h2>
               <p className="mt-1 text-sm text-slate-600">Keep stage changes explicit and document why the deal moved.</p>
             </div>
-            <div className={`rounded-lg px-3 py-2 text-sm font-medium ${getStageTone(opportunity.stage)}`}>
-              {formatStageLabel(opportunity.stage)}
+            <div className={`rounded-lg px-3 py-2 text-sm font-medium ${getDealStageTone(opportunity.stage)}`}>
+              {getDealStageLabel(opportunity.stage)}
             </div>
           </div>
           <form action={updateDealStage} className="mt-4 space-y-3">

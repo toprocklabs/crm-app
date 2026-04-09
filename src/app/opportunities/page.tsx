@@ -1,4 +1,4 @@
-﻿import { desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { createDeal } from "@/app/actions";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
@@ -6,6 +6,7 @@ import { CrmShell } from "@/components/crm-shell";
 import { SearchInput } from "@/components/search-input";
 import { StageFilter } from "@/components/stage-filter";
 import { requireUser } from "@/lib/auth";
+import { dealStageOptions, getDealStageLabel, getDealStageTone } from "@/lib/deal-stage";
 import { getDb } from "@/lib/db";
 import { companies, deals } from "@/lib/schema";
 
@@ -17,37 +18,10 @@ const currency = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
-function formatStageLabel(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, " ");
-}
-
-function getStageTone(stage: string) {
-  switch (stage) {
-    case "won":
-      return "bg-emerald-100 text-emerald-800";
-    case "lost":
-      return "bg-rose-100 text-rose-800";
-    case "negotiation":
-      return "bg-amber-100 text-amber-800";
-    case "proposal":
-      return "bg-sky-100 text-sky-800";
-    case "qualified":
-      return "bg-cyan-100 text-cyan-800";
-    case "lead":
-      return "bg-slate-100 text-slate-700";
-    default:
-      return "bg-slate-100 text-slate-700";
-  }
-}
-
-const stageOptions = [
-  { value: "lead", label: "Lead" },
-  { value: "qualified", label: "Qualified" },
-  { value: "proposal", label: "Proposal" },
-  { value: "negotiation", label: "Negotiation" },
-  { value: "won", label: "Won" },
-  { value: "lost", label: "Lost" },
-];
+const stageOptions = dealStageOptions.map((stage) => ({
+  value: stage,
+  label: getDealStageLabel(stage),
+}));
 
 type OpportunitiesPageProps = {
   searchParams: Promise<{ q?: string; stage?: string }>;
@@ -208,8 +182,8 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                       <p className="text-slate-500">{row.companyName ?? "No account"}</p>
                     </td>
                     <td className="px-3 py-2">
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStageTone(row.stage)}`}>
-                        {formatStageLabel(row.stage)}
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${getDealStageTone(row.stage)}`}>
+                        {getDealStageLabel(row.stage)}
                       </span>
                     </td>
                     <td className="px-3 py-2 text-slate-700">{row.ownerName ?? "Unassigned"}</td>

@@ -4,6 +4,7 @@ import { ActivityTimeline } from "@/components/activity-timeline";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
+import { getDealStageLabel, getDealStageTone } from "@/lib/deal-stage";
 import { getDb } from "@/lib/db";
 import { activities, companies, contacts, deals, salesTasks, users } from "@/lib/schema";
 
@@ -121,27 +122,6 @@ export default async function Home() {
   const completedTaskRows = taskRows.filter((task) => task.status === "done");
   const overdueTasks = openTaskRows.filter((task) => task.dueDate < today);
 
-  function getDealStageTone(stage: string) {
-    switch (stage) {
-      case "won":
-        return "bg-emerald-100 text-emerald-800";
-      case "lost":
-        return "bg-rose-100 text-rose-800";
-      case "negotiation":
-        return "bg-amber-100 text-amber-800";
-      case "proposal":
-        return "bg-sky-100 text-sky-800";
-      case "qualified":
-        return "bg-cyan-100 text-cyan-800";
-      default:
-        return "bg-slate-100 text-slate-700";
-    }
-  }
-
-  function formatStageLabel(value: string) {
-    return value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, " ");
-  }
-
   return (
     <CrmShell
       username={session.username}
@@ -212,7 +192,7 @@ export default async function Home() {
                         <span>{deal.companyName ?? "No account"}</span>
                         <span>•</span>
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${getDealStageTone(deal.stage)}`}>
-                          {formatStageLabel(deal.stage)}
+                          {getDealStageLabel(deal.stage)}
                         </span>
                         <span>•</span>
                         <span>{deal.ownerName ?? "Unassigned"}</span>

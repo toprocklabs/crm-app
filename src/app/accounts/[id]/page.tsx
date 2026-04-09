@@ -23,6 +23,7 @@ import { accountStageOptions, getAccountStageLabel, getAccountStageTone } from "
 import { requireUser } from "@/lib/auth";
 import { companyIndustries } from "@/lib/company-industries";
 import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
+import { getDealStageLabel, getDealStageTone } from "@/lib/deal-stage";
 import { getDb } from "@/lib/db";
 import { activities, companies, contacts, deals, salesTasks, users } from "@/lib/schema";
 
@@ -78,29 +79,6 @@ function formatRecencyLabel(value: Date | string, today: string) {
 
 function getContactInitials(firstName: string, lastName: string) {
   return `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase();
-}
-
-function getDealStageTone(stage: string) {
-  switch (stage) {
-    case "lead":
-      return "bg-slate-100 text-slate-700";
-    case "qualified":
-      return "bg-sky-100 text-sky-800";
-    case "proposal":
-      return "bg-violet-100 text-violet-800";
-    case "negotiation":
-      return "bg-amber-100 text-amber-800";
-    case "won":
-      return "bg-emerald-100 text-emerald-800";
-    case "lost":
-      return "bg-rose-100 text-rose-800";
-    default:
-      return "bg-slate-100 text-slate-700";
-  }
-}
-
-function getDealStageLabel(stage: string) {
-  return stage.charAt(0).toUpperCase() + stage.slice(1);
 }
 
 type Props = {
