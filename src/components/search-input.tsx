@@ -45,7 +45,7 @@ export function SearchInput({ paramName = "q", placeholder = "Search..." }: { pa
           Clear
         </button>
       ) : null}
-      <button type="submit" className="rounded-md bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200">
+      <button type="submit" className="rounded-md bg-slate-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700">
         Search
       </button>
     </form>
