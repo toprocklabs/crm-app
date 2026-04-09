@@ -132,7 +132,7 @@ export default async function Home() {
         <article className="gong-panel rounded-xl p-6">
           <div className="flex flex-wrap items-start justify-between gap-5">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-700">Executive Summary</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">Executive Summary</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Revenue motion at a glance</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
                 Prioritize open revenue, overdue next steps, and the follow-up work blocking pipeline movement.

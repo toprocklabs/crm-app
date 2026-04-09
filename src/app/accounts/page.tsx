@@ -333,7 +333,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
       <section className="gong-panel rounded-xl p-6">
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Quick Capture</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Quick Capture</p>
             <h2 className="mt-2 text-xl font-semibold text-slate-950">Add account</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">Create a new account record and assign its stage without leaving the accounts workspace.</p>
           </div>

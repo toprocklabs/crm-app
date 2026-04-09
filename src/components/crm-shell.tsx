@@ -91,7 +91,7 @@ export function CrmShell({
           <div className="flex items-center gap-2.5 px-2">
             <img src="/toprock_logo_black.png" alt="Toprock" className="h-8 w-auto rounded-lg" />
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-200">Toprock</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200">Toprock</p>
             </div>
           </div>
 
@@ -100,7 +100,7 @@ export function CrmShell({
           </div>
 
           <div className="mt-5 px-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">Workspace</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Workspace</p>
           </div>
 
           <nav className="mt-2 grid gap-0.5">

@@ -199,7 +199,7 @@ export default async function AccountDetailPage({ params }: Props) {
                 </div>
 
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Account Command</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Account Command</p>
                   <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{company.name}</h2>
                   <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
                     {company.nextStep
@@ -642,11 +642,11 @@ export default async function AccountDetailPage({ params }: Props) {
                     </div>
                     <div className="grid min-w-[180px] gap-2 sm:grid-cols-2">
                       <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">IARR</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">IARR</p>
                         <p className="mt-1 text-base font-semibold text-slate-950">{currency.format(Math.round(deal.valueCents / 100))}</p>
                       </div>
                       <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Implementation</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Implementation</p>
                         <p className="mt-1 text-base font-semibold text-slate-950">
                           {currency.format(Math.round(deal.implementationCostCents / 100))}
                         </p>
@@ -655,11 +655,11 @@ export default async function AccountDetailPage({ params }: Props) {
                   </div>
                   <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1.3fr)_220px]">
                     <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Next step</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Next step</p>
                       <p className="mt-2 text-sm leading-6 text-slate-800">{deal.nextStep || "No next step set for this opportunity."}</p>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Due</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Due</p>
                       <p className={`mt-2 text-sm font-medium ${opportunityOverdue ? "text-rose-700" : "text-slate-800"}`}>
                         {deal.nextStepDueDate ? formatDate(deal.nextStepDueDate) : "No date set"}
                       </p>

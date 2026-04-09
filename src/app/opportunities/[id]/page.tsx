@@ -152,7 +152,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
               </span>
             </div>
             <div>
-              <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-500">Overview</p>
+              <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500">Overview</p>
               <p className="mt-2 max-w-3xl text-sm text-slate-600">
                 {opportunity.nextStep
                   ? `Current next step: ${opportunity.nextStep}`
@@ -216,7 +216,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
             <a href="#opportunity-activity" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">Activity</a>
             <a href="#opportunity-tasks" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">Tasks</a>
           </div>
-          <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+          <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
             {nextStepLate ? "This opportunity needs immediate follow-up" : "Keep stage and next step aligned"}
           </p>
         </div>
@@ -225,7 +225,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
       <section id="opportunity-overview" className="gong-panel rounded-xl p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-500">Overview</p>
+            <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500">Overview</p>
             <h2 className="mt-1 text-xl font-semibold text-slate-900">Deal Snapshot</h2>
             <p className="mt-1 text-sm text-slate-600">Review owner, timing, and relationship context before editing the record.</p>
           </div>
@@ -240,7 +240,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
         <article id="opportunity-details" className="gong-panel rounded-xl p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-500">Details</p>
+              <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500">Details</p>
               <h2 className="mt-1 text-lg font-semibold text-slate-900">Opportunity Details</h2>
               <p className="mt-1 text-sm text-slate-600">Update commercial fields, owner, and relationship mapping.</p>
             </div>
@@ -339,7 +339,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
         <article id="opportunity-stage" className="gong-panel rounded-xl p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-500">Stage</p>
+              <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500">Stage</p>
               <h2 className="mt-1 text-lg font-semibold text-slate-900">Stage Workflow</h2>
               <p className="mt-1 text-sm text-slate-600">Keep stage changes explicit and document why the deal moved.</p>
             </div>
@@ -391,7 +391,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
         <article id="opportunity-activity" className="gong-panel rounded-xl p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-500">Activity</p>
+              <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500">Activity</p>
               <h2 className="mt-1 text-lg font-semibold text-slate-900">Timeline</h2>
               <p className="mt-1 text-sm text-slate-600">Log interactions and keep the deal narrative current.</p>
             </div>
@@ -461,7 +461,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
         <article id="opportunity-tasks" className="gong-panel rounded-xl p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-500">Tasks</p>
+              <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500">Tasks</p>
               <h2 className="mt-1 text-lg font-semibold text-slate-900">Linked Tasks</h2>
               <p className="mt-1 text-sm text-slate-600">Use linked tasks to enforce the next action outside the timeline.</p>
             </div>
