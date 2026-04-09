@@ -182,7 +182,7 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                       <p className="text-slate-500">{row.companyName ?? "No account"}</p>
                     </td>
                     <td className="px-3 py-2">
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${getDealStageTone(row.stage)}`}>
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getDealStageTone(row.stage)}`}>
                         {getDealStageLabel(row.stage)}
                       </span>
                     </td>

@@ -715,8 +715,8 @@ export default async function AccountDetailPage({ params }: Props) {
                   <p className="font-medium text-slate-900">{task.title}</p>
                   <p className="text-sm text-slate-600">Due {task.dueDate} • {task.assignedTo ?? "Unassigned"}</p>
                   <p className="mt-1">
-                    <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800">
-                      done
+                    <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                      Done
                     </span>
                   </p>
                 </li>

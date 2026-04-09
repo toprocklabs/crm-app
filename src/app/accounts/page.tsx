@@ -338,8 +338,8 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
             <p className="mt-2 text-sm leading-6 text-slate-600">Create a new account record and assign its stage without leaving the accounts workspace.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <span className="inline-flex rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">{rows.length} accounts</span>
-            <span className="inline-flex rounded-full bg-rose-100 px-3 py-1.5 text-xs font-semibold text-rose-800">{closedLostRows.length} closed lost</span>
+            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{rows.length} accounts</span>
+            <span className="inline-flex rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-800">{closedLostRows.length} closed lost</span>
           </div>
         </div>
         <div className="mt-4">

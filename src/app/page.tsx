@@ -191,7 +191,7 @@ export default async function Home() {
                       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-slate-600">
                         <span>{deal.companyName ?? "No account"}</span>
                         <span>•</span>
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${getDealStageTone(deal.stage)}`}>
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getDealStageTone(deal.stage)}`}>
                           {getDealStageLabel(deal.stage)}
                         </span>
                         <span>•</span>
@@ -247,7 +247,7 @@ export default async function Home() {
                         </button>
                       </form>
                     ) : (
-                      <span className="rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">Done</span>
+                      <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">Done</span>
                     )}
                   </div>
                 </li>
@@ -271,7 +271,7 @@ export default async function Home() {
                       </p>
                       <p className="mt-1 text-xs text-slate-500">Due {task.dueDate}</p>
                     </div>
-                    <span className="rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">Done</span>
+                    <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">Done</span>
                   </div>
                 </li>
               ))}

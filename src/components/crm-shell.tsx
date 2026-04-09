@@ -89,9 +89,7 @@ export function CrmShell({
       <div className="mx-auto grid min-h-screen w-full max-w-[1500px] gap-0 md:grid-cols-[240px_minmax(0,1fr)]">
         <aside className="crm-sidebar border-r border-slate-200/95 bg-[var(--sidebar-bg)] px-3 py-4 text-slate-100 md:sticky md:top-0 md:h-screen">
           <div className="flex items-center gap-2.5 px-2">
-            <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-400 text-xs font-bold tracking-[0.15em] text-slate-950">
-              TR
-            </div>
+            <img src="/toprock_logo_black.png" alt="Toprock" className="h-8 w-auto rounded-lg" />
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-200">Toprock</p>
             </div>
