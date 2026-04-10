@@ -10,6 +10,7 @@ import { CrmShell } from "@/components/crm-shell";
 import { activityTypeOptions, getActivityMeta } from "@/lib/activity-ui";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { currency } from "@/lib/format";
 import { activities, companies, contacts, deals, users } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
@@ -17,12 +18,6 @@ export const dynamic = "force-dynamic";
 type Props = {
   params: Promise<{ id: string }>;
 };
-
-const currency = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
 
 export default async function ContactDetailPage({ params }: Props) {
   const session = await requireUser();

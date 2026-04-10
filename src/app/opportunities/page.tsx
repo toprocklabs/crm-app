@@ -9,15 +9,10 @@ import { StageFilter } from "@/components/stage-filter";
 import { requireUser } from "@/lib/auth";
 import { dealStageOptions, getDealStageLabel, getDealStageTone } from "@/lib/deal-stage";
 import { getDb } from "@/lib/db";
+import { currency } from "@/lib/format";
 import { companies, deals } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
-
-const currency = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
 
 const stageOptions = dealStageOptions.map((stage) => ({
   value: stage,

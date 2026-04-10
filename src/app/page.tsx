@@ -1,4 +1,4 @@
-import { and, desc, eq, ne, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { completeTask } from "@/app/actions";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
@@ -6,16 +6,11 @@ import { CrmShell } from "@/components/crm-shell";
 import { EmptyState } from "@/components/empty-state";
 import { requireUser } from "@/lib/auth";
 import { getDealStageLabel, getDealStageTone } from "@/lib/deal-stage";
+import { currency } from "@/lib/format";
 import { getDb } from "@/lib/db";
 import { activities, companies, contacts, deals, salesTasks, users } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
-
-const currency = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
 
 function Card({
   title,
