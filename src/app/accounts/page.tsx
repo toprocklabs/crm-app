@@ -38,6 +38,7 @@ const sortLabels: Record<SortKey, string> = {
   arr: "Total ARR",
   nextStep: "Next step",
   nextStepDue: "Next step due",
+  created: "Created",
 };
 
 function getSortKey(value: string | undefined): SortKey {
