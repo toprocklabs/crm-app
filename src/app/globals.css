@@ -182,7 +182,6 @@ body {
 
 @media (max-width: 767px) {
   .crm-sidebar {
-    height: auto;
-    position: static;
+    display: none;
   }
 }

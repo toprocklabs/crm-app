@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useCallback, useState } from "react";
 import { logout } from "@/app/login/actions";
 
 const links = [
@@ -83,6 +84,8 @@ export function CrmShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const close = useCallback(() => setMenuOpen(false), []);
 
   return (
     <main className="crm-shell min-h-screen bg-[var(--app-bg)] text-slate-950">
@@ -110,6 +113,7 @@ export function CrmShell({
                 <Link
                   key={link.href}
                   href={link.href}
+                  onClick={close}
                   className={`group flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm transition ${
                     isActive
                       ? "bg-white/12 text-white"
@@ -141,13 +145,98 @@ export function CrmShell({
 
         <section className="min-w-0 px-4 py-4 md:px-6 md:py-5">
           <header className="rounded-xl border border-slate-200/95 bg-white px-5 py-4 shadow-sm md:px-6">
-            <h1 className="text-xl font-semibold tracking-tight text-slate-950">{title}</h1>
-            {description ? <p className="mt-1 max-w-3xl text-sm text-slate-500">{description}</p> : null}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setMenuOpen(true)}
+                className="-ml-1 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 md:hidden"
+                aria-label="Open navigation"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
+              <div>
+                <h1 className="text-xl font-semibold tracking-tight text-slate-950">{title}</h1>
+                {description ? <p className="mt-1 max-w-3xl text-sm text-slate-500">{description}</p> : null}
+              </div>
+            </div>
           </header>
 
           <div className="mt-5 space-y-6">{children}</div>
         </section>
       </div>
+
+      {menuOpen ? (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-slate-950/60" onClick={close} />
+          <div className="crm-sidebar absolute inset-y-0 left-0 w-72 bg-[var(--sidebar-bg)] px-3 py-4 text-slate-100 shadow-2xl">
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-2.5">
+                <img src="/toprock_logo_black.png" alt="Toprock" className="h-8 w-auto rounded-lg" />
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200">Toprock</p>
+              </div>
+              <button
+                type="button"
+                onClick={close}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-white/8 hover:text-white"
+                aria-label="Close navigation"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mt-4 px-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{username}</p>
+            </div>
+
+            <div className="mt-5 px-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Workspace</p>
+            </div>
+
+            <nav className="mt-2 grid gap-0.5">
+              {links.map((link) => {
+                const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={close}
+                    className={`group flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm transition ${
+                      isActive
+                        ? "bg-white/12 text-white"
+                        : "text-slate-400 hover:bg-white/6 hover:text-white"
+                    }`}
+                  >
+                    <span
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-md ${
+                        isActive ? "text-cyan-300" : "text-slate-500 group-hover:text-slate-300"
+                      }`}
+                    >
+                      {link.icon}
+                    </span>
+                    <span className={`font-medium ${isActive ? "text-white" : ""}`}>{link.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <form action={logout} className="mt-6 px-1">
+              <button
+                type="submit"
+                className="w-full rounded-lg border border-white/8 bg-white/4 px-3 py-2 text-sm text-slate-400 transition hover:bg-white/8 hover:text-white"
+              >
+                Log out
+              </button>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
