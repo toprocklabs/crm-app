@@ -172,7 +172,7 @@ export function CrmShell({
       {menuOpen ? (
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-slate-950/60" onClick={close} />
-          <div className="crm-sidebar absolute inset-y-0 left-0 w-72 bg-[var(--sidebar-bg)] px-3 py-4 text-slate-100 shadow-2xl">
+          <div className="absolute inset-y-0 left-0 w-72 overflow-y-auto bg-[var(--sidebar-bg)] px-3 py-4 text-slate-100 shadow-2xl">
             <div className="flex items-center justify-between px-2">
               <div className="flex items-center gap-2.5">
                 <img src="/toprock_logo_black.png" alt="Toprock" className="h-8 w-auto rounded-lg" />
