@@ -32,7 +32,9 @@ export function CollapsibleFormSection({
           <p className="text-base font-semibold text-slate-900">{title}</p>
           {description ? <p className="mt-1 text-sm text-slate-600">{description}</p> : null}
         </span>
-        <span className="mt-1 text-xs text-slate-500 transition group-open:rotate-180">^</span>
+        <span className="mt-1 text-slate-500 transition group-open:rotate-180">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+        </span>
       </summary>
       <div className="mt-4 border-t border-slate-200 pt-4">{children}</div>
     </details>

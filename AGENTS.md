@@ -57,8 +57,9 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `sales_tasks`
 - `activities`
 - Enums:
+  - `account_stage`: new_lead, attempting_to_engage, engaged, in_pipeline, customer
   - `deal_stage`: lead, qualified, proposal, negotiation, won, lost
-  - `activity_type`: note, call, meeting, email, task
+  - `activity_type`: note, call, meeting, email, instagram, linkedin, task
   - `task_status`: open, done
 
 ## Coding Conventions (Repo-Specific)
@@ -74,7 +75,18 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - Phone numbers are normalized to US format in actions (`(###) ###-####`).
 - Keep routes dynamic when data should always be fresh.
 
+## UI Direction
+- Current approved direction is a Gong-inspired revenue-workspace UI, not a generic SaaS card layout.
+- Preserve the dark utility sidebar, bright analytics canvas, crisp white panels, and cyan/blue accent system unless explicitly redesigning again.
+- Favor dense but readable information hierarchy: compact KPI blocks, sharp tables, restrained pills, and fewer redundant explainer sections.
+- Avoid reintroducing glossy/glassy gradients or duplicative summary panels that repeat the page header or table metadata.
+- On `/accounts`, keep the top area focused on a single add-account action panel plus the main account table.
+
 ## Key Workflows Added
+- Account stage workflow lives at `/accounts` and `/accounts/[id]`.
+- Account create/edit supports:
+  - selecting `companies.stage` during account creation
+  - inline account stage updates on account detail via `updateCompanyField`
 - Opportunity detail workflow lives at `/opportunities/[id]`.
 - Opportunity detail supports:
   - editing core fields via `updateDeal`
@@ -89,6 +101,8 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - If adding activity logging context, set `returnPath` so the page revalidates after submit.
 - If adding/renaming routes, update top nav in `src/components/crm-shell.tsx`.
 - If editing create/log forms, preserve the collapsible interaction pattern.
+- If editing account stage selection, preserve immediate client-side feedback and the direct server-action update pattern in `AutoSaveCompanySelectField`.
+- If editing the account create form on `/accounts`, keep it spacious and readable; do not collapse it back into a high-column cramped layout.
 
 ## Database Change Workflow
 1. Update `src/lib/schema.ts`
@@ -102,6 +116,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `npm run build`
 - If auth touched: verify `/login` flow and guarded pages redirect as expected
 - If schema touched: verify migration generated and applied
+- If account stage touched: verify `/accounts` create flow and `/accounts/[id]` stage updates
 - If opportunity workflow touched: verify `/opportunities/[id]` save + stage updates + timeline logging
 
 ## Safety Notes

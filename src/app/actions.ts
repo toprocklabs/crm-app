@@ -3,16 +3,20 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { setFlashToast } from "@/lib/flash";
 import { requireUser } from "@/lib/auth";
+import { accountStageOptions } from "@/lib/account-stage";
 import { getDb } from "@/lib/db";
 import { companyIndustries } from "@/lib/company-industries";
 import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
-import { activities, companies, contacts, deals, salesTasks } from "@/lib/schema";
+import { activities, companies, contacts, deals, salesTasks, users } from "@/lib/schema";
 
 const optionalCompanyIndustrySchema = z.enum(companyIndustries).optional().or(z.literal(""));
+const accountStageSchema = z.enum(accountStageOptions);
 
 const companySchema = z.object({
   name: z.string().trim().min(2),
+  stage: accountStageSchema,
   website: z.string().trim().optional(),
   customerProjectUrl: z.string().trim().optional(),
   industry: optionalCompanyIndustrySchema,
@@ -25,6 +29,7 @@ const contactSchema = z.object({
   lastName: z.string().trim().min(1),
   email: z.string().trim().email().optional().or(z.literal("")),
   phone: z.string().trim().optional(),
+  linkedinProfileUrl: z.string().trim().optional(),
   title: z.string().trim().optional(),
   companyId: z.coerce.number().int().positive().optional(),
 });
@@ -66,10 +71,16 @@ const taskSchema = z.object({
   assignedTo: z.string().trim().optional(),
   dealId: z.coerce.number().int().positive().optional(),
   companyId: z.coerce.number().int().positive().optional(),
+  returnPath: z.string().optional(),
+});
+
+const completeTaskSchema = z.object({
+  taskId: z.coerce.number().int().positive(),
+  returnPath: z.string().optional(),
 });
 
 const activitySchema = z.object({
-  type: z.enum(["note", "call", "meeting", "email", "task"]),
+  type: z.enum(["note", "call", "meeting", "email", "instagram", "linkedin", "task"]),
   notes: z.string().trim().min(2),
   dealId: z.coerce.number().int().positive().optional(),
   contactId: z.coerce.number().int().positive().optional(),
@@ -86,14 +97,14 @@ const activityDateUpdateSchema = z.object({
 
 const contactFieldUpdateSchema = z.object({
   contactId: z.coerce.number().int().positive(),
-  field: z.enum(["title", "email", "phone"]),
+  field: z.enum(["title", "email", "phone", "linkedinProfileUrl"]),
   value: z.string().optional(),
   returnPath: z.string().optional(),
 });
 
 const companyFieldUpdateSchema = z.object({
   companyId: z.coerce.number().int().positive(),
-  field: z.enum(["website", "customerProjectUrl", "industry", "nextStep", "nextStepDueDate"]),
+  field: z.enum(["stage", "website", "customerProjectUrl", "industry", "nextStep", "nextStepDueDate"]),
   value: z.string().optional(),
 });
 
@@ -172,6 +183,7 @@ export async function createCompany(formData: FormData) {
 
   const parsed = companySchema.parse({
     name: formData.get("name"),
+    stage: formData.get("stage"),
     website: formData.get("website"),
     customerProjectUrl: formData.get("customerProjectUrl"),
     industry: formData.get("industry"),
@@ -181,6 +193,7 @@ export async function createCompany(formData: FormData) {
 
   await db.insert(companies).values({
     name: parsed.name,
+    stage: parsed.stage,
     website: normalizeUrl(cleanOptionalText(parsed.website)),
     customerProjectUrl: normalizeUrl(cleanOptionalText(parsed.customerProjectUrl)),
     industry: normalizeCompanyIndustry(parsed.industry),
@@ -189,6 +202,8 @@ export async function createCompany(formData: FormData) {
   });
 
   revalidatePath("/");
+  revalidatePath("/accounts");
+  await setFlashToast("Account created");
 }
 
 export async function createContact(formData: FormData) {
@@ -206,6 +221,7 @@ export async function createContact(formData: FormData) {
     lastName: formData.get("lastName"),
     email: formData.get("email"),
     phone: formData.get("phone"),
+    linkedinProfileUrl: formData.get("linkedinProfileUrl"),
     title: formData.get("title"),
     companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
   });
@@ -215,11 +231,14 @@ export async function createContact(formData: FormData) {
     lastName: parsed.lastName,
     email: cleanOptionalText(parsed.email),
     phone: normalizeUsPhone(parsed.phone),
+    linkedinProfileUrl: normalizeUrl(cleanOptionalText(parsed.linkedinProfileUrl)),
     title: cleanOptionalText(parsed.title),
     companyId: parsed.companyId ?? null,
   });
 
   revalidatePath("/");
+  revalidatePath("/contacts");
+  await setFlashToast("Contact created");
 }
 
 export async function updateContactField(formData: FormData) {
@@ -255,6 +274,13 @@ export async function updateContactField(formData: FormData) {
     await db.update(contacts).set({ phone: normalizeUsPhone(parsed.value) }).where(eq(contacts.id, parsed.contactId));
   }
 
+  if (parsed.field === "linkedinProfileUrl") {
+    await db
+      .update(contacts)
+      .set({ linkedinProfileUrl: normalizeUrl(cleanOptionalText(parsed.value)) })
+      .where(eq(contacts.id, parsed.contactId));
+  }
+
   revalidatePath(`/contacts/${parsed.contactId}`);
   revalidatePath("/contacts");
   if (parsed.returnPath?.startsWith("/")) {
@@ -288,13 +314,20 @@ export async function updateCompanyField(formData: FormData) {
     optionalCompanyIndustrySchema.parse(parsed.value ?? "");
   }
 
+  if (parsed.field === "stage") {
+    accountStageSchema.parse(parsed.value);
+  }
+
   if (parsed.field === "nextStepDueDate" && cleaned) {
     z.string().date().parse(cleaned);
   }
 
+  const stageValue = parsed.field === "stage" ? accountStageSchema.parse(parsed.value) : undefined;
+
   await db
     .update(companies)
     .set({
+      stage: stageValue,
       website: parsed.field === "website" ? normalizedUrl : undefined,
       customerProjectUrl: parsed.field === "customerProjectUrl" ? normalizedUrl : undefined,
       industry: parsed.field === "industry" ? normalizeCompanyIndustry(parsed.value) : undefined,
@@ -342,6 +375,8 @@ export async function createDeal(formData: FormData) {
   });
 
   revalidatePath("/");
+  revalidatePath("/opportunities");
+  await setFlashToast("Opportunity created");
 }
 
 export async function updateDeal(formData: FormData) {
@@ -386,6 +421,7 @@ export async function updateDeal(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${parsed.dealId}`);
+  await setFlashToast("Opportunity updated");
 }
 
 export async function updateDealStage(formData: FormData) {
@@ -434,6 +470,7 @@ export async function updateDealStage(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${parsed.dealId}`);
+  await setFlashToast(`Opportunity marked ${parsed.stage}`);
 }
 
 export async function createTask(formData: FormData) {
@@ -453,17 +490,34 @@ export async function createTask(formData: FormData) {
     assignedTo: formData.get("assignedTo"),
     dealId: rawDealId ? Number(rawDealId) : undefined,
     companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+    returnPath: formData.get("returnPath"),
   });
+
+  let cleanedAssignedTo = cleanOptionalText(parsed.assignedTo);
+
+  if (cleanedAssignedTo) {
+    const userRows = await db.select({ username: users.username }).from(users);
+    const usernames = new Set(userRows.map((row) => row.username));
+
+    if (!usernames.has(cleanedAssignedTo)) {
+      cleanedAssignedTo = null;
+    }
+  }
 
   await db.insert(salesTasks).values({
     title: parsed.title,
     dueDate: parsed.dueDate,
-    assignedTo: cleanOptionalText(parsed.assignedTo),
+    assignedTo: cleanedAssignedTo,
     dealId: parsed.dealId ?? null,
     companyId: parsed.companyId ?? null,
   });
 
   revalidatePath("/");
+  revalidatePath("/tasks");
+  if (parsed.returnPath?.startsWith("/")) {
+    revalidatePath(parsed.returnPath);
+  }
+  await setFlashToast("Task created");
 }
 
 export async function completeTask(formData: FormData) {
@@ -474,11 +528,19 @@ export async function completeTask(formData: FormData) {
     throw new Error("DATABASE_URL is not set.");
   }
 
-  const taskId = z.coerce.number().int().positive().parse(formData.get("taskId"));
+  const parsed = completeTaskSchema.parse({
+    taskId: formData.get("taskId"),
+    returnPath: formData.get("returnPath"),
+  });
 
-  await db.update(salesTasks).set({ status: "done" }).where(eq(salesTasks.id, taskId));
+  await db.update(salesTasks).set({ status: "done" }).where(eq(salesTasks.id, parsed.taskId));
 
   revalidatePath("/");
+  revalidatePath("/tasks");
+  if (parsed.returnPath?.startsWith("/")) {
+    revalidatePath(parsed.returnPath);
+  }
+  await setFlashToast("Task completed");
 }
 
 export async function updateActivityDate(formData: FormData) {
@@ -522,7 +584,7 @@ export async function updateActivityDate(formData: FormData) {
 }
 
 export async function logActivity(formData: FormData) {
-  await requireUser();
+  const session = await requireUser();
 
   const db = getDb();
   if (!db) {
@@ -546,6 +608,7 @@ export async function logActivity(formData: FormData) {
   await db.insert(activities).values({
     type: parsed.type,
     notes: parsed.notes,
+    loggedByUserId: session.userId,
     dealId: parsed.dealId ?? null,
     contactId: parsed.contactId ?? null,
     companyId: parsed.companyId ?? null,
@@ -556,4 +619,5 @@ export async function logActivity(formData: FormData) {
   if (parsed.returnPath?.startsWith("/")) {
     revalidatePath(parsed.returnPath);
   }
+  await setFlashToast("Activity logged");
 }

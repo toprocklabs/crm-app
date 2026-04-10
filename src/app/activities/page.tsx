@@ -1,11 +1,12 @@
 ﻿import { desc, eq } from "drizzle-orm";
-import Link from "next/link";
 import { logActivity } from "@/app/actions";
+import { ActivityTimeline } from "@/components/activity-timeline";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
+import { activityTypeOptions, getActivityMeta } from "@/lib/activity-ui";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { activities, companies, contacts, deals } from "@/lib/schema";
+import { activities, companies, contacts, deals, users } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -24,16 +25,20 @@ export default async function ActivitiesPage() {
         type: activities.type,
         notes: activities.notes,
         occurredAt: activities.occurredAt,
+        dealId: deals.id,
         dealName: deals.name,
         contactFirstName: contacts.firstName,
         contactLastName: contacts.lastName,
         contactId: contacts.id,
+        companyId: companies.id,
         companyName: companies.name,
+        loggedByUsername: users.username,
       })
       .from(activities)
       .leftJoin(deals, eq(activities.dealId, deals.id))
       .leftJoin(contacts, eq(activities.contactId, contacts.id))
       .leftJoin(companies, eq(activities.companyId, companies.id))
+      .leftJoin(users, eq(activities.loggedByUserId, users.id))
       .orderBy(desc(activities.occurredAt)),
     db.select({ id: deals.id, name: deals.name }).from(deals).orderBy(desc(deals.createdAt)),
     db.select({ id: contacts.id, firstName: contacts.firstName, lastName: contacts.lastName }).from(contacts).orderBy(desc(contacts.createdAt)),
@@ -57,11 +62,11 @@ export default async function ActivitiesPage() {
               <label className="flex flex-col gap-1 text-sm text-slate-700">
                 <span>Type</span>
                 <select name="type" defaultValue="note" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                  <option value="note">Note</option>
-                  <option value="call">Call</option>
-                  <option value="meeting">Meeting</option>
-                  <option value="email">Email</option>
-                  <option value="task">Task</option>
+                  {activityTypeOptions.map((type) => (
+                    <option key={type} value={type}>
+                      {getActivityMeta(type).label}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label className="flex flex-col gap-1 text-sm text-slate-700">
@@ -107,36 +112,36 @@ export default async function ActivitiesPage() {
                   ))}
                 </select>
               </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>Activity date</span>
+                <input name="occurredOn" type="date" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+              </label>
             </div>
-            <button type="submit" className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+            <button type="submit" className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
               Save activity
             </button>
           </form>
         </CollapsibleFormSection>
 
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-2">
+        <article className="gong-panel rounded-xl p-5 lg:col-span-2">
           <h2 className="text-lg font-semibold text-slate-900">Timeline</h2>
-          <ul className="mt-4 space-y-3">
-            {activityRows.length === 0 ? <li className="text-sm text-slate-500">No activity yet.</li> : null}
-            {activityRows.map((item) => (
-              <li key={item.id} className="rounded-lg border border-slate-200 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">{item.type}</p>
-                <p className="mt-1 font-medium text-slate-900">{item.notes}</p>
-                <p className="mt-1 text-sm text-slate-600">
-                  {item.dealName ?? item.companyName ?? "General"}
-                  {item.contactFirstName ? (
-                    <>
-                      {" • "}
-                      <Link href={`/contacts/${item.contactId}`} className="underline decoration-slate-300 underline-offset-2">
-                        {item.contactFirstName} {item.contactLastName}
-                      </Link>
-                    </>
-                  ) : null}
-                  {` • ${new Date(item.occurredAt).toLocaleString()}`}
-                </p>
-              </li>
-            ))}
-          </ul>
+          <ActivityTimeline
+            emptyMessage="No activity yet."
+            items={activityRows.map((item) => ({
+              id: item.id,
+              type: item.type,
+              notes: item.notes,
+              occurredAt: item.occurredAt,
+              loggedByUsername: item.loggedByUsername,
+              contextLinks: [
+                ...(item.dealName && item.dealId ? [{ label: item.dealName, href: `/opportunities/${item.dealId}` }] : []),
+                ...(item.companyName && item.companyId ? [{ label: item.companyName, href: `/accounts/${item.companyId}` }] : []),
+                ...(item.contactFirstName && item.contactId
+                  ? [{ label: `${item.contactFirstName} ${item.contactLastName}`, href: `/contacts/${item.contactId}` }]
+                  : []),
+              ],
+            }))}
+          />
         </article>
       </section>
     </CrmShell>

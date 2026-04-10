@@ -23,7 +23,18 @@ export const activityType = pgEnum("activity_type", [
   "call",
   "meeting",
   "email",
+  "instagram",
+  "linkedin",
   "task",
+]);
+
+export const accountStage = pgEnum("account_stage", [
+  "new_lead",
+  "attempting_to_engage",
+  "engaged",
+  "in_pipeline",
+  "customer",
+  "closed_lost",
 ]);
 
 export const taskStatus = pgEnum("task_status", ["open", "done"]);
@@ -45,6 +56,7 @@ export const users = pgTable(
 export const companies = pgTable("companies", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  stage: accountStage("stage").default("new_lead").notNull(),
   website: text("website"),
   customerProjectUrl: text("customer_project_url"),
   industry: text("industry"),
@@ -61,6 +73,7 @@ export const contacts = pgTable(
     lastName: text("last_name").notNull(),
     email: text("email"),
     phone: text("phone"),
+    linkedinProfileUrl: text("linkedin_profile_url"),
     title: text("title"),
     companyId: integer("company_id").references(() => companies.id, {
       onDelete: "set null",
@@ -95,6 +108,9 @@ export const activities = pgTable("activities", {
   id: serial("id").primaryKey(),
   type: activityType("type").default("note").notNull(),
   notes: text("notes").notNull(),
+  loggedByUserId: integer("logged_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
   companyId: integer("company_id").references(() => companies.id, {
     onDelete: "set null",
   }),
@@ -123,3 +139,5 @@ export const salesTasks = pgTable("sales_tasks", {
 });
 
 export type DealStage = (typeof dealStage.enumValues)[number];
+export type ActivityType = (typeof activityType.enumValues)[number];
+export type AccountStage = (typeof accountStage.enumValues)[number];

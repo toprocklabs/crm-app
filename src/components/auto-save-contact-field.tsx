@@ -12,10 +12,10 @@ export function AutoSaveContactField({
   action,
 }: {
   contactId: number;
-  field: "title" | "email" | "phone";
+  field: "title" | "email" | "phone" | "linkedinProfileUrl";
   label: string;
   defaultValue: string;
-  type?: "text" | "email" | "tel";
+  type?: "text" | "email" | "tel" | "url";
   returnPath?: string;
   action: (formData: FormData) => void | Promise<void>;
 }) {
@@ -45,7 +45,7 @@ export function AutoSaveContactField({
         name="value"
         type={type}
         defaultValue={defaultValue}
-        placeholder={`No ${field}`}
+        placeholder={field === "linkedinProfileUrl" ? "No LinkedIn URL" : `No ${field}`}
         onBlur={submitIfChanged}
         onKeyDown={(event) => {
           if (event.key === "Enter") {
