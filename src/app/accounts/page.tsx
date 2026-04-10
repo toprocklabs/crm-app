@@ -1,6 +1,7 @@
 import { desc } from "drizzle-orm";
 import Link from "next/link";
 import { createCompany, updateCompanyField } from "@/app/actions";
+import { AutoSaveCompanyField } from "@/components/auto-save-company-field";
 import { AutoSaveCompanySelectField } from "@/components/auto-save-company-select-field";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
@@ -37,7 +38,6 @@ const sortLabels: Record<SortKey, string> = {
   arr: "Total ARR",
   nextStep: "Next step",
   nextStepDue: "Next step due",
-  created: "Created",
 };
 
 function getSortKey(value: string | undefined): SortKey {
@@ -181,7 +181,6 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
         return (a.nextStep ?? "").localeCompare(b.nextStep ?? "") * direction;
       case "nextStepDue":
         return (a.nextStepDueDate ?? "").localeCompare(b.nextStepDueDate ?? "") * direction;
-      case "created":
       default:
         return (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) * direction;
     }
@@ -241,7 +240,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
         <table className="min-w-full text-sm">
           <thead className="border-b border-slate-200 text-left text-slate-500">
             <tr>
-              {(["account", "stage", "industry", "opportunities", "arr", "nextStep", "nextStepDue", "created"] as SortKey[]).map((key) => (
+              {(["account", "stage", "industry", "opportunities", "arr", "nextStep", "nextStepDue"] as SortKey[]).map((key) => (
                 <th key={key} className="px-3 py-2">
                   <Link href={sortHref(key)} className="inline-flex items-center gap-1 hover:text-slate-700">
                     <span>{sortLabels[key]}</span>
@@ -254,7 +253,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
           <tbody>
             {tableRows.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-3 py-4">
+                <td colSpan={7} className="px-3 py-4">
                   <EmptyState icon="account" message={emptyLabel} />
                 </td>
               </tr>
@@ -311,11 +310,31 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                   <td className="px-3 py-3 text-slate-700">{normalizeCompanyIndustry(row.industry) ?? "-"}</td>
                   <td className="px-3 py-3 text-slate-700">{row.dealCount}</td>
                   <td className="px-3 py-3 text-slate-700">${Math.round(row.pipelineCents / 100).toLocaleString()}</td>
-                  <td className="px-3 py-3 text-slate-700">{row.nextStep || "-"}</td>
-                  <td className={`px-3 py-3 ${nextStepLate ? "text-red-700" : "text-slate-500"}`}>
-                    {row.nextStepDueDate ? new Date(`${row.nextStepDueDate}T00:00:00`).toLocaleDateString("en-US") : "-"}
+                  <td className="min-w-[220px] px-3 py-3 align-top text-slate-700">
+                    <AutoSaveCompanyField
+                      action={updateCompanyField}
+                      companyId={row.id}
+                      field="nextStep"
+                      label="Next step"
+                      defaultValue={row.nextStep}
+                      emptyText="No next step"
+                      helperText={null}
+                      labelClassName="sr-only"
+                    />
                   </td>
-                  <td className="px-3 py-3 text-slate-500">{new Date(row.createdAt).toLocaleDateString()}</td>
+                  <td className={`min-w-[170px] px-3 py-3 align-top ${nextStepLate ? "text-red-700" : "text-slate-500"}`}>
+                    <AutoSaveCompanyField
+                      action={updateCompanyField}
+                      companyId={row.id}
+                      field="nextStepDueDate"
+                      label="Next step due"
+                      type="date"
+                      defaultValue={row.nextStepDueDate ?? ""}
+                      emptyText="No next step date"
+                      helperText={null}
+                      labelClassName="sr-only"
+                    />
+                  </td>
                 </tr>
               );
             })}
