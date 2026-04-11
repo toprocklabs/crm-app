@@ -10,6 +10,9 @@ export function AutoSaveCompanyField({
   emptyText,
   type = "text",
   action,
+  helperText = "Auto-saves when you leave the field.",
+  labelClassName,
+  className,
 }: {
   companyId: number;
   field: "website" | "customerProjectUrl" | "nextStep" | "nextStepDueDate";
@@ -18,6 +21,9 @@ export function AutoSaveCompanyField({
   emptyText?: string;
   type?: "text" | "url" | "date";
   action: (formData: FormData) => void | Promise<void>;
+  helperText?: string | null;
+  labelClassName?: string;
+  className?: string;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -69,11 +75,16 @@ export function AutoSaveCompanyField({
           ? "No next step date"
           : "No next step");
 
+  const formattedDisplayValue =
+    displayValue && field === "nextStepDueDate"
+      ? new Date(`${displayValue}T00:00:00`).toLocaleDateString("en-US")
+      : displayValue;
+
   return (
-    <form ref={formRef} action={action} className="space-y-1">
+    <form ref={formRef} action={action} className={`space-y-1 ${className ?? ""}`}>
       <input type="hidden" name="companyId" value={companyId} />
       <input type="hidden" name="field" value={field} />
-      <label className="text-xs uppercase tracking-wide text-slate-500">{label}</label>
+      <label className={`text-xs uppercase tracking-wide text-slate-500 ${labelClassName ?? ""}`}>{label}</label>
       {isEditing ? (
         <input
           ref={inputRef}
@@ -103,10 +114,10 @@ export function AutoSaveCompanyField({
             type="button"
             onClick={beginEditing}
             className="min-w-0 flex-1 rounded-md border border-transparent bg-slate-50 px-3 py-2 text-left text-sm text-slate-900 transition hover:border-slate-200 hover:bg-white"
-            title={displayValue || fallbackText}
+            title={formattedDisplayValue || fallbackText}
           >
             {displayValue ? (
-              <span className="block truncate underline decoration-slate-300 underline-offset-2">{displayValue}</span>
+              <span className="block truncate underline decoration-slate-300 underline-offset-2">{formattedDisplayValue}</span>
             ) : (
               <span className="text-slate-500">{fallbackText}</span>
             )}
@@ -123,7 +134,7 @@ export function AutoSaveCompanyField({
           ) : null}
         </div>
       )}
-      <p className="text-[11px] text-slate-500">Auto-saves when you leave the field.</p>
+      {helperText ? <p className="text-[11px] text-slate-500">{helperText}</p> : null}
     </form>
   );
 }

@@ -9,24 +9,11 @@ import { EmptyState } from "@/components/empty-state";
 import { activityTypeOptions, getActivityMeta } from "@/lib/activity-ui";
 import { requireUser } from "@/lib/auth";
 import { getDealStageLabel, getDealStageTone } from "@/lib/deal-stage";
+import { currency, formatDate } from "@/lib/format";
 import { getDb } from "@/lib/db";
 import { activities, companies, contacts, deals, salesTasks, users } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
-
-const currency = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
-
-function formatDate(value: string | null | undefined) {
-  if (!value) {
-    return "Not set";
-  }
-
-  return new Date(`${value}T00:00:00`).toLocaleDateString("en-US");
-}
 
 type Props = {
   params: Promise<{ id: string }>;

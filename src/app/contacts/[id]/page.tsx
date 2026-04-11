@@ -10,6 +10,8 @@ import { CrmShell } from "@/components/crm-shell";
 import { activityTypeOptions, getActivityMeta } from "@/lib/activity-ui";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { getDealStageLabel, getDealStageTone } from "@/lib/deal-stage";
+import { currency } from "@/lib/format";
 import { activities, companies, contacts, deals, users } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
@@ -17,12 +19,6 @@ export const dynamic = "force-dynamic";
 type Props = {
   params: Promise<{ id: string }>;
 };
-
-const currency = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
 
 export default async function ContactDetailPage({ params }: Props) {
   const session = await requireUser();
@@ -252,7 +248,11 @@ export default async function ContactDetailPage({ params }: Props) {
             {relatedDeals.map((deal) => (
               <li key={deal.id} className="rounded-lg border border-slate-200 p-3">
                 <p className="font-medium text-slate-900"><Link href={`/opportunities/${deal.id}`} className="underline decoration-slate-300 underline-offset-2">{deal.name}</Link></p>
-                <p className="text-sm text-slate-600">{deal.stage}</p>
+                <p className="text-sm text-slate-600">
+                  <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getDealStageTone(deal.stage)}`}>
+                    {getDealStageLabel(deal.stage)}
+                  </span>
+                </p>
                 <p className="text-sm text-slate-700">
                   IARR: {currency.format(Math.round(deal.valueCents / 100))} • Implementation Cost: {currency.format(Math.round(deal.implementationCostCents / 100))}
                 </p>
