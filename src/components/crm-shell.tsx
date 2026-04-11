@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useState } from "react";
@@ -92,7 +93,7 @@ export function CrmShell({
       <div className="mx-auto grid min-h-screen w-full max-w-[1500px] gap-0 md:grid-cols-[240px_minmax(0,1fr)]">
         <aside className="crm-sidebar border-r border-slate-200/95 bg-[var(--sidebar-bg)] px-3 py-4 text-slate-100 md:sticky md:top-0 md:h-screen">
           <div className="flex items-center gap-2.5 px-2">
-            <img src="/toprock_logo_black.png" alt="Toprock" className="h-8 w-auto rounded-lg" />
+            <Image src="/toprock_logo_black.png" alt="Toprock" width={36} height={32} className="h-8 w-auto rounded-lg" />
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200">Toprock</p>
             </div>
@@ -175,7 +176,7 @@ export function CrmShell({
           <div className="absolute inset-y-0 left-0 w-72 overflow-y-auto bg-[var(--sidebar-bg)] px-3 py-4 text-slate-100 shadow-2xl">
             <div className="flex items-center justify-between px-2">
               <div className="flex items-center gap-2.5">
-                <img src="/toprock_logo_black.png" alt="Toprock" className="h-8 w-auto rounded-lg" />
+                <Image src="/toprock_logo_black.png" alt="Toprock" width={36} height={32} className="h-8 w-auto rounded-lg" />
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200">Toprock</p>
               </div>
               <button
