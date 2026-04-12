@@ -254,7 +254,7 @@ export default async function ContactDetailPage({ params }: Props) {
                   </span>
                 </p>
                 <p className="text-sm text-slate-700">
-                  MRR: {currency.format(Math.round(deal.valueCents / 100))} • Implementation Cost: {currency.format(Math.round(deal.implementationCostCents / 100))}
+                  MRR: {currency.format(Math.round(deal.valueCents / 100))} - Implementation Cost: {currency.format(Math.round(deal.implementationCostCents / 100))}
                 </p>
               </li>
             ))}

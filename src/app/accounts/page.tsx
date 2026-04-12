@@ -35,7 +35,7 @@ const sortLabels: Record<SortKey, string> = {
   stage: "Stage",
   industry: "Industry",
   opportunities: "Opportunities",
-  MRR: "Total MRR",
+  mrr: "Total MRR",
   nextStep: "Next step",
   nextStepDue: "Next step due",
   created: "Created",
