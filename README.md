@@ -1,4 +1,14 @@
-﻿# Simple CRM (HubSpot-lite)
+# Simple CRM (HubSpot-lite)
+
+## Repository moved
+
+This repository has moved to: `https://github.com/toprocklabs/crm-app`
+
+If you already cloned the old location, update your remote:
+
+```bash
+git remote set-url origin https://github.com/toprocklabs/crm-app.git
+```
 
 A lightweight CRM starter for small AI-first SMB agencies.
 
