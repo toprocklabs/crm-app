@@ -107,16 +107,15 @@ export default async function Home() {
         companies: sql<number>`count(distinct ${companies.id})`,
         contacts: sql<number>`(select count(*) from ${contacts})`,
         pipelineCents: sql<number>`coalesce(sum(${deals.valueCents}) filter (where ${deals.stage} not in ('won', 'lost')), 0)`,
-        openTasks: sql<number>`(select count(*) from ${salesTasks} where ${salesTasks.status} = 'open')`,
+        wonMrrCents: sql<number>`coalesce(sum(${deals.valueCents}) filter (where ${deals.stage} = 'won'), 0)`,
       })
       .from(companies)
       .leftJoin(deals, eq(companies.id, deals.companyId)),
   ]);
 
-  const stats = statsRows[0] ?? { companies: 0, contacts: 0, pipelineCents: 0, openTasks: 0 };
+  const stats = statsRows[0] ?? { companies: 0, contacts: 0, pipelineCents: 0, wonMrrCents: 0 };
   const openTaskRows = taskRows.filter((task) => task.status === "open");
   const completedTaskRows = taskRows.filter((task) => task.status === "done");
-  const overdueTasks = openTaskRows.filter((task) => task.dueDate < today);
 
   return (
     <CrmShell
@@ -124,19 +123,18 @@ export default async function Home() {
       title="Dashboard"
       description="Track pipeline, enforce next steps, and run a clean follow-up cadence for your SMB opportunities."
     >
-      <section className="grid gap-4 md:grid-cols-5">
+      <section className="grid gap-4 md:grid-cols-4">
         <Card title="Accounts" value={String(stats.companies)} subtitle="Active SMB accounts" />
         <Card title="Contacts" value={String(stats.contacts)} subtitle="People in your funnel" />
         <Card
-          title="Pipeline ARR"
+          title="Pipeline MRR"
           value={currency.format(Math.round((stats.pipelineCents ?? 0) / 100))}
           subtitle="Active pipeline (excl. won/lost)"
         />
-        <Card title="Open Tasks" value={String(stats.openTasks)} subtitle="Follow-ups due soon" />
         <Card
-          title="Overdue"
-          value={String(overdueTasks.length)}
-          subtitle={overdueTasks.length > 0 ? "Tasks past due date" : "Everything on schedule"}
+          title="Won MRR"
+          value={currency.format(Math.round((stats.wonMrrCents ?? 0) / 100))}
+          subtitle="Closed-won opportunities"
         />
       </section>
 
@@ -171,7 +169,7 @@ export default async function Home() {
                       <p className="mt-2 text-sm text-slate-800">Next step: {deal.nextStep || "Not set"}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium text-slate-700">IARR {currency.format(Math.round(deal.valueCents / 100))}</p>
+                      <p className="text-sm font-medium text-slate-700">MRR {currency.format(Math.round(deal.valueCents / 100))}</p>
                       <p className="text-xs text-slate-500">Impl. {currency.format(Math.round(deal.implementationCostCents / 100))}</p>
                     </div>
                   </div>

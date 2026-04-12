@@ -1,4 +1,4 @@
-﻿import { desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { logActivity, updateContactField } from "@/app/actions";
@@ -254,7 +254,7 @@ export default async function ContactDetailPage({ params }: Props) {
                   </span>
                 </p>
                 <p className="text-sm text-slate-700">
-                  IARR: {currency.format(Math.round(deal.valueCents / 100))} • Implementation Cost: {currency.format(Math.round(deal.implementationCostCents / 100))}
+                  MRR: {currency.format(Math.round(deal.valueCents / 100))} � Implementation Cost: {currency.format(Math.round(deal.implementationCostCents / 100))}
                 </p>
               </li>
             ))}

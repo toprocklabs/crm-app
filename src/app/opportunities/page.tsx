@@ -93,8 +93,8 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                 </select>
               </label>
               <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>IARR (USD)</span>
-                <input name="iarrUsd" type="number" min="0" defaultValue="0" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                <span>MRR (USD)</span>
+                <input name="mrrUsd" type="number" min="0" defaultValue="0" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
               </label>
               <label className="flex flex-col gap-1 text-sm text-slate-700">
                 <span>Implementation Cost (USD)</span>
@@ -151,7 +151,7 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                 <th className="px-3 py-2">Stage</th>
                 <th className="px-3 py-2">Owner</th>
                 <th className="px-3 py-2">Next step</th>
-                <th className="px-3 py-2">IARR</th>
+                <th className="px-3 py-2">MRR</th>
                 <th className="px-3 py-2">Implementation Cost</th>
                 <th className="px-3 py-2">Expected close</th>
               </tr>

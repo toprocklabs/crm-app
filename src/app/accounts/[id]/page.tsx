@@ -130,7 +130,7 @@ export default async function AccountDetailPage({ params }: Props) {
   const openTasks = companyTasks.filter((task) => task.status === "open").length;
   const openCompanyTasks = companyTasks.filter((task) => task.status === "open");
   const completedCompanyTasks = companyTasks.filter((task) => task.status === "done");
-  const totalIarrCents = companyDeals.reduce((sum, deal) => sum + deal.valueCents, 0);
+  const totalMrrCents = companyDeals.reduce((sum, deal) => sum + deal.valueCents, 0);
   const totalImplementationCostCents = companyDeals.reduce((sum, deal) => sum + deal.implementationCostCents, 0);
   const today = new Date().toISOString().slice(0, 10);
   const latestActivity = companyActivities[0] ?? null;
@@ -260,8 +260,8 @@ export default async function AccountDetailPage({ params }: Props) {
               <p className="mt-1 text-sm text-slate-600">{reachableContacts} reachable across phone, email, or LinkedIn</p>
             </article>
             <article className="gong-kpi rounded-lg p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Open Pipeline ARR</p>
-              <p className="mt-2 text-3xl font-semibold text-slate-950">{currency.format(Math.round(totalIarrCents / 100))}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Open Pipeline MRR</p>
+              <p className="mt-2 text-3xl font-semibold text-slate-950">{currency.format(Math.round(totalMrrCents / 100))}</p>
               <p className="mt-1 text-sm text-slate-600">{companyDeals.length} opportunities on this account</p>
             </article>
             <article className="gong-kpi rounded-lg p-5">
@@ -531,7 +531,7 @@ export default async function AccountDetailPage({ params }: Props) {
             </div>
             <div className="rounded-xl bg-slate-100 px-3 py-2 text-right text-sm font-medium text-slate-700">
               <p>{companyDeals.length} tracked</p>
-              <p className="text-xs text-slate-500">{currency.format(Math.round(totalIarrCents / 100))} total ARR</p>
+              <p className="text-xs text-slate-500">{currency.format(Math.round(totalMrrCents / 100))} total MRR</p>
             </div>
           </div>
           <div id="opportunity-create">
@@ -555,8 +555,8 @@ export default async function AccountDetailPage({ params }: Props) {
                     </select>
                   </label>
                   <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>IARR (USD)</span>
-                    <input name="iarrUsd" type="number" placeholder="5000" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                    <span>MRR (USD)</span>
+                    <input name="mrrUsd" type="number" placeholder="5000" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
                   </label>
                   <label className="flex flex-col gap-1 text-sm text-slate-700">
                     <span>Implementation Cost (USD)</span>
@@ -630,7 +630,7 @@ export default async function AccountDetailPage({ params }: Props) {
                     </div>
                     <div className="grid min-w-[180px] gap-2 sm:grid-cols-2">
                       <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">IARR</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">MRR</p>
                         <p className="mt-1 text-base font-semibold text-slate-950">{currency.format(Math.round(deal.valueCents / 100))}</p>
                       </div>
                       <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">

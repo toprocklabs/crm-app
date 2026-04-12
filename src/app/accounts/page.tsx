@@ -17,7 +17,7 @@ import { companies, deals } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
-type SortKey = "account" | "stage" | "industry" | "opportunities" | "arr" | "nextStep" | "nextStepDue" | "created";
+type SortKey = "account" | "stage" | "industry" | "opportunities" | "mrr" | "nextStep" | "nextStepDue" | "created";
 type SortDirection = "asc" | "desc";
 type SelectOption = { value: string; label: string };
 
@@ -35,14 +35,14 @@ const sortLabels: Record<SortKey, string> = {
   stage: "Stage",
   industry: "Industry",
   opportunities: "Opportunities",
-  arr: "Total ARR",
+  MRR: "Total MRR",
   nextStep: "Next step",
   nextStepDue: "Next step due",
   created: "Created",
 };
 
 function getSortKey(value: string | undefined): SortKey {
-  const keys: SortKey[] = ["account", "stage", "industry", "opportunities", "arr", "nextStep", "nextStepDue", "created"];
+  const keys: SortKey[] = ["account", "stage", "industry", "opportunities", "mrr", "nextStep", "nextStepDue", "created"];
   return keys.includes(value as SortKey) ? (value as SortKey) : "created";
 }
 
@@ -176,7 +176,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
         return (a.industry ?? "").localeCompare(b.industry ?? "") * direction;
       case "opportunities":
         return (a.dealCount - b.dealCount) * direction;
-      case "arr":
+      case "mrr":
         return (a.pipelineCents - b.pipelineCents) * direction;
       case "nextStep":
         return (a.nextStep ?? "").localeCompare(b.nextStep ?? "") * direction;
@@ -241,7 +241,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
         <table className="min-w-full text-sm">
           <thead className="border-b border-slate-200 text-left text-slate-500">
             <tr>
-              {(["account", "stage", "industry", "opportunities", "arr", "nextStep", "nextStepDue"] as SortKey[]).map((key) => (
+              {(["account", "stage", "industry", "opportunities", "mrr", "nextStep", "nextStepDue"] as SortKey[]).map((key) => (
                 <th key={key} className="px-3 py-2">
                   <Link href={sortHref(key)} className="inline-flex items-center gap-1 hover:text-slate-700">
                     <span>{sortLabels[key]}</span>
@@ -349,7 +349,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
     <CrmShell
       username={session.username}
       title="Accounts"
-      description="All account records with opportunities and total tracked ARR."
+      description="All account records with opportunities and total tracked MRR."
     >
       <section className="gong-panel rounded-xl p-6">
         <div className="flex flex-wrap items-start justify-between gap-5">
