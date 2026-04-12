@@ -1,14 +1,12 @@
 import { desc, eq, sql } from "drizzle-orm";
-import { completeTask } from "@/app/actions";
 import { ActivityTimeline } from "@/components/activity-timeline";
-import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { EmptyState } from "@/components/empty-state";
 import { requireUser } from "@/lib/auth";
 import { getDealStageLabel, getDealStageTone } from "@/lib/deal-stage";
 import { currency } from "@/lib/format";
 import { getDb } from "@/lib/db";
-import { activities, companies, contacts, deals, salesTasks, users } from "@/lib/schema";
+import { activities, companies, contacts, deals, users } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +50,7 @@ export default async function Home() {
 
   const today = new Date().toISOString().slice(0, 10);
 
-  const [dealRows, taskRows, activityRows, statsRows] = await Promise.all([
+  const [dealRows, activityRows, statsRows] = await Promise.all([
     db
       .select({
         id: deals.id,
@@ -69,21 +67,6 @@ export default async function Home() {
       .leftJoin(companies, eq(deals.companyId, companies.id))
       .orderBy(desc(deals.createdAt))
       .limit(12),
-    db
-      .select({
-        id: salesTasks.id,
-        title: salesTasks.title,
-        dueDate: salesTasks.dueDate,
-        status: salesTasks.status,
-        assignedTo: salesTasks.assignedTo,
-        dealName: deals.name,
-        companyName: companies.name,
-      })
-      .from(salesTasks)
-      .leftJoin(deals, eq(salesTasks.dealId, deals.id))
-      .leftJoin(companies, eq(salesTasks.companyId, companies.id))
-      .orderBy(salesTasks.dueDate, desc(salesTasks.createdAt))
-      .limit(14),
     db
       .select({
         id: activities.id,
@@ -108,14 +91,21 @@ export default async function Home() {
         contacts: sql<number>`(select count(*) from ${contacts})`,
         pipelineCents: sql<number>`coalesce(sum(${deals.valueCents}) filter (where ${deals.stage} not in ('won', 'lost')), 0)`,
         wonMrrCents: sql<number>`coalesce(sum(${deals.valueCents}) filter (where ${deals.stage} = 'won'), 0)`,
+        pipelineImplementationCents: sql<number>`coalesce(sum(${deals.implementationCostCents}) filter (where ${deals.stage} not in ('won', 'lost')), 0)`,
+        wonImplementationCents: sql<number>`coalesce(sum(${deals.implementationCostCents}) filter (where ${deals.stage} = 'won'), 0)`,
       })
       .from(companies)
       .leftJoin(deals, eq(companies.id, deals.companyId)),
   ]);
 
-  const stats = statsRows[0] ?? { companies: 0, contacts: 0, pipelineCents: 0, wonMrrCents: 0 };
-  const openTaskRows = taskRows.filter((task) => task.status === "open");
-  const completedTaskRows = taskRows.filter((task) => task.status === "done");
+  const stats = statsRows[0] ?? {
+    companies: 0,
+    contacts: 0,
+    pipelineCents: 0,
+    wonMrrCents: 0,
+    pipelineImplementationCents: 0,
+    wonImplementationCents: 0,
+  };
 
   return (
     <CrmShell
@@ -123,7 +113,7 @@ export default async function Home() {
       title="Dashboard"
       description="Track pipeline, enforce next steps, and run a clean follow-up cadence for your SMB opportunities."
     >
-      <section className="grid gap-4 md:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
         <Card title="Accounts" value={String(stats.companies)} subtitle="Active SMB accounts" />
         <Card title="Contacts" value={String(stats.contacts)} subtitle="People in your funnel" />
         <Card
@@ -136,118 +126,61 @@ export default async function Home() {
           value={currency.format(Math.round((stats.wonMrrCents ?? 0) / 100))}
           subtitle="Closed-won opportunities"
         />
+        <Card
+          title="Pipeline Impl."
+          value={currency.format(Math.round((stats.pipelineImplementationCents ?? 0) / 100))}
+          subtitle="Active implementation fees"
+        />
+        <Card
+          title="Won Impl."
+          value={currency.format(Math.round((stats.wonImplementationCents ?? 0) / 100))}
+          subtitle="Closed-won implementation fees"
+        />
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <article className="gong-panel rounded-xl p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Pipeline Focus</p>
-              <h2 className="mt-2 text-lg font-semibold text-slate-950">Opportunities with next steps</h2>
-            </div>
-            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{dealRows.length} tracked</span>
+      <section className="gong-panel rounded-xl p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Pipeline Focus</p>
+            <h2 className="mt-2 text-lg font-semibold text-slate-950">Opportunities with next steps</h2>
           </div>
-          <ul className="mt-4 space-y-3">
-            {dealRows.length === 0 ? <li><EmptyState icon="opportunity" message="No opportunities yet." action={{ label: "Create opportunity", href: "/opportunities" }} /></li> : null}
-            {dealRows.map((deal) => {
-              const stepLate = Boolean(deal.nextStepDueDate && deal.nextStepDueDate < today && deal.stage !== "won" && deal.stage !== "lost");
+          <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{dealRows.length} tracked</span>
+        </div>
+        <ul className="mt-4 space-y-3">
+          {dealRows.length === 0 ? <li><EmptyState icon="opportunity" message="No opportunities yet." action={{ label: "Create opportunity", href: "/opportunities" }} /></li> : null}
+          {dealRows.map((deal) => {
+            const stepLate = Boolean(deal.nextStepDueDate && deal.nextStepDueDate < today && deal.stage !== "won" && deal.stage !== "lost");
 
-              return (
-                <li key={deal.id} className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-medium text-slate-900">{deal.name}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-slate-600">
-                        <span>{deal.companyName ?? "No account"}</span>
-                        <span>•</span>
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getDealStageTone(deal.stage)}`}>
-                          {getDealStageLabel(deal.stage)}
-                        </span>
-                        <span>•</span>
-                        <span>{deal.ownerName ?? "Unassigned"}</span>
-                      </div>
-                      <p className="mt-2 text-sm text-slate-800">Next step: {deal.nextStep || "Not set"}</p>
+            return (
+              <li key={deal.id} className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-medium text-slate-900">{deal.name}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-slate-600">
+                      <span>{deal.companyName ?? "No account"}</span>
+                      <span>•</span>
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getDealStageTone(deal.stage)}`}>
+                        {getDealStageLabel(deal.stage)}
+                      </span>
+                      <span>•</span>
+                      <span>{deal.ownerName ?? "Unassigned"}</span>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-slate-700">MRR {currency.format(Math.round(deal.valueCents / 100))}</p>
-                      <p className="text-xs text-slate-500">Impl. {currency.format(Math.round(deal.implementationCostCents / 100))}</p>
-                    </div>
+                    <p className="mt-2 text-sm text-slate-800">Next step: {deal.nextStep || "Not set"}</p>
                   </div>
-                  {deal.nextStepDueDate ? (
-                    <p className={`mt-2 text-xs ${stepLate ? "text-red-700" : "text-slate-500"}`}>
-                      Next step due: {deal.nextStepDueDate}
-                    </p>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        </article>
-
-        <article className="gong-panel rounded-xl p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Execution Queue</p>
-              <h2 className="mt-2 text-lg font-semibold text-slate-950">Task reminders</h2>
-            </div>
-            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{openTaskRows.length} open</span>
-          </div>
-          <ul className="mt-4 space-y-3">
-            {openTaskRows.length === 0 ? <li><EmptyState icon="task" message="No open tasks right now." /></li> : null}
-            {openTaskRows.map((task) => {
-              const overdue = task.status === "open" && task.dueDate < today;
-              return (
-                <li key={task.id} className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-medium text-slate-900">{task.title}</p>
-                      <p className="text-sm text-slate-600">
-                        {task.dealName ?? task.companyName ?? "General"} • {task.assignedTo ?? "Unassigned"}
-                      </p>
-                      <p className={`mt-1 text-xs ${overdue ? "text-red-700" : "text-slate-500"}`}>
-                        Due {task.dueDate}
-                      </p>
-                    </div>
-                    {task.status === "open" ? (
-                      <form action={completeTask}>
-                        <input type="hidden" name="taskId" value={task.id} />
-                        <input type="hidden" name="returnPath" value="/" />
-                        <button type="submit" className="rounded-md bg-slate-900 px-2.5 py-1 text-xs font-medium text-white hover:bg-slate-800">
-                          Mark done
-                        </button>
-                      </form>
-                    ) : (
-                      <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">Done</span>
-                    )}
+                  <div className="text-right">
+                    <p className="text-sm font-medium text-slate-700">MRR {currency.format(Math.round(deal.valueCents / 100))}</p>
+                    <p className="text-xs text-slate-500">Impl. {currency.format(Math.round(deal.implementationCostCents / 100))}</p>
                   </div>
-                </li>
-              );
-            })}
-          </ul>
-          <CollapsibleFormSection
-            title={`Completed tasks (${completedTaskRows.length})`}
-            description="Expand to review finished reminders."
-            className="mt-5 border-slate-200 bg-slate-50/70"
-          >
-            <ul className="space-y-3">
-              {completedTaskRows.length === 0 ? <li><EmptyState icon="task" message="No completed tasks yet." /></li> : null}
-              {completedTaskRows.map((task) => (
-                <li key={task.id} className="rounded-lg border border-slate-200 bg-white p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-medium text-slate-900">{task.title}</p>
-                      <p className="text-sm text-slate-600">
-                        {task.dealName ?? task.companyName ?? "General"} • {task.assignedTo ?? "Unassigned"}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">Due {task.dueDate}</p>
-                    </div>
-                    <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">Done</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </CollapsibleFormSection>
-        </article>
+                </div>
+                {deal.nextStepDueDate ? (
+                  <p className={`mt-2 text-xs ${stepLate ? "text-red-700" : "text-slate-500"}`}>
+                    Next step due: {deal.nextStepDueDate}
+                  </p>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
       </section>
 
       <section className="gong-panel rounded-xl p-5">
