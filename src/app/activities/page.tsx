@@ -53,6 +53,7 @@ export default async function ActivitiesPage() {
     >
       <section className="grid gap-6 lg:grid-cols-3">
         <CollapsibleFormSection
+          id="log-activity"
           title="Log activity"
           description="Expand to add a call, meeting, note, or email."
           className="lg:col-span-1"

@@ -117,16 +117,16 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
           <p className="text-sm font-semibold text-slate-700">{filtered.length} contacts</p>
           <SearchInput placeholder="Search contacts..." />
         </div>
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="border-b border-slate-200 text-left text-slate-500">
+        <div className="crm-table-wrap mt-4">
+          <table className="crm-data-table">
+            <thead className="text-left text-slate-500">
               <tr>
-                <th className="px-3 py-2">Name</th>
-                <th className="px-3 py-2">Title</th>
-                <th className="px-3 py-2">Account</th>
-                <th className="px-3 py-2">Email</th>
-                <th className="px-3 py-2">Phone</th>
-                <th className="px-3 py-2">LinkedIn</th>
+                <th>Name</th>
+                <th>Title</th>
+                <th>Account</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>LinkedIn</th>
               </tr>
             </thead>
             <tbody>
@@ -138,18 +138,18 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
                 </tr>
               ) : null}
               {filtered.map((row) => (
-                <tr key={row.id} className="border-b border-slate-100">
-                  <td className="px-3 py-2">
-                    <Link href={`/contacts/${row.id}`} className="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2">
+                <tr key={row.id}>
+                  <td className="min-w-[185px]">
+                    <Link href={`/contacts/${row.id}`} className="crm-table-link">
                       {row.firstName} {row.lastName}
                     </Link>
                   </td>
-                  <td className="px-3 py-2 text-slate-700">{row.title ?? "-"}</td>
-                  <td className="px-3 py-2 text-slate-700">
-                    {row.companyId ? <Link href={`/accounts/${row.companyId}`} className="underline decoration-slate-300 underline-offset-2">{row.companyName}</Link> : "-"}
+                  <td className="min-w-[160px] text-slate-700">{row.title ?? "-"}</td>
+                  <td className="min-w-[180px] text-slate-700">
+                    {row.companyId ? <Link href={`/accounts/${row.companyId}`} className="crm-table-link font-normal">{row.companyName}</Link> : "-"}
                   </td>
-                  <td className="px-3 py-2 text-slate-700">{row.email ?? "-"}</td>
-                  <td className="px-3 py-2 text-slate-700">
+                  <td className="min-w-[210px] text-slate-700">{row.email ?? "-"}</td>
+                  <td className="min-w-[185px] text-slate-700">
                     {row.phone ? (
                       <div className="flex items-center gap-2">
                         <span>{row.phone}</span>
@@ -159,7 +159,7 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
                       "-"
                     )}
                   </td>
-                  <td className="px-3 py-2 text-slate-700">
+                  <td className="min-w-[110px] text-slate-700">
                     {row.linkedinProfileUrl ? (
                       <a
                         href={row.linkedinProfileUrl}

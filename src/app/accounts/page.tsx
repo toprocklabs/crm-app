@@ -58,6 +58,13 @@ function getUrlLabel(url: string) {
   }
 }
 
+function getDueUrgency(date: string | null, today: string) {
+  if (!date) return "missing";
+  if (date < today) return "overdue";
+  if (date === today) return "today";
+  return "future";
+}
+
 function Field({
   label,
   name,
@@ -237,13 +244,13 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
 
   function renderAccountsTable(tableRows: typeof rows, emptyLabel: string) {
     return (
-      <div className="mt-4 overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead className="border-b border-slate-200 text-left text-slate-500">
+      <div className="crm-table-wrap mt-4">
+        <table className="crm-data-table">
+          <thead className="text-left text-slate-500">
             <tr>
               {(["account", "stage", "industry", "opportunities", "mrr", "nextStep", "nextStepDue"] as SortKey[]).map((key) => (
-                <th key={key} className="px-3 py-2">
-                  <Link href={sortHref(key)} className="inline-flex items-center gap-1 hover:text-slate-700">
+                <th key={key} className={key === "mrr" || key === "opportunities" ? "text-right" : undefined}>
+                  <Link href={sortHref(key)} className={`inline-flex items-center gap-1 ${key === "mrr" || key === "opportunities" ? "justify-end" : ""}`}>
                     <span>{sortLabels[key]}</span>
                     {sortIndicator(key)}
                   </Link>
@@ -260,13 +267,13 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
               </tr>
             ) : null}
             {tableRows.map((row) => {
-              const nextStepLate = Boolean(row.nextStepDueDate && row.nextStepDueDate < today);
+              const dueUrgency = getDueUrgency(row.nextStepDueDate, today);
 
               return (
-                <tr key={row.id} className="border-b border-slate-100">
-                  <td className="px-3 py-3">
+                <tr key={row.id}>
+                  <td className="min-w-[240px]">
                     <p className="font-medium text-slate-900">
-                      <Link href={`/accounts/${row.id}`} className="underline decoration-slate-300 underline-offset-2">
+                      <Link href={`/accounts/${row.id}`} className="crm-table-link">
                         {row.name}
                       </Link>
                     </p>
@@ -276,7 +283,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                           href={row.website}
                           target="_blank"
                           rel="noreferrer"
-                          className="underline decoration-slate-300 underline-offset-2 hover:text-slate-700"
+                          className="crm-table-link text-sm font-normal"
                         >
                           {getUrlLabel(row.website)}
                         </a>
@@ -288,14 +295,14 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                           href={row.customerProjectUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="underline decoration-slate-300 underline-offset-2 hover:text-slate-700"
+                          className="crm-table-link text-sm font-normal"
                         >
                           {getUrlLabel(row.customerProjectUrl)}
                         </a>
                       ) : "No customer project URL"}
                     </p>
                   </td>
-                  <td className="px-3 py-3">
+                  <td className="min-w-[185px]">
                     <AutoSaveCompanySelectField
                       action={updateCompanyField}
                       companyId={row.id}
@@ -308,10 +315,10 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                       stageToneStyle
                     />
                   </td>
-                  <td className="px-3 py-3 text-slate-700">{normalizeCompanyIndustry(row.industry) ?? "-"}</td>
-                  <td className="px-3 py-3 text-slate-700">{row.dealCount}</td>
-                  <td className="px-3 py-3 text-slate-700">${Math.round(row.pipelineCents / 100).toLocaleString()}</td>
-                  <td className="min-w-[220px] px-3 py-3 align-top text-slate-700">
+                  <td className="min-w-[150px] text-slate-700">{normalizeCompanyIndustry(row.industry) ?? "-"}</td>
+                  <td className="text-right font-medium text-slate-700">{row.dealCount}</td>
+                  <td className="crm-money font-semibold text-slate-800">${Math.round(row.pipelineCents / 100).toLocaleString()}</td>
+                  <td className="min-w-[260px] text-slate-700">
                     <AutoSaveCompanyField
                       action={updateCompanyField}
                       companyId={row.id}
@@ -323,7 +330,10 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                       labelClassName="sr-only"
                     />
                   </td>
-                  <td className={`min-w-[170px] px-3 py-3 align-top ${nextStepLate ? "text-red-700" : "text-slate-500"}`}>
+                  <td className="min-w-[185px] text-slate-700">
+                    <span className="crm-due-pill mb-2" data-urgency={dueUrgency}>
+                      {row.nextStepDueDate ? (dueUrgency === "overdue" ? "Overdue" : dueUrgency === "today" ? "Due today" : "Scheduled") : "No date"}
+                    </span>
                     <AutoSaveCompanyField
                       action={updateCompanyField}
                       companyId={row.id}
@@ -364,7 +374,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
           </div>
         </div>
         <div className="mt-4">
-          <CollapsibleFormSection title="Open account form" description="Create a new account record.">
+          <CollapsibleFormSection id="add-account" title="Open account form" description="Create a new account record.">
               <form action={createCompany}>
                 <div className="grid gap-4 md:grid-cols-2">
                   <Field label="Account name" name="name" required />

@@ -73,6 +73,42 @@ const links = [
   },
 ];
 
+const headerActions = [
+  {
+    href: "/accounts#add-account",
+    label: "Add account",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 5v14" />
+        <path d="M5 12h14" />
+      </svg>
+    ),
+    primary: true,
+  },
+  {
+    href: "/opportunities#add-opportunity",
+    label: "Add opportunity",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 5v14" />
+        <path d="M5 12h14" />
+      </svg>
+    ),
+    primary: false,
+  },
+  {
+    href: "/activities#log-activity",
+    label: "Log activity",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+      </svg>
+    ),
+    primary: false,
+  },
+];
+
 export function CrmShell({
   username,
   title,
@@ -146,22 +182,41 @@ export function CrmShell({
 
         <section className="min-w-0 px-4 py-4 md:px-6 md:py-5">
           <header className="rounded-xl border border-slate-200/95 bg-white px-5 py-4 shadow-sm md:px-6">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setMenuOpen(true)}
-                className="-ml-1 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 md:hidden"
-                aria-label="Open navigation"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="3" y1="6" x2="21" y2="6" />
-                  <line x1="3" y1="12" x2="21" y2="12" />
-                  <line x1="3" y1="18" x2="21" y2="18" />
-                </svg>
-              </button>
-              <div>
-                <h1 className="text-xl font-semibold tracking-tight text-slate-950">{title}</h1>
-                {description ? <p className="mt-1 max-w-3xl text-sm text-slate-500">{description}</p> : null}
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen(true)}
+                  className="-ml-1 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 md:hidden"
+                  aria-label="Open navigation"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                    <line x1="3" y1="18" x2="21" y2="18" />
+                  </svg>
+                </button>
+                <div>
+                  <h1 className="text-xl font-semibold tracking-tight text-slate-950">{title}</h1>
+                  {description ? <p className="mt-1 max-w-3xl text-sm text-slate-500">{description}</p> : null}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {headerActions.map((action) => (
+                  <Link
+                    key={action.href}
+                    href={action.href}
+                    className={`inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition ${
+                      action.primary
+                        ? "bg-slate-950 text-white shadow-sm hover:bg-slate-800"
+                        : "border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span className={action.primary ? "text-cyan-200" : "text-slate-500"}>{action.icon}</span>
+                    {action.label}
+                  </Link>
+                ))}
               </div>
             </div>
           </header>

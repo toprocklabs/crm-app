@@ -19,6 +19,13 @@ const stageOptions = dealStageOptions.map((stage) => ({
   label: getDealStageLabel(stage),
 }));
 
+function getDueUrgency(date: string | null, today: string) {
+  if (!date) return "missing";
+  if (date < today) return "overdue";
+  if (date === today) return "today";
+  return "future";
+}
+
 type OpportunitiesPageProps = {
   searchParams: Promise<{ q?: string; stage?: string }>;
 };
@@ -74,7 +81,7 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
       description="Complete opportunity pipeline with owner accountability and next-step deadlines."
     >
       <section className="gong-panel rounded-xl p-5">
-        <CollapsibleFormSection title="Add opportunity" description="Create a new deal and set its stage, value, and next step.">
+        <CollapsibleFormSection id="add-opportunity" title="Add opportunity" description="Create a new deal and set its stage, value, and next step.">
           <form action={createDeal}>
             <div className="grid gap-3 md:grid-cols-2">
               <label className="flex flex-col gap-1 text-sm text-slate-700">
@@ -143,17 +150,17 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
             <StageFilter options={stageOptions} />
           </div>
         </div>
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="border-b border-slate-200 text-left text-slate-500">
+        <div className="crm-table-wrap mt-4">
+          <table className="crm-data-table">
+            <thead className="text-left text-slate-500">
               <tr>
-                <th className="px-3 py-2">Opportunity</th>
-                <th className="px-3 py-2">Stage</th>
-                <th className="px-3 py-2">Owner</th>
-                <th className="px-3 py-2">Next step</th>
-                <th className="px-3 py-2">MRR</th>
-                <th className="px-3 py-2">Implementation Cost</th>
-                <th className="px-3 py-2">Expected close</th>
+                <th>Opportunity</th>
+                <th>Stage</th>
+                <th>Owner</th>
+                <th>Next step</th>
+                <th className="text-right">MRR</th>
+                <th className="text-right">Implementation Cost</th>
+                <th>Expected close</th>
               </tr>
             </thead>
             <tbody>
@@ -165,33 +172,37 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                 </tr>
               ) : null}
               {filtered.map((row) => {
-                const overdue = Boolean(row.nextStepDueDate && row.nextStepDueDate < today && row.stage !== "won" && row.stage !== "lost");
+                const dueUrgency = row.stage === "won" || row.stage === "lost" ? "future" : getDueUrgency(row.nextStepDueDate, today);
 
                 return (
-                  <tr key={row.id} className="border-b border-slate-100">
-                    <td className="px-3 py-2">
+                  <tr key={row.id}>
+                    <td className="min-w-[240px]">
                       <p className="font-medium text-slate-900">
-                        <Link href={`/opportunities/${row.id}`} className="underline decoration-slate-300 underline-offset-2">
+                        <Link href={`/opportunities/${row.id}`} className="crm-table-link">
                           {row.name}
                         </Link>
                       </p>
                       <p className="text-slate-500">{row.companyName ?? "No account"}</p>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="min-w-[135px]">
                       <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getDealStageTone(row.stage)}`}>
                         {getDealStageLabel(row.stage)}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-slate-700">{row.ownerName ?? "Unassigned"}</td>
-                    <td className="px-3 py-2">
+                    <td className="min-w-[130px] text-slate-700">{row.ownerName ?? "Unassigned"}</td>
+                    <td className="min-w-[260px]">
                       <p className="text-slate-800">{row.nextStep || "No next step"}</p>
                       {row.nextStepDueDate ? (
-                        <p className={`text-xs ${overdue ? "text-red-700" : "text-slate-500"}`}>Due {row.nextStepDueDate}</p>
-                      ) : null}
+                        <span className="crm-due-pill mt-1" data-urgency={dueUrgency}>
+                          {dueUrgency === "overdue" ? "Overdue" : dueUrgency === "today" ? "Due today" : `Due ${row.nextStepDueDate}`}
+                        </span>
+                      ) : (
+                        <span className="crm-due-pill mt-1" data-urgency="missing">No due date</span>
+                      )}
                     </td>
-                    <td className="px-3 py-2 text-slate-700">{currency.format(Math.round(row.valueCents / 100))}</td>
-                    <td className="px-3 py-2 text-slate-700">{currency.format(Math.round(row.implementationCostCents / 100))}</td>
-                    <td className="px-3 py-2 text-slate-700">{row.expectedCloseDate ? new Date(`${row.expectedCloseDate}T00:00:00`).toLocaleDateString("en-US") : "-"}</td>
+                    <td className="crm-money font-semibold text-slate-800">{currency.format(Math.round(row.valueCents / 100))}</td>
+                    <td className="crm-money text-slate-700">{currency.format(Math.round(row.implementationCostCents / 100))}</td>
+                    <td className="min-w-[145px] text-slate-700">{row.expectedCloseDate ? new Date(`${row.expectedCloseDate}T00:00:00`).toLocaleDateString("en-US") : "-"}</td>
                   </tr>
                 );
               })}
