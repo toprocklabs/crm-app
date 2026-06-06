@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -37,7 +37,7 @@ const contactSchema = z.object({
 const dealSchema = z.object({
   name: z.string().trim().min(2),
   stage: z.enum(["lead", "qualified", "proposal", "negotiation", "won", "lost"]),
-  iarrUsd: z.coerce.number().min(0),
+  mrrUsd: z.coerce.number().min(0),
   implementationCostUsd: z.coerce.number().min(0),
   ownerName: z.string().trim().optional(),
   nextStep: z.string().trim().min(2),
@@ -49,7 +49,7 @@ const dealSchema = z.object({
 const dealUpdateSchema = z.object({
   dealId: z.coerce.number().int().positive(),
   name: z.string().trim().min(2),
-  iarrUsd: z.coerce.number().min(0),
+  mrrUsd: z.coerce.number().min(0),
   implementationCostUsd: z.coerce.number().min(0),
   ownerName: z.string().trim().optional(),
   nextStep: z.string().trim().min(2),
@@ -353,7 +353,7 @@ export async function createDeal(formData: FormData) {
   const parsed = dealSchema.parse({
     name: formData.get("name"),
     stage: formData.get("stage"),
-    iarrUsd: formData.get("iarrUsd"),
+    mrrUsd: formData.get("mrrUsd"),
     implementationCostUsd: formData.get("implementationCostUsd"),
     ownerName: formData.get("ownerName"),
     nextStep: formData.get("nextStep"),
@@ -365,7 +365,7 @@ export async function createDeal(formData: FormData) {
   await db.insert(deals).values({
     name: parsed.name,
     stage: parsed.stage,
-    valueCents: Math.round(parsed.iarrUsd * 100),
+    valueCents: Math.round(parsed.mrrUsd * 100),
     implementationCostCents: Math.round(parsed.implementationCostUsd * 100),
     ownerName: cleanOptionalText(parsed.ownerName),
     nextStep: parsed.nextStep,
@@ -393,7 +393,7 @@ export async function updateDeal(formData: FormData) {
   const parsed = dealUpdateSchema.parse({
     dealId: formData.get("dealId"),
     name: formData.get("name"),
-    iarrUsd: formData.get("iarrUsd"),
+    mrrUsd: formData.get("mrrUsd"),
     implementationCostUsd: formData.get("implementationCostUsd"),
     ownerName: formData.get("ownerName"),
     nextStep: formData.get("nextStep"),
@@ -407,7 +407,7 @@ export async function updateDeal(formData: FormData) {
     .update(deals)
     .set({
       name: parsed.name,
-      valueCents: Math.round(parsed.iarrUsd * 100),
+      valueCents: Math.round(parsed.mrrUsd * 100),
       implementationCostCents: Math.round(parsed.implementationCostUsd * 100),
       ownerName: cleanOptionalText(parsed.ownerName),
       nextStep: parsed.nextStep,

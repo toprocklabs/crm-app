@@ -167,7 +167,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
 
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
           <article className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">IARR</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">MRR</p>
             <p className="mt-1 text-2xl font-semibold text-slate-900">{currency.format(Math.round(opportunity.valueCents / 100))}</p>
           </article>
           <article className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
@@ -243,9 +243,9 @@ export default async function OpportunityDetailPage({ params }: Props) {
               <input name="name" required defaultValue={opportunity.name} className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
             </label>
             <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>IARR (USD)</span>
+              <span>MRR (USD)</span>
               <input
-                name="iarrUsd"
+                name="mrrUsd"
                 type="number"
                 min={0}
                 defaultValue={Math.round(opportunity.valueCents / 100)}

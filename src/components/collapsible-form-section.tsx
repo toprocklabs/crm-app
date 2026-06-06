@@ -1,14 +1,16 @@
 ﻿"use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 export function CollapsibleFormSection({
+  id,
   title,
   description,
   children,
   defaultOpen = false,
   className,
 }: {
+  id?: string;
   title: string;
   description?: string;
   children: React.ReactNode;
@@ -17,8 +19,29 @@ export function CollapsibleFormSection({
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
 
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    const openIfTargeted = () => {
+      if (window.location.hash === `#${id}`) {
+        detailsRef.current?.setAttribute("open", "");
+        detailsRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+      }
+    };
+
+    openIfTargeted();
+    window.addEventListener("hashchange", openIfTargeted);
+
+    return () => {
+      window.removeEventListener("hashchange", openIfTargeted);
+    };
+  }, [id]);
+
   return (
     <details
+      id={id}
       ref={detailsRef}
       open={defaultOpen}
       onSubmitCapture={() => {
