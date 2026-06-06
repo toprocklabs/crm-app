@@ -1,8 +1,11 @@
 import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { completeTask, logActivity, updateDeal, updateDealStage } from "@/app/actions";
+import { completeTask, logActivity, updateDealField, updateDealStage } from "@/app/actions";
 import { ActivityTimeline } from "@/components/activity-timeline";
+import { AutoSaveDealField } from "@/components/auto-save-deal-field";
+import { AutoSaveDealSelectField } from "@/components/auto-save-deal-select-field";
+import { AutoSaveDealStageField } from "@/components/auto-save-deal-stage-field";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { EmptyState } from "@/components/empty-state";
@@ -236,92 +239,90 @@ export default async function OpportunityDetailPage({ params }: Props) {
               {getDealStageLabel(opportunity.stage)}
             </div>
           </div>
-          <form action={updateDeal} className="mt-4 space-y-3">
-            <input type="hidden" name="dealId" value={opportunity.id} />
-            <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Name</span>
-              <input name="name" required defaultValue={opportunity.name} className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-            </label>
-            <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>MRR (USD)</span>
-              <input
-                name="mrrUsd"
-                type="number"
-                min={0}
-                defaultValue={Math.round(opportunity.valueCents / 100)}
-                className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Implementation Cost (USD)</span>
-              <input
-                name="implementationCostUsd"
-                type="number"
-                min={0}
-                defaultValue={Math.round(opportunity.implementationCostCents / 100)}
-                className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Owner</span>
-              <input name="ownerName" defaultValue={opportunity.ownerName ?? ""} className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-            </label>
-            <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Next step</span>
-              <input name="nextStep" required defaultValue={opportunity.nextStep} className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-            </label>
+          <div className="mt-4 space-y-3">
+            <AutoSaveDealField
+              dealId={opportunity.id}
+              field="name"
+              label="Name"
+              required
+              defaultValue={opportunity.name}
+              action={updateDealField}
+            />
+            <AutoSaveDealField
+              dealId={opportunity.id}
+              field="mrrUsd"
+              label="MRR (USD)"
+              type="number"
+              min={0}
+              defaultValue={String(Math.round(opportunity.valueCents / 100))}
+              action={updateDealField}
+            />
+            <AutoSaveDealField
+              dealId={opportunity.id}
+              field="implementationCostUsd"
+              label="Implementation Cost (USD)"
+              type="number"
+              min={0}
+              defaultValue={String(Math.round(opportunity.implementationCostCents / 100))}
+              action={updateDealField}
+            />
+            <AutoSaveDealField
+              dealId={opportunity.id}
+              field="ownerName"
+              label="Owner"
+              defaultValue={opportunity.ownerName ?? ""}
+              action={updateDealField}
+            />
+            <AutoSaveDealField
+              dealId={opportunity.id}
+              field="nextStep"
+              label="Next step"
+              required
+              defaultValue={opportunity.nextStep}
+              action={updateDealField}
+            />
             <div className="grid gap-3 md:grid-cols-2">
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Next step due</span>
-                <input
-                  name="nextStepDueDate"
-                  type="date"
-                  defaultValue={opportunity.nextStepDueDate ?? ""}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Expected close</span>
-                <input
-                  name="expectedCloseDate"
-                  type="date"
-                  defaultValue={opportunity.expectedCloseDate ?? ""}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
-                />
-              </label>
+              <AutoSaveDealField
+                dealId={opportunity.id}
+                field="nextStepDueDate"
+                label="Next step due"
+                type="date"
+                defaultValue={opportunity.nextStepDueDate ?? ""}
+                action={updateDealField}
+              />
+              <AutoSaveDealField
+                dealId={opportunity.id}
+                field="expectedCloseDate"
+                label="Expected close"
+                type="date"
+                defaultValue={opportunity.expectedCloseDate ?? ""}
+                action={updateDealField}
+              />
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Account</span>
-                <select name="companyId" defaultValue={opportunity.companyId ?? ""} className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                  <option value="">None</option>
-                  {companyRows.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-sm text-slate-700">
-                <span>Primary contact</span>
-                <select
-                  name="primaryContactId"
-                  defaultValue={opportunity.primaryContactId ?? ""}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
-                >
-                  <option value="">None</option>
-                  {contactRows.map((contact) => (
-                    <option key={contact.id} value={contact.id}>
-                      {contact.firstName} {contact.lastName}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <AutoSaveDealSelectField
+                dealId={opportunity.id}
+                field="companyId"
+                label="Account"
+                defaultValue={opportunity.companyId ? String(opportunity.companyId) : ""}
+                emptyOptionLabel="None"
+                options={companyRows.map((company) => ({ value: String(company.id), label: company.name }))}
+                action={updateDealField}
+              />
+              <AutoSaveDealSelectField
+                dealId={opportunity.id}
+                field="primaryContactId"
+                label="Primary contact"
+                defaultValue={opportunity.primaryContactId ? String(opportunity.primaryContactId) : ""}
+                emptyOptionLabel="None"
+                options={contactRows.map((contact) => ({
+                  value: String(contact.id),
+                  label: `${contact.firstName} ${contact.lastName}`,
+                }))}
+                action={updateDealField}
+              />
             </div>
-            <button type="submit" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-              Save details
-            </button>
-          </form>
+          </div>
         </article>
 
         <article id="opportunity-stage" className="gong-panel rounded-xl p-5">
@@ -335,32 +336,11 @@ export default async function OpportunityDetailPage({ params }: Props) {
               {getDealStageLabel(opportunity.stage)}
             </div>
           </div>
-          <form action={updateDealStage} className="mt-4 space-y-3">
-            <input type="hidden" name="dealId" value={opportunity.id} />
-            <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Stage</span>
-              <select name="stage" defaultValue={opportunity.stage} className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                <option value="lead">Lead</option>
-                <option value="qualified">Qualified</option>
-                <option value="proposal">Proposal</option>
-                <option value="negotiation">Negotiation</option>
-                <option value="won">Won</option>
-                <option value="lost">Lost</option>
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-sm text-slate-700">
-              <span>Close/Lost reason (required for Lost)</span>
-              <textarea
-                name="reason"
-                rows={3}
-                placeholder="Example: Lost to incumbent due to pricing and timing."
-                className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
-              />
-            </label>
-            <button type="submit" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-              Update stage
-            </button>
-          </form>
+          <AutoSaveDealStageField
+            dealId={opportunity.id}
+            defaultStage={opportunity.stage}
+            action={updateDealStage}
+          />
 
           <h3 className="mt-6 text-sm font-semibold uppercase tracking-wide text-slate-500">Stage History</h3>
           <ul className="mt-2 space-y-2">

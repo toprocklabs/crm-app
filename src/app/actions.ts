@@ -65,6 +65,22 @@ const dealStageUpdateSchema = z.object({
   reason: z.string().trim().optional(),
 });
 
+const dealFieldUpdateSchema = z.object({
+  dealId: z.coerce.number().int().positive(),
+  field: z.enum([
+    "name",
+    "mrrUsd",
+    "implementationCostUsd",
+    "ownerName",
+    "nextStep",
+    "nextStepDueDate",
+    "expectedCloseDate",
+    "companyId",
+    "primaryContactId",
+  ]),
+  value: z.string().optional(),
+});
+
 const taskSchema = z.object({
   title: z.string().trim().min(2),
   dueDate: z.string().min(4),
@@ -422,6 +438,66 @@ export async function updateDeal(formData: FormData) {
   revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${parsed.dealId}`);
   await setFlashToast("Opportunity updated");
+}
+
+export async function updateDealField(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const parsed = dealFieldUpdateSchema.parse({
+    dealId: formData.get("dealId"),
+    field: formData.get("field"),
+    value: formData.get("value"),
+  });
+
+  const cleaned = cleanOptionalText(parsed.value);
+
+  if (parsed.field === "name" || parsed.field === "nextStep") {
+    const text = z.string().trim().min(2).parse(parsed.value);
+    await db
+      .update(deals)
+      .set(parsed.field === "name" ? { name: text } : { nextStep: text })
+      .where(eq(deals.id, parsed.dealId));
+  }
+
+  if (parsed.field === "mrrUsd" || parsed.field === "implementationCostUsd") {
+    const amount = z.coerce.number().min(0).parse(parsed.value);
+    const cents = Math.round(amount * 100);
+    await db
+      .update(deals)
+      .set(parsed.field === "mrrUsd" ? { valueCents: cents } : { implementationCostCents: cents })
+      .where(eq(deals.id, parsed.dealId));
+  }
+
+  if (parsed.field === "ownerName") {
+    await db.update(deals).set({ ownerName: cleaned }).where(eq(deals.id, parsed.dealId));
+  }
+
+  if (parsed.field === "nextStepDueDate" || parsed.field === "expectedCloseDate") {
+    if (cleaned) {
+      z.string().date().parse(cleaned);
+    }
+    await db
+      .update(deals)
+      .set(parsed.field === "nextStepDueDate" ? { nextStepDueDate: cleaned } : { expectedCloseDate: cleaned })
+      .where(eq(deals.id, parsed.dealId));
+  }
+
+  if (parsed.field === "companyId" || parsed.field === "primaryContactId") {
+    const id = cleaned ? z.coerce.number().int().positive().parse(cleaned) : null;
+    await db
+      .update(deals)
+      .set(parsed.field === "companyId" ? { companyId: id } : { primaryContactId: id })
+      .where(eq(deals.id, parsed.dealId));
+  }
+
+  revalidatePath("/");
+  revalidatePath("/opportunities");
+  revalidatePath(`/opportunities/${parsed.dealId}`);
 }
 
 export async function updateDealStage(formData: FormData) {
