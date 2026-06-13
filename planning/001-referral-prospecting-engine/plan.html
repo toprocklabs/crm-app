@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<!--
+  planning/001-referral-prospecting-engine/plan.html — the HOW.
+  Architecture, data flow, interfaces, sequencing. Keep section order stable.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan · Agentic referral-prospecting engine</title>
+<style>
+  :root{--bg:#fbfaf8;--ink:#1c1b1a;--muted:#6b6660;--line:#e6e2db;--accent:#3a5a78;--soft:#eef2f6;
+    --codebg:#23272e;--codefg:#e6e6e6;--inlinebg:#f3f1ec;
+    --proposed:#9a7b2f;--proposed-bg:#f6efdd;--accepted:#3f6b4a;--accepted-bg:#e9f1ea;
+    --superseded:#8a8580;--superseded-bg:#efece8;--deprecated:#9a4b3f;--deprecated-bg:#f5e8e5;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  main{max-width:820px;margin:0 auto;padding:44px 28px 80px}
+  .top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+  .top a{color:var(--accent);text-decoration:none}
+  .status{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;padding:3px 11px;border-radius:20px;text-transform:capitalize}
+  .s-proposed{color:var(--proposed);background:var(--proposed-bg)}
+  .s-accepted{color:var(--accepted);background:var(--accepted-bg)}
+  .s-superseded{color:var(--superseded);background:var(--superseded-bg)}
+  .s-deprecated{color:var(--deprecated);background:var(--deprecated-bg)}
+  .kicker{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-top:18px}
+  h1{font-size:30px;margin:6px 0 6px;letter-spacing:-.01em}
+  h2{font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);
+    border-top:1px solid var(--line);padding-top:22px;margin:32px 0 10px}
+  h3{font-size:15px;margin:18px 0 4px}
+  p{margin:8px 0}ul,ol{margin:8px 0;padding-left:22px}li{margin:5px 0}
+  code{background:var(--inlinebg);padding:1.5px 5px;border-radius:4px;font-size:13.5px;font-family:"SF Mono",Consolas,Menlo,monospace}
+  pre{background:var(--codebg);color:var(--codefg);border-radius:8px;padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.5}
+  pre code{background:none;color:inherit;padding:0}
+  .diagram{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px;margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+  th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;color:var(--muted);background:var(--soft)}
+  .phase{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--soft);color:var(--accent);margin-right:6px}
+  .legend{font-size:12.5px;color:var(--muted);margin-top:8px;display:flex;gap:16px;flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+  footer{margin-top:36px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a href="../index.html">← Planning index</a>
+    <span class="status s-proposed">Proposed</span>
+  </div>
+
+  <div class="kicker">Plan · Feature 001</div>
+  <h1>Agentic referral-prospecting engine</h1>
+  <p><a href="spec.html">→ Read the spec (what &amp; why)</a></p>
+
+  <h2>Approach</h2>
+  <p>Evolve the pipeline we already have — Overpass sourcing → <code>suggestions</code> queue → <code>/inbox</code> + <code>/map</code> — into a <strong>scored, learning loop</strong>, keeping every part free/no-key and human-gated. Three things get added on top of the existing bones: a deterministic <strong>two-factor scorer</strong> (warmth × fit) that reads a stored <em>targeting profile</em>; an <strong>LLM "analyst"</strong> step that writes a rationale and a drafted intro for the top few prospects (tiered models, budget-guarded); and a <strong>feedback loop</strong> that turns inbox + deal outcomes into labels which periodically refine the targeting profile. The sweep is a manually-triggered server action in v1; the same function later moves behind a cron with no change to its body.</p>
+
+  <h2>Architecture</h2>
+  <p>Intake flows left-to-right into the scorer; the scorer, analyst, and ranker feed the queue and surfaces; your decisions close a loop back through <em>Learn</em> into the <em>Targeting profile</em> that the scorer reads. The profile is the thing that improves.</p>
+  <div class="diagram">
+    <svg viewBox="0 0 820 300" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pipeline diagram: Source and Qualify feed Score; Score to Analyst to Rank to Suggestions to Map/Inbox to You act; You act loops back through Learn to the Targeting profile, which feeds Score.">
+      <defs>
+        <marker id="ar" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L6.5,3 L0,6 Z" fill="#6b6660"/></marker>
+        <marker id="arg" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L6.5,3 L0,6 Z" fill="#3f6b4a"/></marker>
+      </defs>
+
+      <!-- Row 1: agent pipeline -->
+      <g font-size="13" text-anchor="middle">
+        <g><rect x="15" y="30" width="110" height="48" rx="8" fill="#eef2f6" stroke="#3a5a78"/>
+          <text x="70" y="50" fill="#1c1b1a">Source</text><text x="70" y="66" font-size="10" fill="#6b6660">Overpass + signals</text></g>
+        <g><rect x="145" y="30" width="110" height="48" rx="8" fill="#eef2f6" stroke="#3a5a78"/>
+          <text x="200" y="50" fill="#1c1b1a">Qualify</text><text x="200" y="66" font-size="10" fill="#6b6660">scrape · ICP fit</text></g>
+        <g><rect x="275" y="30" width="110" height="48" rx="8" fill="#eef2f6" stroke="#3a5a78" stroke-width="2"/>
+          <text x="330" y="50" fill="#1c1b1a">Score</text><text x="330" y="66" font-size="10" fill="#6b6660">warmth × fit</text></g>
+        <g><rect x="405" y="30" width="110" height="48" rx="8" fill="#eef2f6" stroke="#3a5a78"/>
+          <text x="460" y="50" fill="#1c1b1a">Analyst</text><text x="460" y="66" font-size="10" fill="#6b6660">rationale · draft</text></g>
+        <g><rect x="535" y="30" width="110" height="48" rx="8" fill="#eef2f6" stroke="#3a5a78"/>
+          <text x="590" y="54" fill="#1c1b1a">Rank</text></g>
+        <g><rect x="665" y="30" width="110" height="48" rx="8" fill="#eef2f6" stroke="#3a5a78"/>
+          <text x="720" y="50" fill="#1c1b1a">Suggestions</text><text x="720" y="66" font-size="10" fill="#6b6660">queue</text></g>
+      </g>
+
+      <!-- Row 2 -->
+      <g font-size="13" text-anchor="middle">
+        <g><rect x="275" y="140" width="130" height="48" rx="8" fill="#e9f1ea" stroke="#3f6b4a"/>
+          <text x="340" y="160" fill="#1c1b1a">Targeting profile</text><text x="340" y="176" font-size="10" fill="#6b6660">ICP + weights</text></g>
+        <g><rect x="665" y="140" width="110" height="48" rx="8" fill="#eef2f6" stroke="#3a5a78"/>
+          <text x="720" y="160" fill="#1c1b1a">Map / Inbox</text><text x="720" y="176" font-size="10" fill="#6b6660">opportunities</text></g>
+      </g>
+      <!-- Row 3 -->
+      <g font-size="13" text-anchor="middle">
+        <g><rect x="275" y="232" width="130" height="48" rx="8" fill="#e9f1ea" stroke="#3f6b4a"/>
+          <text x="340" y="252" fill="#1c1b1a">Learn</text><text x="340" y="268" font-size="10" fill="#6b6660">refine from outcomes</text></g>
+        <g><rect x="665" y="232" width="110" height="48" rx="8" fill="#f6efdd" stroke="#9a7b2f"/>
+          <text x="720" y="252" fill="#1c1b1a">You act</text><text x="720" y="268" font-size="10" fill="#6b6660">approve·dismiss·win</text></g>
+      </g>
+
+      <!-- arrows: pipeline -->
+      <g stroke="#6b6660" stroke-width="1.6" fill="none">
+        <line x1="125" y1="54" x2="143" y2="54" marker-end="url(#ar)"/>
+        <line x1="255" y1="54" x2="273" y2="54" marker-end="url(#ar)"/>
+        <line x1="385" y1="54" x2="403" y2="54" marker-end="url(#ar)"/>
+        <line x1="515" y1="54" x2="533" y2="54" marker-end="url(#ar)"/>
+        <line x1="645" y1="54" x2="663" y2="54" marker-end="url(#ar)"/>
+        <line x1="720" y1="78" x2="720" y2="138" marker-end="url(#ar)"/>
+        <line x1="720" y1="188" x2="720" y2="230" marker-end="url(#ar)"/>
+      </g>
+      <!-- arrows: feedback loop (green) -->
+      <g stroke="#3f6b4a" stroke-width="1.8" fill="none">
+        <line x1="663" y1="256" x2="407" y2="256" marker-end="url(#arg)"/>
+        <line x1="340" y1="232" x2="340" y2="190" marker-end="url(#arg)"/>
+        <line x1="332" y1="140" x2="332" y2="80" marker-end="url(#arg)"/>
+      </g>
+    </svg>
+    <div class="legend">
+      <span><span class="sw" style="background:#eef2f6;border:1px solid #3a5a78"></span> agent step</span>
+      <span><span class="sw" style="background:#f6efdd;border:1px solid #9a7b2f"></span> human gate</span>
+      <span><span class="sw" style="background:#e9f1ea;border:1px solid #3f6b4a"></span> learning loop</span>
+    </div>
+  </div>
+
+  <h2>Data flow / key decisions</h2>
+  <ul>
+    <li><strong>Warmth = blended proximity + affiliation.</strong> Physical tier (same plaza &gt; block &gt; corridor &gt; town) comes from coordinates we already store; affiliation comes from at least one declared-tie signal. Warmth is materialised as graph edges in the existing <code>relationships</code> table (<code>colocated_with</code>, <code>knows</code>, …) with a <code>strength</code>, so <code>findWarmPaths()</code> in <code>src/lib/graph.ts</code> picks it up for free.</li>
+    <li><strong>Fit = ICP look-alike.</strong> Derived automatically from <code>customer</code>-stage accounts: scrape each candidate (reuse <code>src/lib/enrich.ts</code>), compare attributes (industry, owner-operated, storefront) to the book. No manual ICP config to start.</li>
+    <li><strong>Scoring is deterministic and glass-box.</strong> A pure <code>scoreProspect(features, profile)</code> returns a number <em>and</em> a per-signal breakdown. The LLM never produces the score — it only narrates and drafts. This keeps ranking inspectable and cheap.</li>
+    <li><strong>The targeting profile is the learned state.</strong> A small, versioned record holding the ICP description (LLM-written) and the feature weights (numeric, inspectable). The scorer reads the active row; the <em>Learn</em> step writes a new version. "Learning" = weight updates + periodic LLM rewrite of the ICP text from labelled outcomes — not a trained model.</li>
+    <li><strong>Feedback already half-exists.</strong> <code>suggestions.status</code> gives approve/dismiss; joining an approved suggestion's created company to <code>deals</code> gives won/lost. Labels are computed from these — minimal new storage.</li>
+    <li><strong>Tiered, budgeted agents.</strong> A cheap model triages the long candidate list; the strong model writes rationale + intro for only the top K. Every sweep records tokens/cost in <code>agent_runs</code> and aborts if a per-run budget is exceeded.</li>
+    <li><strong>Manual now, cron later.</strong> The sweep is one server action invoked by a button; promoting it to a schedule (Vercel Cron) is a later, body-unchanged step.</li>
+    <li><strong>Stay no-key.</strong> Overpass / Nominatim / Census only; <em>adaptive radius</em> widens the search when a customer's immediate surroundings are too sparse.</li>
+  </ul>
+
+  <h2>Key code</h2>
+  <p>Illustrative interfaces — the shapes that anchor the design. Existing files are referenced by path rather than pasted.</p>
+  <h3>The scorer (new <code>src/lib/referral-score.ts</code>)</h3>
+  <pre><code>type ProximityTier = "plaza" | "block" | "corridor" | "town" | "none";
+
+type ProspectFeatures = {
+  proximityTier: ProximityTier;     // physical warmth
+  affiliations: string[];           // e.g. ["declared_link","same_trade"]
+  icpSimilarity: number;            // 0..1 look-alike to customer book
+  needSignals: string[];            // e.g. ["new_location","renovating"]
+};
+
+type TargetingProfile = {
+  version: number;
+  icpDescription: string;           // LLM-written, refined each cycle
+  weights: Record<string, number>;  // transparent, inspectable
+};
+
+type ProspectScore = {
+  warmth: number; fit: number; combined: number;   // combined = warmth * fit
+  breakdown: { signal: string; contribution: number }[];  // glass-box "why"
+};
+
+export function scoreProspect(f: ProspectFeatures, p: TargetingProfile): ProspectScore;</code></pre>
+
+  <h3>The sweep (new server action in <code>src/app/actions.ts</code>)</h3>
+  <pre><code>// Manually triggered from a "Scan for referrals" button on a customer / the map.
+export async function scanCustomerForReferrals(formData: FormData): Promise&lt;void&gt; {
+  // 1. source nearby (Overpass, adaptive radius)  -- promote scripts/source-nearby.mjs
+  // 2. qualify (enrich.ts) + extract ProspectFeatures
+  // 3. score (referral-score.ts) against active TargetingProfile
+  // 4. analyst pass on top K (Haiku triage -&gt; Opus draft), budget-guarded via agent_runs
+  // 5. upsert scored rows into `suggestions` (payload extended below), revalidate /map + /inbox
+}</code></pre>
+
+  <h3>Extended <code>suggestions.payload</code> (jsonb — no migration needed)</h3>
+  <pre><code>{ name, category, address, lat, lng, nearCompanyId, nearCompanyName, distanceMeters,
+  warmth, fit, combined,            // scores
+  proximityTier, affiliations,      // warmth evidence
+  icpSimilarity, needSignals,       // fit evidence
+  rationale, draftedIntro }         // analyst output (top K only)</code></pre>
+
+  <h2>Implementation steps</h2>
+  <ol>
+    <li><span class="phase">P1</span><strong>Deterministic scoring.</strong> Add <code>referral-score.ts</code>; extend the suggestion payload with warmth/fit/breakdown; compute during sourcing; sort the inbox + map by <code>combined</code> and show the scores. Add adaptive radius. (No LLM, no schema change.)</li>
+    <li><span class="phase">P2</span><strong>In-app manual sweep.</strong> Promote <code>scripts/source-nearby.mjs</code> into <code>scanCustomerForReferrals</code>; add a "Scan for referrals" button per customer and on <code>/map</code>. Scaffold <code>agent_runs</code> logging + budget guard (even before any model call).</li>
+    <li><span class="phase">P3</span><strong>Analyst pass.</strong> Add the tiered LLM step (cheap triage → strong draft) that writes <code>rationale</code> + <code>draftedIntro</code> for the top K; surface "Draft intro for &lt;contact&gt;" in the popup/inbox card.</li>
+    <li><span class="phase">P4</span><strong>Beyond proximity.</strong> Implement the first non-geographic warmth signal (declared digital ties via the scraper, and/or complementary-trade affinity seeded by the LLM). Each becomes a weighted feature.</li>
+    <li><span class="phase">P5</span><strong>Learning loop.</strong> Add the <code>targeting_profile</code> store; a "Refine targeting" run that reads approve/dismiss/won/lost, rewrites the ICP text, and nudges weights; scorer reads the active profile; expose a read-only "why these weights" view.</li>
+    <li><span class="phase">P6</span><strong>Cadence (later, out of v1).</strong> Move the unchanged sweep behind a Vercel Cron once it has earned trust; keep the manual trigger as an override.</li>
+  </ol>
+
+  <h2>Risks &amp; tradeoffs</h2>
+  <table>
+    <thead><tr><th>Risk / tradeoff</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>OSM/Overpass coverage is sparse outside dense strips (e.g. Coatary's area returned zero).</td><td>Adaptive radius; keep the Google Places swap one env-key away; never present "no pins" as "no prospects."</td></tr>
+      <tr><td>LLM cost / runaway loops.</td><td>Tiered models, top-K only, <code>agent_runs</code> budget guard that aborts the sweep, and manual triggering caps volume in v1.</td></tr>
+      <tr><td>Over-fitting to scant early feedback.</td><td>Seed the profile from the current customer book; require a minimum sample before weights move; keep a human in the loop on every action.</td></tr>
+      <tr><td>Wrongly asserting two owners know each other.</td><td>Always frame as "likely," show the evidence, let the user dismiss — and feed that dismissal back as a negative label.</td></tr>
+      <tr><td>Awkward or off-brand intro drafts.</td><td>The agent drafts; the human edits and sends. No auto-send in v1.</td></tr>
+      <tr><td>Scraping reliability / politeness (Overpass, sites).</td><td>Best-effort no-throw (as in <code>enrich.ts</code>/<code>geocode.ts</code>), polite rate limits, cache via <code>place_enrichment</code>.</td></tr>
+      <tr><td>Noisy HTML diffs from this plan in git.</td><td>Already handled by the <code>planning/**/*.html</code> rules in <code>.gitattributes</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Verification</h2>
+  <ul>
+    <li>A manual scan of <em>Scuba Dive Utah</em> returns scored, ranked prospects with a visible per-signal breakdown; <code>npm run lint</code> + <code>npm run build</code> stay green.</li>
+    <li>Repeatedly dismissing a category (e.g. restaurants) demonstrably lowers its rank in the next sweep — captured as a before/after.</li>
+    <li>A sweep forced past its token ceiling aborts cleanly and records an <code>agent_runs</code> row with the spend.</li>
+    <li>Existing <code>/inbox</code> approve/dismiss and <code>/map</code> interactions are unchanged (no regression).</li>
+    <li>Every drafted intro is shown for human approval before any send path exists.</li>
+  </ul>
+
+  <footer>Plan · html-context-planning. The <a href="spec.html">spec.html</a> covers the what &amp; why.</footer>
+</main>
+</body>
+</html>
