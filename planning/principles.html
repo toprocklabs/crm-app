@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<!--
+  planning/principles.html — the persistent tier. Standing context that applies to
+  the whole project: stack, conventions, constraints, non-negotiables. This is the
+  "constitution" in the practitioner sense (NOT Anthropic's model Constitution).
+  Keep it lean and high-signal; it is meant to be read often.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Principles · Toprock CRM</title>
+<style>
+  :root{--bg:#fbfaf8;--ink:#1c1b1a;--muted:#6b6660;--line:#e6e2db;--accent:#3a5a78;--soft:#eef2f6;--codebg:#f3f1ec}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  main{max-width:780px;margin:0 auto;padding:48px 28px 80px}
+  .kicker{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  h1{font-size:30px;margin:8px 0 24px;letter-spacing:-.01em}
+  h2{font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);
+    border-top:1px solid var(--line);padding-top:22px;margin:34px 0 10px}
+  p{margin:8px 0}
+  ul{margin:8px 0;padding-left:22px}
+  li{margin:6px 0}
+  code{background:var(--codebg);padding:1.5px 5px;border-radius:4px;font-size:13.5px;
+    font-family:"SF Mono",Consolas,Menlo,monospace}
+  a{color:var(--accent)}
+  footer{margin-top:36px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<main>
+  <div class="kicker">Project principles &amp; standards</div>
+  <h1>Toprock CRM</h1>
+  <p><a href="index.html">← Back to planning index</a></p>
+
+  <h2>What this project is</h2>
+  <p>A lightweight CRM (product label <strong>Toprock CRM</strong>) covering accounts, contacts,
+  opportunities, tasks, and activities. The current product direction is a Gong-inspired
+  revenue-workspace UI — a dark utility sidebar, a bright analytics canvas, crisp white panels,
+  and a cyan/blue accent system — favoring dense-but-readable information hierarchy over a generic
+  SaaS card layout.</p>
+
+  <h2>Tech stack</h2>
+  <ul>
+    <li><strong>Framework:</strong> Next.js 16.x (App Router), TypeScript, Tailwind. Server-rendered route pages (<code>force-dynamic</code>) with server actions for all writes. Note: this is Next.js 16 — check <code>node_modules/next/dist/docs/</code> before relying on older framework patterns.</li>
+    <li><strong>Data layer:</strong> Drizzle ORM over Neon Postgres. Schema + enums in <code>src/lib/schema.ts</code>; shared client in <code>src/lib/db.ts</code>. <code>db:push</code> is the source of truth for the live schema.</li>
+    <li><strong>Auth:</strong> custom username/password login with a signed JWT cookie session (<code>src/lib/auth.ts</code>). Passwords hashed with bcrypt (<code>bcryptjs</code>).</li>
+  </ul>
+
+  <h2>Conventions &amp; standards</h2>
+  <ul>
+    <li>Prefer server components for pages and data reads. Keep mutations in server actions (<code>"use server"</code>) and validate inputs with Zod. Gate every write with <code>requireUser()</code>.</li>
+    <li>UI vs. DB terminology is deliberate: UI label <strong>Account</strong> = table <code>companies</code>; UI label <strong>Opportunity</strong> = table <code>deals</code>. Keep this mapping consistent.</li>
+    <li>Phone numbers normalize to US format <code>(###) ###-####</code> in actions; preserve the <code>Call</code> (<code>tel:</code>) button behavior and contact blur-autosave behavior when touching those areas.</li>
+    <li>Create/log forms use <code>CollapsibleFormSection</code>, default collapsed, auto-closing on submit. When adding activity logging, set <code>returnPath</code> so the page revalidates.</li>
+    <li>If adding/renaming routes, update the top nav in <code>src/components/crm-shell.tsx</code>.</li>
+    <li><strong>Validation before hand-off:</strong> <code>npm run lint</code> and <code>npm run build</code>. If schema touched, regenerate + apply the migration; if auth touched, verify <code>/login</code> and guarded redirects. No automated test suite yet — quality relies on lint/build + manual verification.</li>
+  </ul>
+
+  <h2>Database change workflow</h2>
+  <ul>
+    <li>Edit <code>src/lib/schema.ts</code> → <code>npm run db:generate</code> → review SQL in <code>drizzle/</code> → <code>npm run db:push</code> → <code>npm run build</code> and verify affected pages.</li>
+    <li>Generated migration SQL is known to be polluted/drifted; treat <code>db:push</code> against the live DB as the authoritative state.</li>
+  </ul>
+
+  <h2>Non-negotiables</h2>
+  <ul>
+    <li>Never store plaintext passwords — always bcrypt. Keep <code>AUTH_SECRET</code> (&ge;32 chars) and DB credentials in <code>.env.local</code> only.</li>
+    <li>Preserve the <code>/customers</code> → <code>/accounts</code> (and <code>/customers/[id]</code>) backward-compat redirects unless explicitly removing them.</li>
+    <li>Do not reintroduce glossy/glassy gradients or duplicative summary panels; preserve the approved Gong-inspired UI direction unless explicitly redesigning.</li>
+  </ul>
+
+  <h2>Known constraints / tech debt</h2>
+  <ul>
+    <li>Single-tenant: all authenticated users see all data; no per-user/org authorization boundary yet.</li>
+    <li>Contact-to-opportunity linking is partial (<code>deals.primaryContactId</code> not set in all create flows).</li>
+    <li>Minimal error UX — server-action validation failures generally throw rather than surfacing inline.</li>
+    <li>Phone normalization assumes US numbers only; non-US formats are rejected.</li>
+  </ul>
+
+  <footer>Persistent tier · maintained by the html-context-planning skill.</footer>
+</main>
+</body>
+</html>

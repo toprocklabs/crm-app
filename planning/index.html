@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<!--
+  planning/index.html — the front door to this project's planning artifacts.
+  Maintained by the html-context-planning skill. Update the table whenever a plan
+  is added, changes status, or is superseded. Do NOT bake a live timestamp here
+  (it creates phantom git diffs). Keep section/row order stable.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planning Index · Toprock CRM</title>
+<style>
+  :root{--bg:#fbfaf8;--ink:#1c1b1a;--muted:#6b6660;--line:#e6e2db;--accent:#3a5a78;
+    --soft:#eef2f6;--proposed:#9a7b2f;--proposed-bg:#f6efdd;--accepted:#3f6b4a;--accepted-bg:#e9f1ea;
+    --superseded:#8a8580;--superseded-bg:#efece8;--deprecated:#9a4b3f;--deprecated-bg:#f5e8e5;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  main{max-width:860px;margin:0 auto;padding:48px 28px 80px}
+  .kicker{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  h1{font-size:30px;margin:8px 0 6px;letter-spacing:-.01em}
+  .lede{color:var(--muted);margin:0 0 28px;font-size:17px}
+  .links{margin:0 0 28px;font-size:14px}
+  .links a{color:var(--accent);text-decoration:none;margin-right:18px}
+  .links a:hover{text-decoration:underline}
+  table{border-collapse:collapse;width:100%;font-size:14.5px;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--soft);font-weight:600}
+  tr:last-child td{border-bottom:none}
+  td a{color:var(--accent);text-decoration:none;font-weight:600}
+  td a:hover{text-decoration:underline}
+  .status{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;padding:2px 9px;border-radius:20px;text-transform:capitalize}
+  .s-proposed{color:var(--proposed);background:var(--proposed-bg)}
+  .s-accepted{color:var(--accepted);background:var(--accepted-bg)}
+  .s-superseded{color:var(--superseded);background:var(--superseded-bg)}
+  .s-deprecated{color:var(--deprecated);background:var(--deprecated-bg)}
+  .note{color:var(--muted);font-size:13px}
+  .empty{padding:22px 14px;color:var(--muted);font-size:14px;text-align:center}
+  footer{margin-top:32px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<main>
+  <div class="kicker">Planning index</div>
+  <h1>Toprock CRM</h1>
+  <p class="lede">Every plan in this repository, with its current status. Read the relevant plan before starting work on a feature.</p>
+  <p class="links">
+    <a href="principles.html">→ Project principles &amp; standards</a>
+    <a href="features.html">→ Feature set (living inventory)</a>
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>Feature</th><th>Status</th><th>Artifacts</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="empty" colspan="5">No feature plans yet. Run the <strong>html-context-planning</strong> skill to author the first one (<code>001-&lt;slug&gt;</code>).</td></tr>
+    </tbody>
+  </table>
+
+  <footer>Maintained by the <strong>html-context-planning</strong> skill. To add or change a plan, run the skill rather than editing structure by hand.</footer>
+</main>
+</body>
+</html>

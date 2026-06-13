@@ -1,0 +1,8 @@
+# --- html-context-planning: keep HTML planning artifacts from cluttering diffs ---
+# GitHub web UI: collapse these files in PR diffs (still expandable) and drop them
+# from the repository language statistics.
+planning/**/*.html linguist-generated=true
+# Local `git` CLI: report the file as changed without dumping the noisy contents.
+# (The linguist-* attributes above are ignored by the CLI, so this second line is needed.)
+planning/**/*.html -diff
+# --- end html-context-planning ---

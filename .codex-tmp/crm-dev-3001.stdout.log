@@ -1,0 +1,49 @@
+
+> crm-app@0.1.0 dev
+> next dev --port 3001
+
+▲ Next.js 16.2.1 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.0.12:3001
+- Environments: .env.local
+✓ Ready in 631ms
+
+ GET / 307 in 656ms (next.js: 314ms, application-code: 342ms)
+ GET /login 200 in 94ms (next.js: 35ms, application-code: 60ms)
+ GET / 200 in 1350ms (next.js: 9ms, application-code: 1341ms)
+ GET /accounts 200 in 203ms (next.js: 31ms, application-code: 172ms)
+ GET /accounts/7 200 in 776ms (next.js: 588ms, application-code: 189ms)
+ POST /accounts/7 200 in 1076ms (next.js: 23ms, application-code: 1053ms)
+  └─ ƒ updateCompanyField({}) in 808ms src/app/actions.ts
+ GET / 200 in 1401ms (next.js: 7ms, application-code: 1393ms)
+ GET /accounts 200 in 176ms (next.js: 5ms, application-code: 171ms)
+ POST /accounts 200 in 336ms (next.js: 4ms, application-code: 332ms)
+  └─ ƒ createCompany({}) in 118ms src/app/actions.ts
+ GET /accounts/8 200 in 229ms (next.js: 15ms, application-code: 214ms)
+ GET /accounts 200 in 1564ms (next.js: 110ms, application-code: 1454ms)
+ GET /accounts/8 200 in 255ms (next.js: 23ms, application-code: 232ms)
+ POST /accounts/8 200 in 238ms (next.js: 12ms, application-code: 226ms)
+  └─ ƒ updateCompanyField({}) in 51ms src/app/actions.ts
+ GET /accounts 200 in 1493ms (next.js: 97ms, application-code: 1395ms)
+ GET /accounts/6 200 in 285ms (next.js: 25ms, application-code: 261ms)
+ POST /accounts/6 200 in 314ms (next.js: 13ms, application-code: 302ms)
+  └─ ƒ updateCompanyField({}) in 106ms src/app/actions.ts
+ GET /accounts 200 in 23ms (next.js: 6ms, application-code: 17ms)
+ GET /accounts 200 in 293ms (next.js: 4ms, application-code: 288ms)
+ GET /accounts 200 in 1865ms (next.js: 81ms, application-code: 1784ms)
+✓ Compiled in 1700ms
+ GET /accounts 200 in 917ms (next.js: 4ms, application-code: 913ms)
+ GET /accounts 200 in 82ms (next.js: 2ms, application-code: 80ms)
+ GET /accounts 200 in 92ms (next.js: 3ms, application-code: 89ms)
+ GET /accounts 200 in 85ms (next.js: 3ms, application-code: 82ms)
+ GET /accounts 200 in 1869ms (next.js: 6ms, application-code: 1863ms)
+ GET /accounts 200 in 756ms (next.js: 4ms, application-code: 752ms)
+ GET /accounts 200 in 1888ms (next.js: 81ms, application-code: 1807ms)
+ GET /accounts 200 in 2.9s (next.js: 727ms, application-code: 2.1s)
+ GET /accounts 200 in 1891ms (next.js: 38ms, application-code: 1853ms)
+ GET /accounts 200 in 2.9s (next.js: 392ms, application-code: 2.5s)
+ GET / 307 in 599ms (next.js: 303ms, application-code: 296ms)
+ GET /login 200 in 394ms (next.js: 207ms, application-code: 187ms)
+ GET /opportunities 200 in 1502ms (next.js: 129ms, application-code: 1372ms)
+ GET /opportunities 200 in 195ms (next.js: 5ms, application-code: 189ms)
+ GET /accounts 200 in 140ms (next.js: 5ms, application-code: 135ms)

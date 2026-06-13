@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<!--
+  planning/features.html — the living feature inventory for Toprock CRM.
+  Persistent tier: a project-wide map of what the product does, by domain, with a
+  maturity status on every capability. UPDATE THIS as functionality is added,
+  promoted from beta → shipped, or planned features land.
+
+  Maintenance rules:
+    - Add a <div class="feat" data-domain="..." data-status="..."> block for each new capability.
+    - Statuses: shipped | beta | planned. Keep the counts in the legend honest.
+    - Do NOT bake a live timestamp here (phantom git diffs). Use the "Last reviewed"
+      field in the header and bump it by hand when you do a real pass.
+    - Keep section order stable to keep diffs clean.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feature Set · Toprock CRM</title>
+<style>
+  :root{
+    --bg:#fbfaf8;--ink:#1c1b1a;--muted:#6b6660;--line:#e6e2db;--accent:#3a5a78;--accent2:#2f7d8a;
+    --soft:#eef2f6;--card:#fff;--codebg:#f3f1ec;
+    --shipped:#3f6b4a;--shipped-bg:#e9f1ea;--beta:#9a7b2f;--beta-bg:#f6efdd;--planned:#5a6b86;--planned-bg:#e9edf4;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  main{max-width:1040px;margin:0 auto;padding:44px 28px 90px}
+  a{color:var(--accent)}
+  .kicker{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  h1{font-size:32px;margin:8px 0 6px;letter-spacing:-.015em}
+  .lede{color:var(--muted);margin:0 0 18px;font-size:17px;max-width:70ch}
+  .meta{font-size:13px;color:var(--muted);margin:0 0 26px}
+  .meta b{color:var(--ink)}
+  .crumbs{font-size:14px;margin:0 0 22px}
+  .crumbs a{text-decoration:none}.crumbs a:hover{text-decoration:underline}
+
+  /* legend / stat strip */
+  .stats{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 26px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;min-width:118px}
+  .stat .n{font-size:24px;font-weight:700;letter-spacing:-.02em}
+  .stat .l{font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+  /* filter bar */
+  .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 8px}
+  .filters .grp{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font:inherit;font-size:13px;cursor:pointer;border:1px solid var(--line);background:var(--card);
+    color:var(--muted);padding:5px 12px;border-radius:20px;transition:.12s}
+  .chip:hover{border-color:var(--accent);color:var(--accent)}
+  .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+  .filters .sep{width:1px;align-self:stretch;background:var(--line);margin:2px 4px}
+  .hint{font-size:12.5px;color:var(--muted);margin:0 0 26px}
+
+  /* domain section */
+  .domain{margin:34px 0 0}
+  .domain.hidden{display:none}
+  .domain h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);
+    display:flex;align-items:center;gap:10px;margin:0 0 4px;border-top:1px solid var(--line);padding-top:22px}
+  .domain h2 .count{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+  .domain .blurb{color:var(--muted);font-size:14px;margin:0 0 14px}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px}
+  .feat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px 15px;
+    display:flex;flex-direction:column;gap:7px}
+  .feat.hidden{display:none}
+  .feat .top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .feat h3{font-size:15px;margin:0;line-height:1.3;letter-spacing:-.01em}
+  .feat p{margin:0;font-size:13.5px;color:#43403c;line-height:1.5}
+  .status{flex:none;font-size:10.5px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:20px;
+    text-transform:uppercase;white-space:nowrap}
+  .st-shipped{color:var(--shipped);background:var(--shipped-bg)}
+  .st-beta{color:var(--beta);background:var(--beta-bg)}
+  .st-planned{color:var(--planned);background:var(--planned-bg)}
+  .refs{margin-top:2px;display:flex;flex-wrap:wrap;gap:5px}
+  .ref{font-family:"SF Mono",Consolas,Menlo,monospace;font-size:11px;background:var(--codebg);
+    color:#605b54;padding:2px 6px;border-radius:5px}
+
+  /* reference tables */
+  .ref-section{margin-top:48px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;background:#fff;border:1px solid var(--line);
+    border-radius:10px;overflow:hidden;margin:10px 0 4px}
+  th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--soft);font-weight:600}
+  tr:last-child td{border-bottom:none}
+  td code,.inline-code{font-family:"SF Mono",Consolas,Menlo,monospace;font-size:12px;background:var(--codebg);
+    padding:1px 5px;border-radius:4px}
+  .enum-val{display:inline-block;font-family:"SF Mono",Consolas,Menlo,monospace;font-size:11.5px;
+    background:var(--codebg);padding:1px 6px;border-radius:5px;margin:2px 3px 0 0;color:#514d47}
+  footer{margin-top:46px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+  .domain h2 .dot{width:8px;height:8px;border-radius:50%;background:var(--accent2);flex:none}
+</style>
+</head>
+<body>
+<main>
+  <p class="crumbs"><a href="index.html">← Planning index</a> &nbsp;·&nbsp; <a href="principles.html">Principles</a></p>
+  <div class="kicker">Living feature inventory</div>
+  <h1>Toprock CRM — Feature Set</h1>
+  <p class="lede">Everything the product does today, organized by domain, with a maturity status on each
+  capability. This page evolves with the codebase — promote features from <b>planned → beta → shipped</b> as they land.</p>
+  <p class="meta">Last reviewed: <b>2026-06-13</b> &nbsp;·&nbsp; Single-tenant B2B sales tool · Next.js 16 App Router · Drizzle + Neon Postgres</p>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="filters">
+    <div class="grp" id="domainFilters"></div>
+    <span class="sep"></span>
+    <div class="grp" id="statusFilters"></div>
+  </div>
+  <p class="hint">Click a domain or status to filter. Click again to clear. Statuses: <b>shipped</b> = working &amp; in use · <b>beta</b> = built, newer / lightly exercised · <b>planned</b> = scaffolded or designed, not yet wired up.</p>
+
+  <div id="features"></div>
+
+  <!-- ===================== REFERENCE TABLES ===================== -->
+  <div class="ref-section">
+    <h2 style="font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border-top:1px solid var(--line);padding-top:22px;">Data model</h2>
+    <p class="domain blurb" style="margin:0 0 6px">Core tables in <span class="inline-code">src/lib/schema.ts</span>. Currency stored as integer cents; timestamps are timezone-aware.</p>
+    <table>
+      <thead><tr><th>Table</th><th>UI term</th><th>Key columns</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td><code>users</code></td><td>—</td><td>username, password_hash, display_name</td><td>Local auth users (bcrypt)</td></tr>
+        <tr><td><code>companies</code></td><td>Accounts</td><td>name, stage, website, industry, next_step, address, lat/lng, plaza_key</td><td>The org record + geo for proximity</td></tr>
+        <tr><td><code>contacts</code></td><td>Contacts</td><td>first/last, email, phone, linkedin, title, company_id</td><td>People at accounts</td></tr>
+        <tr><td><code>deals</code></td><td>Opportunities</td><td>name, stage, value_cents (MRR), implementation_cost_cents, owner, company_id, primary_contact_id, expected_close</td><td>Revenue pipeline</td></tr>
+        <tr><td><code>activities</code></td><td>Activities</td><td>type, notes, source, logged_by_user_id, company/contact/deal_id, occurred_at</td><td>Audit timeline (manual + agent)</td></tr>
+        <tr><td><code>sales_tasks</code></td><td>Tasks</td><td>title, status, due_date, assigned_to, deal/company_id</td><td>Follow-up reminders</td></tr>
+        <tr><td><code>relationships</code></td><td>—</td><td>from_type/id, to_type/id, edge_type, strength, evidence, source</td><td>Polymorphic typed trust graph</td></tr>
+        <tr><td><code>suggestions</code></td><td>Inbox</td><td>kind, title, payload (jsonb), confidence, status, agent_run_id</td><td>Human-in-the-loop proposal queue</td></tr>
+        <tr><td><code>agent_runs</code></td><td>—</td><td>loop, model, status, tokens_in/out, cost_cents, items_seen/proposed</td><td>Autonomy audit + token accounting</td></tr>
+        <tr><td><code>place_enrichment</code></td><td>—</td><td>company_id, formatted_address, lat/lng, plaza_key, provider</td><td>Geocode + cluster cache</td></tr>
+      </tbody>
+    </table>
+
+    <h2 style="font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border-top:1px solid var(--line);padding-top:22px;margin-top:34px;">Enums</h2>
+    <table>
+      <thead><tr><th>Enum</th><th>Values</th></tr></thead>
+      <tbody>
+        <tr><td><code>account_stage</code></td><td><span class="enum-val">new_lead</span><span class="enum-val">attempting_to_engage</span><span class="enum-val">engaged</span><span class="enum-val">in_pipeline</span><span class="enum-val">customer</span><span class="enum-val">closed_lost</span></td></tr>
+        <tr><td><code>deal_stage</code></td><td><span class="enum-val">lead</span><span class="enum-val">qualified</span><span class="enum-val">proposal</span><span class="enum-val">negotiation</span><span class="enum-val">won</span><span class="enum-val">lost</span></td></tr>
+        <tr><td><code>activity_type</code></td><td><span class="enum-val">note</span><span class="enum-val">call</span><span class="enum-val">meeting</span><span class="enum-val">email</span><span class="enum-val">instagram</span><span class="enum-val">linkedin</span><span class="enum-val">task</span></td></tr>
+        <tr><td><code>edge_type</code></td><td><span class="enum-val">referred_by</span><span class="enum-val">colocated_with</span><span class="enum-val">introduced_by</span><span class="enum-val">knows</span><span class="enum-val">vendor_of</span><span class="enum-val">customer_of</span><span class="enum-val">partner_of</span><span class="enum-val">competitor_of</span></td></tr>
+        <tr><td><code>entity_type</code></td><td><span class="enum-val">company</span><span class="enum-val">contact</span></td></tr>
+        <tr><td><code>suggestion_status</code></td><td><span class="enum-val">pending</span><span class="enum-val">approved</span><span class="enum-val">rejected</span><span class="enum-val">auto_applied</span></td></tr>
+        <tr><td><code>data_source</code></td><td><span class="enum-val">manual</span><span class="enum-val">drive</span><span class="enum-val">gmail</span><span class="enum-val">agent</span></td></tr>
+        <tr><td><code>task_status</code></td><td><span class="enum-val">open</span><span class="enum-val">done</span></td></tr>
+      </tbody>
+    </table>
+
+    <h2 style="font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border-top:1px solid var(--line);padding-top:22px;margin-top:34px;">Routes</h2>
+    <table>
+      <thead><tr><th>Path</th><th>What it does</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><code>/</code></td><td>Dashboard — KPI grid (counts, pipeline/won MRR &amp; impl), pipeline focus, activity timeline</td><td><span class="status st-shipped">shipped</span></td></tr>
+        <tr><td><code>/login</code></td><td>Username/password auth</td><td><span class="status st-shipped">shipped</span></td></tr>
+        <tr><td><code>/accounts</code>, <code>/accounts/[id]</code></td><td>Account list + detail (stage, fields, contacts, deals, warm paths, proximity neighbors, relationship editor, enrich)</td><td><span class="status st-shipped">shipped</span></td></tr>
+        <tr><td><code>/contacts</code>, <code>/contacts/[id]</code></td><td>People list + detail with blur-autosave fields</td><td><span class="status st-shipped">shipped</span></td></tr>
+        <tr><td><code>/opportunities</code>, <code>/opportunities/[id]</code></td><td>Deal list + detail (fields, stage history, contextual logging)</td><td><span class="status st-shipped">shipped</span></td></tr>
+        <tr><td><code>/tasks</code></td><td>Open vs. done tasks, due-date ordering</td><td><span class="status st-shipped">shipped</span></td></tr>
+        <tr><td><code>/activities</code></td><td>Global activity timeline + quick log</td><td><span class="status st-shipped">shipped</span></td></tr>
+        <tr><td><code>/inbox</code></td><td>Sourcing review queue — approve/dismiss agent-proposed leads</td><td><span class="status st-beta">beta</span></td></tr>
+        <tr><td><code>/map</code></td><td>Leaflet map of customers, accounts, and candidate leads with sourcing radius</td><td><span class="status st-beta">beta</span></td></tr>
+        <tr><td><code>/customers</code>, <code>/customers/[id]</code></td><td>Back-compat redirects → <code>/accounts</code></td><td><span class="status st-shipped">shipped</span></td></tr>
+      </tbody>
+    </table>
+
+    <h2 style="font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border-top:1px solid var(--line);padding-top:22px;margin-top:34px;">Scripts &amp; tooling</h2>
+    <table>
+      <thead><tr><th>Script</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>create-user.mjs</code></td><td>Hash + upsert a local auth user</td></tr>
+        <tr><td><code>add-lead.mjs</code></td><td>Quick-add one account as <code>new_lead</code></td></tr>
+        <tr><td><code>seed-demo.mjs</code> / <code>cleanup-demo.mjs</code></td><td>Seed / tear down the Riverton demo graph</td></tr>
+        <tr><td><code>enrich-demo.mjs</code> / <code>enrich-real.mjs</code></td><td>Batch website scrape + geocode (non-destructive fill)</td></tr>
+        <tr><td><code>link-proximity.mjs</code></td><td>Auto-create <code>colocated_with</code> edges from geocoded coordinates</td></tr>
+        <tr><td><code>source-nearby.mjs</code></td><td>OSM Overpass nearby-business discovery → suggestions queue</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>Persistent tier · maintained by the <strong>html-context-planning</strong> skill. To add a capability, append a <span class="inline-code">.feat</span> block with its domain + status and bump the "Last reviewed" date.</footer>
+</main>
+
+<script>
+// ---- Feature data: the single source of truth this page renders from. ----
+// To add a feature: push an object with {domain, title, desc, status, refs}.
+// status ∈ shipped | beta | planned.
+const DOMAINS = [
+  {key:"core",     label:"Core CRM Records", blurb:"Accounts, contacts, opportunities, tasks, and activities — the system of record."},
+  {key:"dashboard",label:"Dashboard & Pipeline", blurb:"At-a-glance revenue health and what to work next."},
+  {key:"graph",    label:"Trust Graph", blurb:"A typed, weighted relationship graph that surfaces warm paths into prospects."},
+  {key:"proximity",label:"Proximity / Plaza Play", blurb:"Geo-clustering to prospect businesses next to proven customers."},
+  {key:"sourcing", label:"Sourcing & Inbox", blurb:"Agent-proposed leads gated through a human-in-the-loop review queue."},
+  {key:"map",      label:"Geographic Map", blurb:"Spatial view of the book of business and sourcing candidates."},
+  {key:"enrich",   label:"Enrichment & Geocoding", blurb:"Fill account data from public sources with no paid APIs."},
+  {key:"agent",    label:"Agent Infrastructure", blurb:"Audit trail, token accounting, and the autonomy substrate."},
+  {key:"platform", label:"Platform & Auth", blurb:"Session security, data conventions, and UX patterns."},
+];
+
+const FEATURES = [
+  // ---- Core CRM ----
+  {domain:"core", status:"shipped", title:"Account management", desc:"Create accounts with stage, website, industry, next step & due date. Inline blur-autosave on detail; stage workflow new_lead → customer / closed_lost.", refs:["companies","createCompany","updateCompanyField"]},
+  {domain:"core", status:"shipped", title:"Contact management", desc:"People linked to accounts; title, email, phone, LinkedIn. Blur-autosave editing; US phone normalization with a tel: Call button.", refs:["contacts","createContact","updateContactField"]},
+  {domain:"core", status:"shipped", title:"Opportunity pipeline", desc:"Deals with MRR + implementation cost (stored as cents), owner, expected close. Stage lead → won/lost with reason capture that auto-logs an activity.", refs:["deals","createDeal","updateDeal","updateDealStage"]},
+  {domain:"core", status:"shipped", title:"Tasks & follow-ups", desc:"Due-dated tasks assigned to a user, linkable to a deal or account. Open vs. done split; complete-in-place keeps history.", refs:["sales_tasks","createTask","completeTask"]},
+  {domain:"core", status:"shipped", title:"Activity logging", desc:"Note / call / meeting / email / Instagram / LinkedIn / task entries against any record, with editable occurred-on date and source attribution.", refs:["activities","logActivity","updateActivityDate"]},
+  {domain:"core", status:"shipped", title:"Collapsible create forms", desc:"Create/log forms default collapsed, auto-close on submit, and stay minimized after refresh for a dense workspace.", refs:["CollapsibleFormSection"]},
+
+  // ---- Dashboard ----
+  {domain:"dashboard", status:"shipped", title:"KPI dashboard", desc:"Six-card grid: account & contact counts, pipeline MRR, won MRR, pipeline & won implementation revenue.", refs:["/","format.ts"]},
+  {domain:"dashboard", status:"shipped", title:"Pipeline focus & timeline", desc:"Surfaces deals needing attention with overdue next steps highlighted, plus a recent-activity feed.", refs:["ActivityTimeline"]},
+
+  // ---- Trust Graph ----
+  {domain:"graph", status:"beta", title:"Polymorphic relationship graph", desc:"One edge table links any company/contact to any other, typed (referred_by, colocated_with, knows, …) and weighted 0–100 with evidence + decay.", refs:["relationships","schema.ts"]},
+  {domain:"graph", status:"beta", title:"Warm-path discovery", desc:"Dijkstra from a prospect to every customer anchor, ranked by hops + weakest-link strength. Classifies warmth high/medium/low and renders the intro path.", refs:["graph.ts:findWarmPaths","/accounts/[id]"]},
+  {domain:"graph", status:"beta", title:"Relationship editor", desc:"On account detail: pick edge type, target entity (grouped companies/contacts), a strength slider, and evidence; submits a deduped bidirectional edge.", refs:["RelationshipEditor","createRelationship","deleteRelationship"]},
+  {domain:"graph", status:"beta", title:"Edge-type styling", desc:"Shared labels + tone classes so edge types and warmth render consistently across the UI.", refs:["edge-type.ts"]},
+
+  // ---- Proximity ----
+  {domain:"proximity", status:"beta", title:"Proximity neighbors", desc:"Haversine distance + shared plaza_key surfaces colocated businesses (\"nearby in your beachhead\") on account detail, ranked by distance.", refs:["graph.ts:findProximityNeighbors"]},
+  {domain:"proximity", status:"beta", title:"Auto proximity linking", desc:"Batch job creates colocated_with edges between geocoded companies within ~150m, with distance-decayed strength.", refs:["link-proximity.mjs"]},
+
+  // ---- Sourcing & Inbox ----
+  {domain:"sourcing", status:"beta", title:"Nearby-business sourcing", desc:"Queries OpenStreetMap Overpass for businesses within 250m of each customer, filters junk amenities, and files them as scored proposals.", refs:["source-nearby.mjs","suggestions"]},
+  {domain:"sourcing", status:"beta", title:"Human-in-the-loop inbox", desc:"Pending suggestions ranked by confidence with evidence; approve creates a new_lead + auto-wires a colocated_with edge, dismiss rejects.", refs:["/inbox","approveSuggestion","dismissSuggestion"]},
+  {domain:"sourcing", status:"planned", title:"Email / Drive ingestion loops", desc:"data_source and agent_runs.loop reserve gmail & drive ingestion that proposes contacts/activities into the same queue — schema is in place, loops not yet wired.", refs:["data_source","agent_runs.loop"]},
+  {domain:"sourcing", status:"planned", title:"Auto-apply high-confidence", desc:"suggestions.auto_applied + auto_applied status exist to let very high-confidence proposals skip manual review; policy not yet enabled.", refs:["suggestions.autoApplied"]},
+
+  // ---- Map ----
+  {domain:"map", status:"beta", title:"Sourcing map", desc:"Leaflet + OpenStreetMap tiles plotting customers (blue), accounts (gray), and candidate leads (tan) with 250m sourcing rings and fit-to-bounds.", refs:["/map","SourcingMap","LeafletCanvas"]},
+  {domain:"map", status:"beta", title:"In-map approve/dismiss", desc:"Candidate pins expose approve/dismiss directly from their popup, closing the sourcing loop on the map.", refs:["LeafletCanvas"]},
+
+  // ---- Enrichment ----
+  {domain:"enrich", status:"beta", title:"Website enrichment", desc:"\"Enrich from website\" scrapes title, description, emails, phones, address, socials & an industry guess — filling only empty fields and logging an agent activity.", refs:["enrich.ts:scrapeCompanyWebsite","enrichCompanyFromWebsite"]},
+  {domain:"enrich", status:"beta", title:"Multi-provider geocoding", desc:"Address → coordinates via Google → US Census → Nominatim fallback, cached in place_enrichment so renders don't re-hit the API.", refs:["geocode.ts","place_enrichment"]},
+  {domain:"enrich", status:"beta", title:"Batch enrichment scripts", desc:"Run enrichment + geocoding across the whole book non-destructively from the CLI.", refs:["enrich-real.mjs","enrich-demo.mjs"]},
+
+  // ---- Agent infra ----
+  {domain:"agent", status:"shipped", title:"Source attribution", desc:"Every activity and edge records whether it came from a human (manual) or an agent, keeping autonomy auditable.", refs:["data_source"]},
+  {domain:"agent", status:"planned", title:"Agent run accounting", desc:"agent_runs logs each loop execution with model, token in/out, cost, and items seen/proposed — table exists for when standing loops run on a schedule.", refs:["agent_runs"]},
+
+  // ---- Platform ----
+  {domain:"platform", status:"shipped", title:"JWT cookie auth", desc:"Custom username/password login with a signed session cookie; every page gated by requireUser(), passwords bcrypt-hashed.", refs:["auth.ts","login","requireUser"]},
+  {domain:"platform", status:"shipped", title:"Gong-inspired workspace UI", desc:"Dark utility sidebar, bright analytics canvas, crisp white panels, cyan/blue accents — dense but readable.", refs:["CrmShell"]},
+  {domain:"platform", status:"shipped", title:"Back-compat redirects", desc:"/customers and /customers/[id] redirect to /accounts to preserve old links.", refs:["/customers"]},
+  {domain:"platform", status:"planned", title:"Multi-tenant authorization", desc:"Currently single-tenant: every authenticated user sees all data. Per-user/org boundaries are known tech debt.", refs:["AGENTS.md"]},
+];
+
+const STATUS_LABEL = {shipped:"Shipped", beta:"Beta", planned:"Planned"};
+const state = {domain:null, status:null};
+
+function render(){
+  // stats
+  const counts = {shipped:0, beta:0, planned:0};
+  FEATURES.forEach(f=>counts[f.status]++);
+  document.getElementById("stats").innerHTML =
+    `<div class="stat"><div class="n">${FEATURES.length}</div><div class="l">Capabilities</div></div>`+
+    `<div class="stat"><div class="n" style="color:var(--shipped)">${counts.shipped}</div><div class="l">Shipped</div></div>`+
+    `<div class="stat"><div class="n" style="color:var(--beta)">${counts.beta}</div><div class="l">Beta</div></div>`+
+    `<div class="stat"><div class="n" style="color:var(--planned)">${counts.planned}</div><div class="l">Planned</div></div>`+
+    `<div class="stat"><div class="n">${DOMAINS.length}</div><div class="l">Domains</div></div>`;
+
+  // domain filter chips
+  document.getElementById("domainFilters").innerHTML = DOMAINS.map(d=>
+    `<button class="chip" data-kind="domain" data-val="${d.key}" aria-pressed="${state.domain===d.key}">${d.label}</button>`).join("");
+  // status filter chips
+  document.getElementById("statusFilters").innerHTML = ["shipped","beta","planned"].map(s=>
+    `<button class="chip" data-kind="status" data-val="${s}" aria-pressed="${state.status===s}">${STATUS_LABEL[s]}</button>`).join("");
+
+  // feature sections
+  const host = document.getElementById("features");
+  host.innerHTML = DOMAINS.map(d=>{
+    const items = FEATURES.filter(f=>f.domain===d.key &&
+      (!state.status || f.status===state.status));
+    const domainVisible = (!state.domain || state.domain===d.key) && items.length>0;
+    const cards = items.map(f=>`
+      <div class="feat">
+        <div class="top">
+          <h3>${f.title}</h3>
+          <span class="status st-${f.status}">${f.status}</span>
+        </div>
+        <p>${f.desc}</p>
+        <div class="refs">${f.refs.map(r=>`<span class="ref">${r}</span>`).join("")}</div>
+      </div>`).join("");
+    return `<section class="domain${domainVisible?"":" hidden"}">
+        <h2><span class="dot"></span>${d.label} <span class="count">${items.length}</span></h2>
+        <p class="blurb">${d.blurb}</p>
+        <div class="grid">${cards}</div>
+      </section>`;
+  }).join("");
+
+  document.querySelectorAll(".chip").forEach(btn=>btn.addEventListener("click",()=>{
+    const {kind,val}=btn.dataset;
+    state[kind] = state[kind]===val ? null : val;
+    render();
+  }));
+}
+render();
+</script>
+</body>
+</html>

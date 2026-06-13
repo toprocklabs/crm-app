@@ -1,15 +1,18 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { setFlashToast } from "@/lib/flash";
 import { requireUser } from "@/lib/auth";
 import { accountStageOptions } from "@/lib/account-stage";
+import { edgeTypeOptions } from "@/lib/edge-type";
 import { getDb } from "@/lib/db";
 import { companyIndustries } from "@/lib/company-industries";
 import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
-import { activities, companies, contacts, deals, salesTasks, users } from "@/lib/schema";
+import { scrapeCompanyWebsite } from "@/lib/enrich";
+import { geocodeAddress } from "@/lib/geocode";
+import { activities, companies, contacts, deals, placeEnrichment, relationships, salesTasks, suggestions, users } from "@/lib/schema";
 
 const optionalCompanyIndustrySchema = z.enum(companyIndustries).optional().or(z.literal(""));
 const accountStageSchema = z.enum(accountStageOptions);
@@ -122,6 +125,24 @@ const companyFieldUpdateSchema = z.object({
   companyId: z.coerce.number().int().positive(),
   field: z.enum(["stage", "website", "customerProjectUrl", "industry", "nextStep", "nextStepDueDate"]),
   value: z.string().optional(),
+});
+
+const entityTypeSchema = z.enum(["company", "contact"]);
+
+const relationshipSchema = z.object({
+  fromType: entityTypeSchema,
+  fromId: z.coerce.number().int().positive(),
+  toType: entityTypeSchema,
+  toId: z.coerce.number().int().positive(),
+  edgeType: z.enum(edgeTypeOptions as [string, ...string[]]),
+  strength: z.coerce.number().int().min(0).max(100).optional(),
+  evidence: z.string().trim().optional(),
+  returnPath: z.string().optional(),
+});
+
+const relationshipDeleteSchema = z.object({
+  relationshipId: z.coerce.number().int().positive(),
+  returnPath: z.string().optional(),
 });
 
 function cleanOptionalText(value: string | undefined) {
@@ -696,4 +717,321 @@ export async function logActivity(formData: FormData) {
     revalidatePath(parsed.returnPath);
   }
   await setFlashToast("Activity logged");
+}
+
+const enrichSchema = z.object({
+  companyId: z.coerce.number().int().positive(),
+  returnPath: z.string().optional(),
+});
+
+export async function enrichCompanyFromWebsite(formData: FormData) {
+  const session = await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const parsed = enrichSchema.parse({
+    companyId: formData.get("companyId"),
+    returnPath: formData.get("returnPath"),
+  });
+
+  const company = await db.query.companies.findFirst({
+    where: eq(companies.id, parsed.companyId),
+  });
+  if (!company) {
+    throw new Error("Account not found.");
+  }
+  if (!company.website) {
+    await setFlashToast("Add a website first, then enrich.");
+    return;
+  }
+
+  const result = await scrapeCompanyWebsite(company.website);
+
+  if (!result.ok) {
+    await setFlashToast(`Could not scrape site: ${result.error ?? "unknown error"}`);
+    if (parsed.returnPath?.startsWith("/")) {
+      revalidatePath(parsed.returnPath);
+    }
+    return;
+  }
+
+  // Fill structured fields only when empty — never clobber human-entered data.
+  const updates: Partial<typeof companies.$inferInsert> = {};
+  if (!company.address && result.address) {
+    updates.address = result.address;
+  }
+  if (!company.industry && result.industryGuess) {
+    updates.industry = result.industryGuess;
+  }
+
+  // Geocode the address (scraped or already on file) when we don't have
+  // coordinates yet, so the proximity / "plaza neighbors" graph can use it.
+  const addressToGeocode = updates.address ?? company.address;
+  let geocode: Awaited<ReturnType<typeof geocodeAddress>> = null;
+  if (addressToGeocode && company.lat == null && company.lng == null) {
+    geocode = await geocodeAddress(addressToGeocode);
+    if (geocode) {
+      updates.lat = geocode.lat;
+      updates.lng = geocode.lng;
+    }
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await db.update(companies).set(updates).where(eq(companies.id, company.id));
+  }
+
+  // Cache the geocode so we don't re-hit the provider on every render.
+  if (geocode) {
+    await db
+      .insert(placeEnrichment)
+      .values({
+        companyId: company.id,
+        formattedAddress: geocode.formattedAddress,
+        lat: geocode.lat,
+        lng: geocode.lng,
+        provider: geocode.provider,
+      })
+      .onConflictDoUpdate({
+        target: placeEnrichment.companyId,
+        set: {
+          formattedAddress: geocode.formattedAddress,
+          lat: geocode.lat,
+          lng: geocode.lng,
+          provider: geocode.provider,
+        },
+      });
+  }
+
+  // Log everything we found as an agent-sourced activity so it is auditable
+  // and reversible, and the contact details surface for human follow-up.
+  const lines: string[] = [`Website enrichment from ${result.fetchedUrl}`];
+  if (result.description) lines.push(`About: ${result.description}`);
+  if (result.industryGuess) lines.push(`Industry guess: ${result.industryGuess}`);
+  if (result.address) lines.push(`Address: ${result.address}`);
+  if (geocode) lines.push(`Geocoded (${geocode.provider}): ${geocode.lat.toFixed(5)}, ${geocode.lng.toFixed(5)}`);
+  if (result.emails.length) lines.push(`Emails: ${result.emails.join(", ")}`);
+  if (result.phones.length) lines.push(`Phones: ${result.phones.join(", ")}`);
+  const socialList = Object.values(result.socials).filter(Boolean);
+  if (socialList.length) lines.push(`Social: ${socialList.join(", ")}`);
+  if (lines.length === 1) lines.push("No structured contact details found on the homepage.");
+
+  await db.insert(activities).values({
+    type: "note",
+    notes: lines.join("\n"),
+    loggedByUserId: session.userId,
+    companyId: company.id,
+    source: "agent",
+  });
+
+  revalidatePath(`/accounts/${company.id}`);
+  revalidatePath("/accounts");
+  if (parsed.returnPath?.startsWith("/")) {
+    revalidatePath(parsed.returnPath);
+  }
+  await setFlashToast(
+    `Enriched from website — ${result.emails.length} email(s), ${result.phones.length} phone(s) found`,
+  );
+}
+
+// --- Sourcing suggestion queue (nearby-business leads) ---
+
+const suggestionActionSchema = z.object({
+  suggestionId: z.coerce.number().int().positive(),
+});
+
+type NewCompanySuggestionPayload = {
+  name?: string;
+  address?: string;
+  lat?: number;
+  lng?: number;
+  nearCompanyId?: number;
+  nearCompanyName?: string;
+  category?: string;
+};
+
+// Promote a sourced "nearby business" suggestion into a real new_lead account,
+// and auto-link it to the customer it was found near (so the warm-path graph
+// immediately knows the new lead sits in a proven plaza).
+export async function approveSuggestion(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const { suggestionId } = suggestionActionSchema.parse({
+    suggestionId: formData.get("suggestionId"),
+  });
+
+  const suggestion = await db.query.suggestions.findFirst({
+    where: eq(suggestions.id, suggestionId),
+  });
+  if (!suggestion || suggestion.status !== "pending") {
+    await setFlashToast("That suggestion was already handled.");
+    revalidatePath("/inbox");
+    return;
+  }
+
+  const payload = (suggestion.payload ?? {}) as NewCompanySuggestionPayload;
+  const name = payload.name?.trim();
+  if (!name) {
+    await setFlashToast("Suggestion is missing a business name.");
+    return;
+  }
+
+  // Don't create a duplicate if the user already added this account by hand.
+  const existing = await db.query.companies.findFirst({
+    where: eq(companies.name, name),
+  });
+
+  let companyId = existing?.id ?? null;
+  if (!companyId) {
+    const inserted = await db
+      .insert(companies)
+      .values({
+        name,
+        stage: "new_lead",
+        industry: normalizeCompanyIndustry(payload.category),
+        address: payload.address ?? null,
+        lat: payload.lat ?? null,
+        lng: payload.lng ?? null,
+      })
+      .returning({ id: companies.id });
+    companyId = inserted[0].id;
+  }
+
+  // Auto-wire the colocated edge back to the customer it was sourced near.
+  if (payload.nearCompanyId && companyId !== payload.nearCompanyId) {
+    const [fromId, toId] =
+      companyId < payload.nearCompanyId
+        ? [companyId, payload.nearCompanyId]
+        : [payload.nearCompanyId, companyId];
+    await db
+      .insert(relationships)
+      .values({
+        fromType: "company",
+        fromId,
+        toType: "company",
+        toId,
+        edgeType: "colocated_with",
+        strength: 80,
+        evidence: suggestion.evidence ?? `Sourced near ${payload.nearCompanyName ?? "a customer"}`,
+        source: "agent",
+      })
+      .onConflictDoNothing();
+  }
+
+  await db
+    .update(suggestions)
+    .set({ status: "approved", resolvedAt: new Date() })
+    .where(eq(suggestions.id, suggestionId));
+
+  revalidatePath("/inbox");
+  revalidatePath("/map");
+  revalidatePath("/accounts");
+  revalidatePath("/");
+  await setFlashToast(`Added ${name} as a new lead`);
+}
+
+export async function dismissSuggestion(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const { suggestionId } = suggestionActionSchema.parse({
+    suggestionId: formData.get("suggestionId"),
+  });
+
+  await db
+    .update(suggestions)
+    .set({ status: "rejected", resolvedAt: new Date() })
+    .where(and(eq(suggestions.id, suggestionId), eq(suggestions.status, "pending")));
+
+  revalidatePath("/inbox");
+  revalidatePath("/map");
+  await setFlashToast("Suggestion dismissed");
+}
+
+export async function createRelationship(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const parsed = relationshipSchema.parse({
+    fromType: formData.get("fromType"),
+    fromId: formData.get("fromId"),
+    toType: formData.get("toType"),
+    toId: formData.get("toId"),
+    edgeType: formData.get("edgeType"),
+    strength: formData.get("strength") ?? undefined,
+    evidence: formData.get("evidence"),
+    returnPath: formData.get("returnPath"),
+  });
+
+  if (parsed.fromType === parsed.toType && parsed.fromId === parsed.toId) {
+    throw new Error("An entity cannot have a relationship to itself.");
+  }
+
+  await db
+    .insert(relationships)
+    .values({
+      fromType: parsed.fromType,
+      fromId: parsed.fromId,
+      toType: parsed.toType,
+      toId: parsed.toId,
+      edgeType: parsed.edgeType as (typeof edgeTypeOptions)[number],
+      strength: parsed.strength ?? 50,
+      evidence: cleanOptionalText(parsed.evidence),
+      source: "manual",
+    })
+    .onConflictDoUpdate({
+      target: [
+        relationships.fromType,
+        relationships.fromId,
+        relationships.toType,
+        relationships.toId,
+        relationships.edgeType,
+      ],
+      set: {
+        strength: parsed.strength ?? 50,
+        evidence: cleanOptionalText(parsed.evidence),
+        lastConfirmedAt: new Date(),
+      },
+    });
+
+  if (parsed.returnPath?.startsWith("/")) {
+    revalidatePath(parsed.returnPath);
+  }
+  await setFlashToast("Relationship saved");
+}
+
+export async function deleteRelationship(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const parsed = relationshipDeleteSchema.parse({
+    relationshipId: formData.get("relationshipId"),
+    returnPath: formData.get("returnPath"),
+  });
+
+  await db.delete(relationships).where(eq(relationships.id, parsed.relationshipId));
+
+  if (parsed.returnPath?.startsWith("/")) {
+    revalidatePath(parsed.returnPath);
+  }
+  await setFlashToast("Relationship removed");
 }
