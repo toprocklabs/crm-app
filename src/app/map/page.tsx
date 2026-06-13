@@ -6,6 +6,7 @@ import type { MapCandidate } from "@/components/leaflet-canvas";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { companies, suggestions } from "@/lib/schema";
+import { scoreFromPayload, tierLabel } from "@/lib/referral-score";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,8 @@ type CandidatePayload = {
 const LEGEND = [
   { label: "Customer", color: "#185FA5" },
   { label: "Account", color: "#888780" },
-  { label: "Candidate lead", color: "#BA7517" },
+  { label: "Strong prospect", color: "#1D9E75" },
+  { label: "Medium prospect", color: "#BA7517" },
 ];
 
 export default async function MapPage() {
@@ -57,6 +59,7 @@ export default async function MapPage() {
     .filter((s) => s.kind === "new_company")
     .map((s) => {
       const p = (s.payload ?? {}) as CandidatePayload;
+      const score = scoreFromPayload(p);
       return {
         id: s.id,
         name: p.name ?? s.title,
@@ -66,6 +69,10 @@ export default async function MapPage() {
         lng: p.lng ?? null,
         distanceMeters: p.distanceMeters ?? null,
         nearCompanyName: p.nearCompanyName ?? null,
+        combined: score.combined,
+        warmth: score.warmth,
+        fit: score.fit,
+        tierLabel: tierLabel(score.tier),
       };
     })
     .filter((c): c is MapCandidate => c.lat != null && c.lng != null);

@@ -23,6 +23,11 @@ export type MapCandidate = {
   lng: number;
   distanceMeters: number | null;
   nearCompanyName: string | null;
+  // Referral scores (warmth × fit), computed in src/lib/referral-score.ts.
+  combined: number;
+  warmth: number;
+  fit: number;
+  tierLabel: string;
 };
 
 // Matches the sourcing radius in scripts/source-nearby.mjs.
@@ -30,7 +35,13 @@ const SOURCING_RADIUS_M = 250;
 
 const COLOR_CUSTOMER = "#185FA5";
 const COLOR_ACCOUNT = "#888780";
-const COLOR_CANDIDATE = "#BA7517";
+
+// Color a candidate pin by its combined referral score.
+function candidateColor(combined: number) {
+  if (combined >= 66) return "#1D9E75"; // strong
+  if (combined >= 40) return "#BA7517"; // medium
+  return "#888780"; // weak
+}
 
 // Fit the viewport to everything we plotted once, on mount.
 function FitBounds({ points }: { points: [number, number][] }) {
@@ -125,20 +136,25 @@ export default function LeafletCanvas({
             key={`cand-${c.id}`}
             center={[c.lat, c.lng]}
             radius={7}
-            pathOptions={{ color: "#ffffff", weight: 1.5, fillColor: COLOR_CANDIDATE, fillOpacity: 1 }}
+            pathOptions={{ color: "#ffffff", weight: 1.5, fillColor: candidateColor(c.combined), fillOpacity: 1 }}
           >
             <Popup>
               <div style={{ minWidth: 190 }}>
-                <p style={{ margin: 0, fontWeight: 600, fontSize: 13 }}>{c.name}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: 13 }}>{c.name}</p>
+                  <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 600, color: candidateColor(c.combined) }}>{c.combined}</span>
+                </div>
                 {c.category ? (
                   <p style={{ margin: "2px 0 0", fontSize: 12, color: "#475569", textTransform: "capitalize" }}>{c.category}</p>
                 ) : null}
                 {c.address ? <p style={{ margin: "2px 0 0", fontSize: 12, color: "#475569" }}>{c.address}</p> : null}
-                {c.distanceMeters != null ? (
-                  <p style={{ margin: "2px 0 0", fontSize: 12, color: "#64748b" }}>
-                    {c.distanceMeters}m from {c.nearCompanyName ?? "a customer"}
-                  </p>
-                ) : null}
+                <p style={{ margin: "3px 0 0", fontSize: 12, color: "#64748b" }}>
+                  {c.tierLabel}
+                  {c.distanceMeters != null ? ` · ${c.distanceMeters}m` : ""} from {c.nearCompanyName ?? "a customer"}
+                </p>
+                <p style={{ margin: "1px 0 0", fontSize: 11, color: "#94a3b8" }}>
+                  warmth {c.warmth} · fit {c.fit}
+                </p>
                 <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
                   <form action={approveSuggestion}>
                     <input type="hidden" name="suggestionId" value={c.id} />
