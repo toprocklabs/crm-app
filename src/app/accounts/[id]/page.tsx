@@ -9,6 +9,7 @@ import {
   deleteRelationship,
   enrichCompanyFromWebsite,
   logActivity,
+  researchAndEnrichCompany,
   updateActivityDate,
   updateCompanyField,
   updateContactField,
@@ -338,6 +339,16 @@ export default async function AccountDetailPage({ params }: Props) {
                     </button>
                   </form>
                 ) : null}
+                <form action={researchAndEnrichCompany}>
+                  <input type="hidden" name="companyId" value={company.id} />
+                  <input type="hidden" name="returnPath" value={`/accounts/${company.id}`} />
+                  <button
+                    type="submit"
+                    className="rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-800 hover:bg-violet-100"
+                  >
+                    Research &amp; enrich
+                  </button>
+                </form>
                 {company.customerProjectUrl ? (
                   <a
                     href={company.customerProjectUrl}

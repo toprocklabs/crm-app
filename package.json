@@ -18,6 +18,7 @@
     "cleanup:demo": "node scripts/cleanup-demo.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.105.0",
     "@neondatabase/serverless": "^1.0.2",
     "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.45.2",
