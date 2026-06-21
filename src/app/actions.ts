@@ -12,7 +12,7 @@ import { companyIndustries } from "@/lib/company-industries";
 import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { scrapeCompanyWebsite } from "@/lib/enrich";
 import { geocodeAddress } from "@/lib/geocode";
-import { reverseGeocode, sourceNearbyBusinesses, SOURCING_RADIUS_M } from "@/lib/source-nearby";
+import { sourceNearbyBusinesses } from "@/lib/source-nearby";
 import { activities, agentRuns, companies, contacts, deals, placeEnrichment, relationships, salesTasks, suggestions, users } from "@/lib/schema";
 
 const optionalCompanyIndustrySchema = z.enum(companyIndustries).optional().or(z.literal(""));
@@ -944,10 +944,13 @@ const scanSchema = z.object({
   companyId: z.coerce.number().int().positive(),
 });
 
+// Adaptive radius: OSM is sparse, so a tight ring often only re-surfaces the
+// businesses we already have. Widen until we turn up enough genuinely-new ones.
+const SCAN_RADII_M = [300, 1000];
+const MIN_NEW_TARGET = 6;
 // Cap how many new prospects one scan can queue — a simple budget guard until
 // the LLM analyst phase introduces a real token ceiling.
-const MAX_NEW_PER_SCAN = 25;
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const MAX_NEW_PER_SCAN = 20;
 const normName = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
 
 export async function scanCustomerForReferrals(formData: FormData) {
@@ -976,10 +979,8 @@ export async function scanCustomerForReferrals(formData: FormData) {
     .returning({ id: agentRuns.id });
   const runId = runRows[0]?.id;
 
-  const raw = await sourceNearbyBusinesses(company.lat, company.lng);
-
-  // De-dupe against the CRM and the existing queue so we never re-surface a
-  // business that's already an account or already waiting in the inbox.
+  // De-dupe sets first, so the adaptive radius can measure how many businesses
+  // are genuinely new (not already an account or already in the queue).
   const [companyRows, suggestionRows] = await Promise.all([
     db.select({ name: companies.name }).from(companies),
     db.select({ payload: suggestions.payload, kind: suggestions.kind, status: suggestions.status }).from(suggestions),
@@ -991,29 +992,36 @@ export async function scanCustomerForReferrals(formData: FormData) {
       .map((s) => normName(((s.payload ?? {}) as { name?: string }).name ?? ""))
       .filter(Boolean),
   );
+  const isFresh = (name: string) => {
+    const key = normName(name);
+    return !existing.has(key) && !queued.has(key);
+  };
 
+  // Widen the radius until we surface enough new businesses (or run out of tiers).
+  let raw: Awaited<ReturnType<typeof sourceNearbyBusinesses>> = [];
+  let radiusUsed = SCAN_RADII_M[0];
+  for (const r of SCAN_RADII_M) {
+    radiusUsed = r;
+    raw = await sourceNearbyBusinesses(company.lat, company.lng, r);
+    if (raw.filter((c) => isFresh(c.name)).length >= MIN_NEW_TARGET) break;
+  }
+
+  // Closest first — warmer prospects lead — then cap the batch.
   const fresh = raw
-    .filter((c) => {
-      const key = normName(c.name);
-      return !existing.has(key) && !queued.has(key);
-    })
+    .filter((c) => isFresh(c.name))
+    .sort((a, b) => a.distanceMeters - b.distanceMeters)
     .slice(0, MAX_NEW_PER_SCAN);
 
   let inserted = 0;
   for (const c of fresh) {
-    let address = c.address;
-    if (!address) {
-      address = await reverseGeocode(c.lat, c.lng);
-      await sleep(1100); // respect Nominatim's >= 1 req/sec policy
-    }
-    const confidence = Math.max(0, Math.min(100, Math.round(100 - (c.distanceMeters / SOURCING_RADIUS_M) * 40)));
+    const confidence = Math.max(5, Math.min(100, Math.round(100 - (c.distanceMeters / radiusUsed) * 60)));
     await db.insert(suggestions).values({
       kind: "new_company",
       title: `${c.name} — ${c.category} near ${company.name}`,
       payload: {
         name: c.name,
         category: c.category,
-        address,
+        address: c.address,
         lat: c.lat,
         lng: c.lng,
         nearCompanyId: company.id,
@@ -1031,17 +1039,25 @@ export async function scanCustomerForReferrals(formData: FormData) {
   if (runId) {
     await db
       .update(agentRuns)
-      .set({ status: "ok", itemsSeen: raw.length, itemsProposed: inserted, finishedAt: new Date() })
+      .set({
+        status: "ok",
+        itemsSeen: raw.length,
+        itemsProposed: inserted,
+        notes: `Find businesses near ${company.name} (radius ${radiusUsed}m)`,
+        finishedAt: new Date(),
+      })
       .where(eq(agentRuns.id, runId));
   }
 
   revalidatePath("/map");
   revalidatePath("/inbox");
-  await setFlashToast(
+  const message =
     inserted > 0
       ? `Found ${inserted} new business${inserted === 1 ? "" : "es"} near ${company.name}`
-      : `No new businesses found near ${company.name}`,
-  );
+      : raw.length > 0
+        ? `Every business OpenStreetMap maps near ${company.name} is already in your CRM`
+        : `OpenStreetMap has no businesses mapped near ${company.name} yet`;
+  await setFlashToast(message);
 }
 
 export async function dismissSuggestion(formData: FormData) {
