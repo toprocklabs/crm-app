@@ -1,9 +1,10 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
+import type { LeafletMouseEvent } from "leaflet";
 import { Fragment, useEffect } from "react";
 import { Circle, CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
-import { approveSuggestion, dismissSuggestion } from "@/app/actions";
+import { approveSuggestion, dismissSuggestion, scanCustomerForReferrals } from "@/app/actions";
 
 export type MapCompany = {
   id: number;
@@ -99,13 +100,28 @@ export default function LeafletCanvas({
               center={[c.lat, c.lng]}
               radius={8}
               pathOptions={{ color: "#ffffff", weight: 2, fillColor: COLOR_CUSTOMER, fillOpacity: 1 }}
+              eventHandlers={{
+                // Reveal the "find more nearby" action on hover; it stays open
+                // so you can click it (closes when you click elsewhere).
+                mouseover: (e: LeafletMouseEvent) =>
+                  (e.target as { openPopup?: () => void }).openPopup?.(),
+              }}
             >
               <Popup>
-                <div style={{ minWidth: 150 }}>
+                <div style={{ minWidth: 170 }}>
                   <p style={{ margin: 0, fontWeight: 600, fontSize: 13 }}>{c.name}</p>
-                  <p style={{ margin: "2px 0 0", fontSize: 12, color: "#475569" }}>
+                  <p style={{ margin: "2px 0 6px", fontSize: 12, color: "#475569" }}>
                     Customer{c.address ? ` • ${c.address}` : ""}
                   </p>
+                  <form action={scanCustomerForReferrals}>
+                    <input type="hidden" name="companyId" value={c.id} />
+                    <button
+                      type="submit"
+                      style={{ background: "#185FA5", color: "#fff", border: "none", borderRadius: 6, padding: "6px 10px", fontSize: 12, cursor: "pointer", width: "100%" }}
+                    >
+                      Find more businesses nearby
+                    </button>
+                  </form>
                 </div>
               </Popup>
             </CircleMarker>
