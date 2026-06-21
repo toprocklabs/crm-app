@@ -891,12 +891,17 @@ export async function approveSuggestion(formData: FormData) {
 
   let companyId = existing?.id ?? null;
   if (!companyId) {
+    // The OSM category (e.g. "beauty") is not a CRM industry — only keep it if
+    // it maps to a real one, otherwise leave industry unset for the user to fill.
+    const normalized = normalizeCompanyIndustry(payload.category);
+    const industry =
+      normalized && (companyIndustries as readonly string[]).includes(normalized) ? normalized : null;
     const inserted = await db
       .insert(companies)
       .values({
         name,
         stage: "new_lead",
-        industry: normalizeCompanyIndustry(payload.category),
+        industry,
         address: payload.address ?? null,
         lat: payload.lat ?? null,
         lng: payload.lng ?? null,
