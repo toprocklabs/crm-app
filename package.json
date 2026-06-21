@@ -13,12 +13,12 @@
     "user:create": "node scripts/create-user.mjs",
     "seed:demo": "node scripts/seed-demo.mjs",
     "enrich:real": "node scripts/enrich-real.mjs",
+    "enrich:apply": "node scripts/apply-enrichment.mjs",
     "link:proximity": "node scripts/link-proximity.mjs",
     "source:nearby": "node scripts/source-nearby.mjs",
     "cleanup:demo": "node scripts/cleanup-demo.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.105.0",
     "@neondatabase/serverless": "^1.0.2",
     "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.45.2",
