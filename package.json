@@ -13,6 +13,7 @@
     "user:create": "node scripts/create-user.mjs",
     "seed:demo": "node scripts/seed-demo.mjs",
     "enrich:real": "node scripts/enrich-real.mjs",
+    "enrich:apply": "node scripts/apply-enrichment.mjs",
     "link:proximity": "node scripts/link-proximity.mjs",
     "source:nearby": "node scripts/source-nearby.mjs",
     "cleanup:demo": "node scripts/cleanup-demo.mjs"

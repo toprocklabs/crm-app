@@ -12,7 +12,8 @@ import { companyIndustries } from "@/lib/company-industries";
 import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { scrapeCompanyWebsite } from "@/lib/enrich";
 import { geocodeAddress } from "@/lib/geocode";
-import { activities, companies, contacts, deals, placeEnrichment, relationships, salesTasks, suggestions, users } from "@/lib/schema";
+import { sourceNearbyBusinesses } from "@/lib/source-nearby";
+import { activities, agentRuns, companies, contacts, deals, placeEnrichment, relationships, salesTasks, suggestions, users } from "@/lib/schema";
 
 const optionalCompanyIndustrySchema = z.enum(companyIndustries).optional().or(z.literal(""));
 const accountStageSchema = z.enum(accountStageOptions);
@@ -890,12 +891,17 @@ export async function approveSuggestion(formData: FormData) {
 
   let companyId = existing?.id ?? null;
   if (!companyId) {
+    // The OSM category (e.g. "beauty") is not a CRM industry — only keep it if
+    // it maps to a real one, otherwise leave industry unset for the user to fill.
+    const normalized = normalizeCompanyIndustry(payload.category);
+    const industry =
+      normalized && (companyIndustries as readonly string[]).includes(normalized) ? normalized : null;
     const inserted = await db
       .insert(companies)
       .values({
         name,
         stage: "new_lead",
-        industry: normalizeCompanyIndustry(payload.category),
+        industry,
         address: payload.address ?? null,
         lat: payload.lat ?? null,
         lng: payload.lng ?? null,
@@ -935,6 +941,128 @@ export async function approveSuggestion(formData: FormData) {
   revalidatePath("/accounts");
   revalidatePath("/");
   await setFlashToast(`Added ${name} as a new lead`);
+}
+
+// --- Live sourcing: "Find more businesses nearby" from the map ---
+
+const scanSchema = z.object({
+  companyId: z.coerce.number().int().positive(),
+});
+
+// Adaptive radius: OSM is sparse, so a tight ring often only re-surfaces the
+// businesses we already have. Widen until we turn up enough genuinely-new ones.
+const SCAN_RADII_M = [300, 1000];
+const MIN_NEW_TARGET = 6;
+// Cap how many new prospects one scan can queue — a simple budget guard until
+// the LLM analyst phase introduces a real token ceiling.
+const MAX_NEW_PER_SCAN = 20;
+const normName = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
+
+export async function scanCustomerForReferrals(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const { companyId } = scanSchema.parse({ companyId: formData.get("companyId") });
+
+  const company = await db.query.companies.findFirst({ where: eq(companies.id, companyId) });
+  if (!company) {
+    throw new Error("Account not found.");
+  }
+  if (company.lat == null || company.lng == null) {
+    await setFlashToast("Geocode this account first (Enrich from website), then scan.");
+    return;
+  }
+
+  // Audit the run so every sweep is accountable (and budget-guardable later).
+  const runRows = await db
+    .insert(agentRuns)
+    .values({ loop: "sourcing", status: "running", notes: `Find businesses near ${company.name}` })
+    .returning({ id: agentRuns.id });
+  const runId = runRows[0]?.id;
+
+  // De-dupe sets first, so the adaptive radius can measure how many businesses
+  // are genuinely new (not already an account or already in the queue).
+  const [companyRows, suggestionRows] = await Promise.all([
+    db.select({ name: companies.name }).from(companies),
+    db.select({ payload: suggestions.payload, kind: suggestions.kind, status: suggestions.status }).from(suggestions),
+  ]);
+  const existing = new Set(companyRows.map((c) => normName(c.name)));
+  const queued = new Set(
+    suggestionRows
+      .filter((s) => s.kind === "new_company" && (s.status === "pending" || s.status === "approved"))
+      .map((s) => normName(((s.payload ?? {}) as { name?: string }).name ?? ""))
+      .filter(Boolean),
+  );
+  const isFresh = (name: string) => {
+    const key = normName(name);
+    return !existing.has(key) && !queued.has(key);
+  };
+
+  // Widen the radius until we surface enough new businesses (or run out of tiers).
+  let raw: Awaited<ReturnType<typeof sourceNearbyBusinesses>> = [];
+  let radiusUsed = SCAN_RADII_M[0];
+  for (const r of SCAN_RADII_M) {
+    radiusUsed = r;
+    raw = await sourceNearbyBusinesses(company.lat, company.lng, r);
+    if (raw.filter((c) => isFresh(c.name)).length >= MIN_NEW_TARGET) break;
+  }
+
+  // Closest first — warmer prospects lead — then cap the batch.
+  const fresh = raw
+    .filter((c) => isFresh(c.name))
+    .sort((a, b) => a.distanceMeters - b.distanceMeters)
+    .slice(0, MAX_NEW_PER_SCAN);
+
+  let inserted = 0;
+  for (const c of fresh) {
+    const confidence = Math.max(5, Math.min(100, Math.round(100 - (c.distanceMeters / radiusUsed) * 60)));
+    await db.insert(suggestions).values({
+      kind: "new_company",
+      title: `${c.name} — ${c.category} near ${company.name}`,
+      payload: {
+        name: c.name,
+        category: c.category,
+        address: c.address,
+        lat: c.lat,
+        lng: c.lng,
+        nearCompanyId: company.id,
+        nearCompanyName: company.name,
+        distanceMeters: c.distanceMeters,
+      },
+      confidence,
+      evidence: `Found via OpenStreetMap ~${c.distanceMeters}m from ${company.name} (customer)`,
+      source: "agent",
+      status: "pending",
+    });
+    inserted++;
+  }
+
+  if (runId) {
+    await db
+      .update(agentRuns)
+      .set({
+        status: "ok",
+        itemsSeen: raw.length,
+        itemsProposed: inserted,
+        notes: `Find businesses near ${company.name} (radius ${radiusUsed}m)`,
+        finishedAt: new Date(),
+      })
+      .where(eq(agentRuns.id, runId));
+  }
+
+  revalidatePath("/map");
+  revalidatePath("/inbox");
+  const message =
+    inserted > 0
+      ? `Found ${inserted} new business${inserted === 1 ? "" : "es"} near ${company.name}`
+      : raw.length > 0
+        ? `Every business OpenStreetMap maps near ${company.name} is already in your CRM`
+        : `OpenStreetMap has no businesses mapped near ${company.name} yet`;
+  await setFlashToast(message);
 }
 
 export async function dismissSuggestion(formData: FormData) {
