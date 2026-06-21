@@ -1,8 +1,8 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
-import type { LeafletMouseEvent } from "leaflet";
-import { Fragment, useEffect } from "react";
+import type { LeafletMouseEvent, Map as LeafletMap } from "leaflet";
+import { Fragment, useEffect, useRef } from "react";
 import { Circle, CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
 import { approveSuggestion, dismissSuggestion, scanCustomerForReferrals } from "@/app/actions";
 
@@ -57,6 +57,18 @@ function FitBounds({ points }: { points: [number, number][] }) {
   return null;
 }
 
+// Hand the live map instance back to the parent so marker clicks can fly to it.
+function CaptureMap({ mapRef }: { mapRef: { current: LeafletMap | null } }) {
+  const map = useMap();
+  useEffect(() => {
+    mapRef.current = map;
+  }, [map, mapRef]);
+  return null;
+}
+
+// Zoom level a single-pin click flies to (street level).
+const FOCUS_ZOOM = 17;
+
 export default function LeafletCanvas({
   customers,
   others,
@@ -73,6 +85,17 @@ export default function LeafletCanvas({
   ];
   const center: [number, number] = points[0] ?? [40.5223, -111.9531];
 
+  const mapRef = useRef<LeafletMap | null>(null);
+  // Click a pin → smoothly zoom in to it (at least street level) and open it,
+  // so you don't have to scroll-zoom manually.
+  const focusMarker = (lat: number, lng: number, e: LeafletMouseEvent) => {
+    const map = mapRef.current;
+    if (map) {
+      map.flyTo([lat, lng], Math.max(map.getZoom(), FOCUS_ZOOM), { duration: 0.6 });
+    }
+    (e.target as { openPopup?: () => void }).openPopup?.();
+  };
+
   return (
     // Own stacking context so Leaflet's high internal z-indexes stay scoped
     // and never paint over the app's sidebar / mobile drawer.
@@ -88,6 +111,7 @@ export default function LeafletCanvas({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <FitBounds points={points} />
+        <CaptureMap mapRef={mapRef} />
 
         {customers.map((c) => (
           <Fragment key={`cust-${c.id}`}>
@@ -105,6 +129,7 @@ export default function LeafletCanvas({
                 // so you can click it (closes when you click elsewhere).
                 mouseover: (e: LeafletMouseEvent) =>
                   (e.target as { openPopup?: () => void }).openPopup?.(),
+                click: (e: LeafletMouseEvent) => focusMarker(c.lat, c.lng, e),
               }}
             >
               <Popup>
@@ -134,6 +159,7 @@ export default function LeafletCanvas({
             center={[c.lat, c.lng]}
             radius={6}
             pathOptions={{ color: "#ffffff", weight: 1.5, fillColor: COLOR_ACCOUNT, fillOpacity: 1 }}
+            eventHandlers={{ click: (e: LeafletMouseEvent) => focusMarker(c.lat, c.lng, e) }}
           >
             <Popup>
               <div style={{ minWidth: 150 }}>
@@ -153,6 +179,7 @@ export default function LeafletCanvas({
             center={[c.lat, c.lng]}
             radius={7}
             pathOptions={{ color: "#ffffff", weight: 1.5, fillColor: candidateColor(c.combined), fillOpacity: 1 }}
+            eventHandlers={{ click: (e: LeafletMouseEvent) => focusMarker(c.lat, c.lng, e) }}
           >
             <Popup>
               <div style={{ minWidth: 190 }}>
