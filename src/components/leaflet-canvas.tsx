@@ -66,8 +66,9 @@ function CaptureMap({ mapRef }: { mapRef: { current: LeafletMap | null } }) {
   return null;
 }
 
-// Zoom level a single-pin click flies to (street level).
+// Zoom a pin click flies to; list-row clicks zoom in closer (storefront level).
 const FOCUS_ZOOM = 17;
+const PROSPECT_ZOOM = 18;
 
 export default function LeafletCanvas({
   customers,
@@ -94,20 +95,20 @@ export default function LeafletCanvas({
   const rankedCandidates = [...candidates].sort((a, b) => b.combined - a.combined);
 
   // Click a pin → smoothly zoom in to it and open it (no manual scroll-zoom).
-  const flyTo = (lat: number, lng: number) => {
+  const flyTo = (lat: number, lng: number, zoom: number) => {
     const map = mapRef.current;
     if (map) {
-      map.flyTo([lat, lng], Math.max(map.getZoom(), FOCUS_ZOOM), { duration: 0.6 });
+      map.flyTo([lat, lng], Math.max(map.getZoom(), zoom), { duration: 0.6 });
     }
   };
   const focusMarker = (lat: number, lng: number, e: LeafletMouseEvent) => {
-    flyTo(lat, lng);
+    flyTo(lat, lng, FOCUS_ZOOM);
     (e.target as { openPopup?: () => void }).openPopup?.();
   };
-  // Shared by a pin click and a list-row click: select, fly, open popup.
+  // List-row click: select, zoom in close, open the prospect's popup.
   const focusCandidate = (c: MapCandidate) => {
     setSelectedId(c.id);
-    flyTo(c.lat, c.lng);
+    flyTo(c.lat, c.lng, PROSPECT_ZOOM);
     candidateRefs.current.get(c.id)?.openPopup();
   };
 
