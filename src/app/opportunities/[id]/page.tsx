@@ -228,7 +228,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
         </div>
       </section>
 
-      <ProposalsPanel dealId={opportunity.id} />
+      <ProposalsPanel companyId={opportunity.companyId} dealId={opportunity.id} />
 
       <section className="grid gap-6 lg:grid-cols-2">
         <article id="opportunity-details" className="gong-panel rounded-xl p-5">

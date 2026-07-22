@@ -63,13 +63,22 @@ export default async function ProposalsPage() {
             <div className="space-y-3">
               <label className="flex flex-col gap-1 text-sm text-slate-700">
                 <span>Account</span>
-                <select name="companyId" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
+                <select name="companyId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
+                  <option value="">— New account (name below) —</option>
                   {companyRows.map((company) => (
                     <option key={company.id} value={company.id}>
                       {company.name}
                     </option>
                   ))}
                 </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm text-slate-700">
+                <span>New account name</span>
+                <input
+                  name="newAccountName"
+                  placeholder="Creates the account if it doesn't exist"
+                  className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
+                />
               </label>
               <label className="flex flex-col gap-1 text-sm text-slate-700">
                 <span>Title</span>
@@ -94,7 +103,8 @@ export default async function ProposalsPage() {
               </label>
               <label className="flex flex-col gap-1 text-sm text-slate-700">
                 <span>Opportunity</span>
-                <select name="dealId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
+                <select name="dealId" defaultValue="auto" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
+                  <option value="auto">Auto-create from this proposal</option>
                   <option value="">None</option>
                   {dealRows.map((deal) => (
                     <option key={deal.id} value={deal.id}>

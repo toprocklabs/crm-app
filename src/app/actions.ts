@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, ilike } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { setFlashToast } from "@/lib/flash";
@@ -15,6 +15,7 @@ import { geocodeAddress } from "@/lib/geocode";
 import { sourceNearbyBusinesses } from "@/lib/source-nearby";
 import { activities, agentRuns, companies, contacts, deals, placeEnrichment, proposals, relationships, salesTasks, suggestions, users } from "@/lib/schema";
 import { generatePin } from "@/lib/proposal/pin";
+import { parsePricingTable, parseSections } from "@/lib/proposal/markdown";
 
 const optionalCompanyIndustrySchema = z.enum(companyIndustries).optional().or(z.literal(""));
 const accountStageSchema = z.enum(accountStageOptions);
@@ -1170,8 +1171,10 @@ export async function deleteRelationship(formData: FormData) {
 const proposalStatusSchema = z.enum(["draft", "sent", "viewed", "signed", "declined", "superseded"]);
 
 const proposalCreateSchema = z.object({
-  companyId: z.coerce.number().int().positive(),
+  companyId: z.coerce.number().int().positive().optional(),
+  newAccountName: z.string().trim().optional(),
   dealId: z.coerce.number().int().positive().optional(),
+  autoCreateDeal: z.boolean(),
   contactId: z.coerce.number().int().positive().optional(),
   title: z.string().trim().min(2),
   clientName: z.string().trim().optional(),
@@ -1182,6 +1185,45 @@ const proposalCreateSchema = z.object({
   contentMd: z.string().optional(),
   returnPath: z.string().optional(),
 });
+
+// Best-effort revenue extraction from a proposal's pricing markdown:
+// MRR from the MONTHLY section, one-time from the ONE-TIME section
+// (preferring an explicit "Total ..." row over summing line items).
+function parsePricingTotals(contentMd: string) {
+  const rows = parsePricingTable(parseSections(contentMd)["Pricing"] ?? "");
+  const parseCost = (cost: string) => {
+    const m = cost.replace(/,/g, "").match(/\$?\s*(\d+(?:\.\d+)?)/);
+    return m ? Math.round(Number(m[1]) * 100) : 0;
+  };
+
+  let section: "one_time" | "monthly" | null = null;
+  let oneTimeSum = 0;
+  let oneTimeTotal = 0;
+  let monthlySum = 0;
+  let monthlyTotal = 0;
+
+  for (const row of rows) {
+    if (!row.description && !row.cost) {
+      const label = row.item.toLowerCase();
+      section = label.includes("month") ? "monthly" : label.includes("one") ? "one_time" : section;
+      continue;
+    }
+    const isTotal = row.item.toLowerCase().startsWith("total");
+    const cents = parseCost(row.cost);
+    if (section === "monthly" || /\/\s*mo/i.test(row.cost)) {
+      if (isTotal) monthlyTotal = cents;
+      else monthlySum += cents;
+    } else if (section === "one_time" || section === null) {
+      if (isTotal) oneTimeTotal = cents;
+      else oneTimeSum += cents;
+    }
+  }
+
+  return {
+    mrrCents: monthlyTotal || monthlySum,
+    oneTimeCents: oneTimeTotal || oneTimeSum,
+  };
+}
 
 const proposalUpdateSchema = z.object({
   proposalId: z.coerce.number().int().positive(),
@@ -1225,26 +1267,59 @@ export async function createProposal(formData: FormData) {
     throw new Error("DATABASE_URL is not set.");
   }
 
-  const rawDealId = formData.get("dealId")?.toString();
+  const rawDealId = formData.get("dealId")?.toString() ?? "";
+  const rawCompanyId = formData.get("companyId")?.toString();
   const rawContactId = formData.get("contactId")?.toString();
+  // formData.get() returns null for fields not present in the form; zod
+  // .optional() only accepts undefined.
+  const opt = (name: string) => formData.get(name)?.toString() ?? undefined;
 
   const parsed = proposalCreateSchema.parse({
-    companyId: formData.get("companyId"),
-    dealId: rawDealId ? Number(rawDealId) : undefined,
+    companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+    newAccountName: opt("newAccountName"),
+    dealId: rawDealId && rawDealId !== "auto" ? Number(rawDealId) : undefined,
+    autoCreateDeal: rawDealId === "auto",
     contactId: rawContactId ? Number(rawContactId) : undefined,
     title: formData.get("title"),
-    clientName: formData.get("clientName"),
-    business: formData.get("business"),
-    proposalDate: formData.get("proposalDate"),
-    slug: formData.get("slug"),
-    pin: formData.get("pin"),
-    contentMd: formData.get("contentMd"),
-    returnPath: formData.get("returnPath"),
+    clientName: opt("clientName"),
+    business: opt("business"),
+    proposalDate: opt("proposalDate"),
+    slug: opt("slug"),
+    pin: opt("pin"),
+    contentMd: opt("contentMd"),
+    returnPath: opt("returnPath"),
   });
 
-  const company = await db.query.companies.findFirst({ where: eq(companies.id, parsed.companyId) });
-  if (!company) {
-    throw new Error("Account not found.");
+  // Resolve the account: an explicit new-account name wins (created on the
+  // spot, matched case-insensitively first so we never duplicate), otherwise
+  // the selected existing account.
+  const newAccountName = cleanOptionalText(parsed.newAccountName);
+  let company: { id: number; name: string };
+  let createdAccount = false;
+
+  if (newAccountName) {
+    const existing = await db.query.companies.findFirst({
+      where: ilike(companies.name, newAccountName),
+    });
+    if (existing) {
+      company = existing;
+    } else {
+      const [inserted] = await db
+        .insert(companies)
+        .values({ name: newAccountName, stage: "in_pipeline" })
+        .returning({ id: companies.id, name: companies.name });
+      company = inserted;
+      createdAccount = true;
+    }
+  } else {
+    if (!parsed.companyId) {
+      throw new Error("Select an account or enter a new account name.");
+    }
+    const existing = await db.query.companies.findFirst({ where: eq(companies.id, parsed.companyId) });
+    if (!existing) {
+      throw new Error("Account not found.");
+    }
+    company = existing;
   }
 
   const business = cleanOptionalText(parsed.business) ?? company.name;
@@ -1252,10 +1327,42 @@ export async function createProposal(formData: FormData) {
   const proposalDate =
     cleanOptionalText(parsed.proposalDate) ??
     new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const contentMd = parsed.contentMd ?? "";
+
+  // Resolve the opportunity: picked one, or auto-create from the proposal
+  // (stage "proposal", value pulled from the pricing table when present).
+  let dealId: number | null = parsed.dealId ?? null;
+  let createdDeal = false;
+  if (dealId) {
+    const selectedDeal = await db.query.deals.findFirst({
+      columns: { id: true, companyId: true },
+      where: eq(deals.id, dealId),
+    });
+    if (!selectedDeal || selectedDeal.companyId !== company.id) {
+      throw new Error("Selected opportunity belongs to a different account.");
+    }
+  }
+  if (!dealId && parsed.autoCreateDeal) {
+    const totals = parsePricingTotals(contentMd);
+    const [insertedDeal] = await db
+      .insert(deals)
+      .values({
+        name: parsed.title,
+        stage: "proposal",
+        valueCents: totals.mrrCents,
+        implementationCostCents: totals.oneTimeCents,
+        nextStep: "Follow up on proposal",
+        companyId: company.id,
+        primaryContactId: parsed.contactId ?? null,
+      })
+      .returning({ id: deals.id });
+    dealId = insertedDeal.id;
+    createdDeal = true;
+  }
 
   await db.insert(proposals).values({
-    companyId: parsed.companyId,
-    dealId: parsed.dealId ?? null,
+    companyId: company.id,
+    dealId,
     contactId: parsed.contactId ?? null,
     title: parsed.title,
     slug,
@@ -1263,14 +1370,80 @@ export async function createProposal(formData: FormData) {
     clientName: cleanOptionalText(parsed.clientName) ?? "",
     business,
     proposalDate,
-    contentMd: parsed.contentMd ?? "",
+    contentMd,
   });
 
   revalidatePath("/proposals");
+  revalidatePath("/accounts");
+  revalidatePath(`/accounts/${company.id}`);
+  revalidatePath("/opportunities");
   if (parsed.returnPath?.startsWith("/")) {
     revalidatePath(parsed.returnPath);
   }
-  await setFlashToast("Proposal created");
+  const extras = [createdAccount ? "account" : null, createdDeal ? "opportunity" : null].filter(Boolean);
+  await setFlashToast(extras.length ? `Proposal created (+ new ${extras.join(" & ")})` : "Proposal created");
+}
+
+const proposalDealUpdateSchema = z.object({
+  proposalId: z.coerce.number().int().positive(),
+  dealId: z.coerce.number().int().positive().optional(),
+  returnPath: z.string().optional(),
+});
+
+// Tie (or untie) a Statement of Work to an opportunity. Used by the dropdown
+// in the Agreements panel on account/opportunity pages.
+export async function updateProposalDeal(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const rawDealId = formData.get("dealId")?.toString();
+  const parsed = proposalDealUpdateSchema.parse({
+    proposalId: formData.get("proposalId"),
+    dealId: rawDealId ? Number(rawDealId) : undefined,
+    returnPath: formData.get("returnPath")?.toString() ?? undefined,
+  });
+
+  const existing = await db.query.proposals.findFirst({
+    columns: { id: true, companyId: true, dealId: true },
+    where: eq(proposals.id, parsed.proposalId),
+  });
+  if (!existing) {
+    throw new Error("Proposal not found.");
+  }
+
+  if (parsed.dealId) {
+    const deal = await db.query.deals.findFirst({
+      columns: { id: true, companyId: true },
+      where: eq(deals.id, parsed.dealId),
+    });
+    if (!deal) {
+      throw new Error("Opportunity not found.");
+    }
+    if (deal.companyId !== existing.companyId) {
+      throw new Error("Opportunity belongs to a different account.");
+    }
+  }
+
+  await db
+    .update(proposals)
+    .set({ dealId: parsed.dealId ?? null, updatedAt: new Date() })
+    .where(eq(proposals.id, parsed.proposalId));
+
+  revalidatePath("/proposals");
+  revalidatePath(`/accounts/${existing.companyId}`);
+  for (const affectedDealId of [existing.dealId, parsed.dealId]) {
+    if (affectedDealId) {
+      revalidatePath(`/opportunities/${affectedDealId}`);
+    }
+  }
+  if (parsed.returnPath?.startsWith("/")) {
+    revalidatePath(parsed.returnPath);
+  }
+  await setFlashToast(parsed.dealId ? "Proposal tied to opportunity" : "Proposal untied from opportunity");
 }
 
 const proposalPinUpdateSchema = z.object({
@@ -1293,7 +1466,7 @@ export async function updateProposalPin(formData: FormData) {
   const parsed = proposalPinUpdateSchema.parse({
     proposalId: formData.get("proposalId"),
     pin: formData.get("pin"),
-    returnPath: formData.get("returnPath"),
+    returnPath: formData.get("returnPath")?.toString() ?? undefined,
   });
 
   const existing = await db.query.proposals.findFirst({
@@ -1329,21 +1502,25 @@ export async function updateProposal(formData: FormData) {
   const rawDealId = formData.get("dealId")?.toString();
   const rawContactId = formData.get("contactId")?.toString();
 
+  const opt = (name: string) => formData.get(name)?.toString() ?? undefined;
   const parsed = proposalUpdateSchema.parse({
     proposalId: formData.get("proposalId"),
     dealId: rawDealId ? Number(rawDealId) : undefined,
     contactId: rawContactId ? Number(rawContactId) : undefined,
     title: formData.get("title"),
-    clientName: formData.get("clientName"),
-    business: formData.get("business"),
-    proposalDate: formData.get("proposalDate"),
+    clientName: opt("clientName"),
+    business: opt("business"),
+    proposalDate: opt("proposalDate"),
     pin: formData.get("pin"),
     status: formData.get("status"),
-    contentMd: formData.get("contentMd"),
-    returnPath: formData.get("returnPath"),
+    contentMd: opt("contentMd"),
+    returnPath: opt("returnPath"),
   });
 
-  const existing = await db.query.proposals.findFirst({ where: eq(proposals.id, parsed.proposalId) });
+  const existing = await db.query.proposals.findFirst({
+    columns: { id: true, slug: true, business: true, proposalDate: true, contentMd: true, sentAt: true },
+    where: eq(proposals.id, parsed.proposalId),
+  });
   if (!existing) {
     throw new Error("Proposal not found.");
   }
@@ -1364,6 +1541,26 @@ export async function updateProposal(formData: FormData) {
       updatedAt: new Date(),
     })
     .where(eq(proposals.id, parsed.proposalId));
+
+  // If the linked opportunity has never had a value set, fill it from the
+  // proposal's pricing table (never overwrites manually-entered numbers).
+  const linkedDealId = parsed.dealId ?? null;
+  if (linkedDealId && parsed.contentMd) {
+    const totals = parsePricingTotals(parsed.contentMd);
+    if (totals.mrrCents || totals.oneTimeCents) {
+      const deal = await db.query.deals.findFirst({
+        columns: { id: true, valueCents: true, implementationCostCents: true },
+        where: eq(deals.id, linkedDealId),
+      });
+      if (deal && deal.valueCents === 0 && deal.implementationCostCents === 0) {
+        await db
+          .update(deals)
+          .set({ valueCents: totals.mrrCents, implementationCostCents: totals.oneTimeCents })
+          .where(eq(deals.id, linkedDealId));
+        revalidatePath(`/opportunities/${linkedDealId}`);
+      }
+    }
+  }
 
   revalidatePath("/proposals");
   revalidatePath(`/proposals/${parsed.proposalId}`);

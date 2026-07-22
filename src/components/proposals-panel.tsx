@@ -1,17 +1,21 @@
 import Link from "next/link";
 import { desc, eq, isNotNull } from "drizzle-orm";
-import { updateProposalPin } from "@/app/actions";
+import { updateProposalDeal, updateProposalPin } from "@/app/actions";
+import { AutoSaveProposalDealField } from "@/components/auto-save-proposal-deal-field";
 import { AutoSaveProposalPinField } from "@/components/auto-save-proposal-pin-field";
 import { getDb } from "@/lib/db";
 import { proposalStatusLabels, proposalStatusPillClasses } from "@/lib/proposal/status-ui";
-import { proposals } from "@/lib/schema";
+import { deals, proposals } from "@/lib/schema";
 
-// Shared "Proposals" panel for account and opportunity detail pages.
+// Shared "Proposals" panel for account and opportunity detail pages. Always
+// shows the whole account's SOWs with a per-row opportunity dropdown so any
+// proposal can be tied/re-tied; on an opportunity page (dealId set) that
+// opportunity's proposals sort first.
 export async function ProposalsPanel({
   companyId,
   dealId,
 }: {
-  companyId?: number;
+  companyId?: number | null;
   dealId?: number;
 }) {
   const db = getDb();
@@ -27,14 +31,29 @@ export async function ProposalsPanel({
       slug: proposals.slug,
       pin: proposals.pin,
       status: proposals.status,
+      dealId: proposals.dealId,
       proposalDate: proposals.proposalDate,
       signerName: proposals.signerName,
       signedAt: proposals.signedAt,
       hasSignedPdf: isNotNull(proposals.signedPdfBase64),
     })
     .from(proposals)
-    .where(dealId ? eq(proposals.dealId, dealId) : eq(proposals.companyId, companyId!))
+    .where(companyId ? eq(proposals.companyId, companyId) : eq(proposals.dealId, dealId!))
     .orderBy(desc(proposals.createdAt));
+
+  if (dealId) {
+    rows.sort((a, b) => Number(b.dealId === dealId) - Number(a.dealId === dealId));
+  }
+
+  const companyDeals = companyId
+    ? await db
+        .select({ id: deals.id, name: deals.name })
+        .from(deals)
+        .where(eq(deals.companyId, companyId))
+        .orderBy(desc(deals.createdAt))
+    : [];
+  const dealOptions = companyDeals.map((deal) => ({ value: String(deal.id), label: deal.name }));
+  const returnPath = dealId ? `/opportunities/${dealId}` : `/accounts/${companyId}`;
 
   return (
     <article id="proposals-panel" className="gong-panel rounded-xl p-5">
@@ -43,8 +62,8 @@ export async function ProposalsPanel({
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Agreements</p>
           <h2 className="mt-2 text-lg font-semibold text-slate-900">Proposals</h2>
           <p className="mt-2 text-sm text-slate-600">
-            Statements of work {dealId ? "for this opportunity" : "for this account"} — send the PIN-gated link, the
-            signed PDF lands here.
+            Statements of work for this account — use the dropdown to tie each one to an opportunity; the signed PDF
+            lands here.
           </p>
         </div>
         <Link
@@ -60,58 +79,84 @@ export async function ProposalsPanel({
             No proposals yet.
           </li>
         ) : null}
-        {rows.map((proposal) => (
-          <li key={proposal.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${proposalStatusPillClasses[proposal.status]}`}
-                  >
-                    {proposalStatusLabels[proposal.status]}
-                  </span>
-                  {proposal.signedAt ? (
-                    <span className="text-xs text-slate-500">
-                      Signed {proposal.signedAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                      {proposal.signerName ? ` by ${proposal.signerName}` : ""}
+        {rows.map((proposal) => {
+          const tiedToThisDeal = dealId != null && proposal.dealId === dealId;
+          return (
+            <li
+              key={proposal.id}
+              className={`rounded-xl border p-4 ${
+                tiedToThisDeal ? "border-cyan-200 bg-cyan-50/40" : "border-slate-200 bg-slate-50/70"
+              }`}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${proposalStatusPillClasses[proposal.status]}`}
+                    >
+                      {proposalStatusLabels[proposal.status]}
                     </span>
+                    {tiedToThisDeal ? (
+                      <span className="inline-flex rounded-full bg-cyan-100 px-2.5 py-1 text-xs font-semibold text-cyan-800">
+                        This opportunity
+                      </span>
+                    ) : null}
+                    {proposal.signedAt ? (
+                      <span className="text-xs text-slate-500">
+                        Signed {proposal.signedAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        {proposal.signerName ? ` by ${proposal.signerName}` : ""}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-2 font-medium text-slate-900">
+                    <Link href={`/proposals/${proposal.id}`} className="underline decoration-slate-300 underline-offset-2">
+                      {proposal.title}
+                    </Link>
+                  </p>
+                  {/* div, not p: the PIN editor renders a <form>, which is invalid
+                      inside <p> and causes a hydration mismatch. */}
+                  <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                    <span>{proposal.proposalDate} · PIN</span>
+                    <AutoSaveProposalPinField
+                      proposalId={proposal.id}
+                      defaultValue={proposal.pin}
+                      action={updateProposalPin}
+                      returnPath={returnPath}
+                    />
+                  </div>
+                  {companyId ? (
+                    <div className="mt-2">
+                      <AutoSaveProposalDealField
+                        proposalId={proposal.id}
+                        defaultValue={proposal.dealId ? String(proposal.dealId) : ""}
+                        options={dealOptions}
+                        action={updateProposalDeal}
+                        returnPath={returnPath}
+                      />
+                    </div>
                   ) : null}
                 </div>
-                <p className="mt-2 font-medium text-slate-900">
-                  <Link href={`/proposals/${proposal.id}`} className="underline decoration-slate-300 underline-offset-2">
-                    {proposal.title}
-                  </Link>
-                </p>
-                <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
-                  <span>{proposal.proposalDate} · PIN</span>
-                  <AutoSaveProposalPinField
-                    proposalId={proposal.id}
-                    defaultValue={proposal.pin}
-                    action={updateProposalPin}
-                    returnPath={dealId ? `/opportunities/${dealId}` : `/accounts/${companyId}`}
-                  />
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <a
-                  href={`/p/${proposal.slug}`}
-                  target="_blank"
-                  className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-cyan-700 hover:bg-slate-50"
-                >
-                  Client link
-                </a>
-                {proposal.hasSignedPdf ? (
+                <div className="flex flex-wrap items-center gap-2">
                   <a
-                    href={`/proposals/${proposal.id}/pdf`}
-                    className="rounded-md bg-emerald-700 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-800"
+                    href={`/p/${proposal.slug}`}
+                    target="_blank"
+                    className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-cyan-700 hover:bg-slate-50"
                   >
-                    Signed PDF
+                    Client link
                   </a>
-                ) : null}
+                  {proposal.hasSignedPdf ? (
+                    <a
+                      href={`/proposals/${proposal.id}/pdf`}
+                      className="rounded-md bg-emerald-700 px-2.5 py-1 text-xs font-semibold text-white hover:bg-emerald-800"
+                    >
+                      Signed PDF
+                    </a>
+                  ) : null}
+                </div>
               </div>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
     </article>
   );
