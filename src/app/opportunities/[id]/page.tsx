@@ -9,6 +9,7 @@ import { AutoSaveDealStageField } from "@/components/auto-save-deal-stage-field"
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { EmptyState } from "@/components/empty-state";
+import { ProposalsPanel } from "@/components/proposals-panel";
 import { activityTypeOptions, getActivityMeta } from "@/lib/activity-ui";
 import { requireUser } from "@/lib/auth";
 import { getDealStageLabel, getDealStageTone } from "@/lib/deal-stage";
@@ -226,6 +227,8 @@ export default async function OpportunityDetailPage({ params }: Props) {
           </div>
         </div>
       </section>
+
+      <ProposalsPanel dealId={opportunity.id} />
 
       <section className="grid gap-6 lg:grid-cols-2">
         <article id="opportunity-details" className="gong-panel rounded-xl p-5">

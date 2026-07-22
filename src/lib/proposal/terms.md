@@ -1,0 +1,333 @@
+# MASTER SERVICES AGREEMENT / TERMS OF SERVICE
+## TOPROCK LABS, LLC
+
+**Effective Date:** 04/09/2026
+
+This Master Services Agreement / Terms of Service ("Agreement") is entered into by and between Toprock Labs, LLC, a Utah limited liability company, with a principal place of business at 8809 South 2240 West, West Jordan, UT 84088 ("Toprock Labs," "Company," "we," "us," or "our"), and the client identified in an applicable Statement of Work ("Client" or "you").
+
+This Agreement governs all services provided by Toprock Labs to Client, including custom web development, implementation, maintenance, support, hosting, and related professional services, unless otherwise agreed in a separate written agreement signed by both parties.
+
+---
+
+## 1. Agreement Structure
+
+1.1 This Agreement sets forth the general terms governing the relationship between the parties.
+
+1.2 Specific services, deliverables, timelines, pricing, and project-specific requirements will be described in one or more written proposals, quotes, statements of work, work orders, maintenance addenda, or similar documents issued by Toprock Labs and accepted by Client (each, an "SOW").
+
+1.3 In the event of a conflict between this Agreement and an SOW, the SOW controls only with respect to the specific subject matter addressed in that SOW.
+
+1.4 This Agreement applies only to business clients and not to individual consumers.
+
+---
+
+## 2. Services
+
+2.1 Toprock Labs may provide fixed-scope and retainer-based services, including custom website development, implementation, content edits, bug fixes, maintenance, support, feature work, and emergency support, as further described in the applicable SOW.
+
+2.2 Unless expressly included in an SOW or maintenance addendum, services do not include ongoing search engine optimization, legal compliance reviews, regulatory compliance consulting, DNS management, email administration, SSL management, CDN management, backup administration, cloud infrastructure administration, or third-party vendor support.
+
+2.3 Toprock Labs may host websites for Client as described in an SOW. Unless expressly agreed otherwise in writing, hosting is limited to making the website available on infrastructure chosen by Toprock Labs and does not include DNS, email, SSL, CDN, backup, or cloud-service administration.
+
+2.4 Any work requested by Client that falls outside the scope of an SOW or maintenance plan will be considered out-of-scope work and may require a new SOW, change order, or separate fee approval.
+
+---
+
+## 3. Statements of Work; Changes
+
+3.1 Each SOW will describe the project scope, deliverables, assumptions, timeline, fees, and any specific acceptance criteria.
+
+3.2 Client may request changes to scope, functionality, design, integrations, or timelines. Toprock Labs may, in its discretion, issue a change order or revised SOW describing any resulting changes to fees, schedule, or deliverables.
+
+3.3 Toprock Labs is not obligated to perform out-of-scope work unless the parties agree in writing.
+
+---
+
+## 4. Fees and Payment
+
+4.1 **Implementation Fees.** Implementation services are provided for the flat fees stated in the applicable SOW. Toprock Labs may require a deposit before commencing work.
+
+4.2 **Maintenance Fees.** Ongoing maintenance and support services are billed monthly or annually, as specified in the applicable maintenance addendum or SOW.
+
+4.3 **Invoices Due Upon Receipt.** All invoices are due upon receipt unless a different due date is expressly stated in the applicable SOW.
+
+4.4 **Suspension for Nonpayment.** If Client fails to pay any undisputed amount when due, Toprock Labs may suspend services, pause work, withhold deliverables, disable hosting, and/or refuse launch or publication of the website until all outstanding amounts are paid in full.
+
+4.5 **Rate Changes.** Toprock Labs may increase recurring maintenance or support fees upon at least 60 days' prior written notice delivered by email to Client's billing contact or other email address provided for notices. Client is responsible for keeping its contact information current, and emailed notice will be deemed effective when sent.
+
+4.6 **Refunds.** Fees are non-refundable except where Toprock Labs fails to complete the contracted work required under the applicable SOW. For clarity, amounts already earned through completed milestones, accepted work, launched work, work deemed accepted, or services already performed are non-refundable.
+
+4.7 **Taxes.** Client is responsible for all taxes, duties, levies, or governmental charges arising from the services, excluding taxes based on Toprock Labs' net income.
+
+4.8 **No Release Until Paid in Full.** Toprock Labs is not required to deliver final production files, publish a website, transfer assets, or release work product for launch unless all amounts due under the applicable SOW have been paid in full.
+
+---
+
+## 5. Maintenance Term; Auto-Renewal; Cancellation
+
+5.1 Maintenance services automatically renew for successive renewal terms matching the initial billing cycle unless either party provides written notice of non-renewal at least 60 days before the end of the then-current term.
+
+5.2 Maintenance includes content edits, bug fixes, and website updates, but excludes new features, unless otherwise expressly stated in writing.
+
+5.3 Toprock Labs' standard response time for maintenance requests is within 24 business hours. Response time is not a guarantee of resolution time.
+
+5.4 An "Emergency" means an issue that materially prevents Client's business from operating through the website. Emergency support is limited to commercially reasonable efforts during Toprock Labs' available business operations unless otherwise stated in an SOW.
+
+5.5 If maintenance fees or hosting-related charges are not paid, Toprock Labs may suspend maintenance and disable hosted services. Ongoing maintenance and hosting may terminate automatically for nonpayment.
+
+---
+
+## 6. Client Responsibilities
+
+6.1 Client will provide timely approvals, decisions, access credentials, content, and materials reasonably requested by Toprock Labs.
+
+6.2 Client is responsible for the accuracy, legality, completeness, and appropriateness of all Client-provided content, claims, disclosures, trademarks, images, videos, data, and other materials.
+
+6.3 Client is solely responsible for obtaining and maintaining all necessary rights, permissions, licenses, and consents for all Client-provided assets.
+
+6.4 Client is responsible for maintaining its own third-party accounts, licenses, subscriptions, domain registrar account, internal access controls, administrative credentials, and backups unless expressly delegated in a signed writing.
+
+6.5 Client acknowledges that delays in providing approvals, feedback, content, or access may delay project timelines and may require schedule adjustments.
+
+---
+
+## 7. Deliverables; Review; Acceptance
+
+7.1 Deliverables, milestone dates, and approval stages will be specified in the applicable SOW.
+
+7.2 Client will have 5 business days after delivery of a milestone or deliverable to review and either approve it or provide a reasonably detailed written list of deficiencies.
+
+7.3 If Client does not respond within 14 business days after delivery of a milestone or deliverable, the milestone or deliverable will be deemed accepted.
+
+7.4 Formal launch of the website or deployment to production constitutes acceptance of the launched work.
+
+7.5 Once a deliverable is approved, deemed accepted, or launched, any further changes may be treated as out-of-scope work unless otherwise agreed.
+
+---
+
+## 8. Intellectual Property
+
+8.1 **Client Ownership of Final Custom Deliverables.** Upon Toprock Labs' receipt of full payment of all amounts due under the applicable SOW, Client will own the final custom website deliverables specifically created for Client under that SOW, excluding Toprock Labs Materials and Third-Party Materials.
+
+8.2 **Toprock Labs Materials.** Toprock Labs retains all right, title, and interest in and to its pre-existing materials, reusable code, frameworks, snippets, libraries, internal tools, templates, systems, methodologies, know-how, processes, and derivative improvements thereto ("Toprock Labs Materials").
+
+8.3 **License to Toprock Labs Materials.** To the extent any Toprock Labs Materials are incorporated into the final deliverables, Toprock Labs grants Client a non-exclusive, non-transferable, non-sublicensable license to use such incorporated Toprock Labs Materials solely as part of Client's website and internal business operations.
+
+8.4 **Open Source and Third-Party Materials.** Deliverables may include open-source software, third-party tools, plug-ins, libraries, APIs, fonts, frameworks, and other materials ("Third-Party Materials"). Client's rights in Third-Party Materials are subject to the applicable third-party license terms, and Toprock Labs makes no representation that Third-Party Materials are transferable, exclusive, perpetual, or free from separate obligations.
+
+8.5 **Client Materials.** Client retains ownership of Client's content, trademarks, business data, and other Client-provided materials. Client grants Toprock Labs a non-exclusive license to use such materials as necessary to perform the services.
+
+8.6 **Portfolio Rights.** Unless prohibited in writing in an SOW, Toprock Labs may identify Client as a customer and display the name, logo, screenshots, general project description, and publicly visible portions of the work in Toprock Labs' portfolio, marketing materials, proposals, and website after public launch.
+
+---
+
+## 9. Hosting and Third-Party Services
+
+9.1 Toprock Labs may provide hosting only as expressly stated in an SOW.
+
+9.2 Client owns and remains responsible for its domain registrar account.
+
+9.3 Toprock Labs does not manage DNS, email, SSL, CDN, backups, or cloud services unless expressly stated in a signed writing.
+
+9.4 Toprock Labs is not responsible for outages, downtime, interruptions, data loss, incompatibilities, deprecations, or security incidents caused by third-party providers, domain registrars, payment processors, software vendors, platform providers, Internet service providers, plug-ins, themes, APIs, hosting infrastructure providers, or other third-party services.
+
+9.5 Toprock Labs provides no warranties regarding third-party tools or services.
+
+---
+
+## 10. Confidentiality
+
+10.1 Each party ("Receiving Party") may receive non-public, confidential, or proprietary information of the other party ("Disclosing Party"), including business plans, pricing, code, technical information, credentials, customer information, or data ("Confidential Information").
+
+10.2 The Receiving Party will:
+
+- use Confidential Information only as necessary to perform or receive services under this Agreement;
+- protect Confidential Information using reasonable care;
+- not disclose Confidential Information to third parties except to personnel or advisors with a need to know and who are bound by confidentiality obligations; and
+- promptly notify the Disclosing Party of any unauthorized use or disclosure known to the Receiving Party.
+
+10.3 Confidential Information does not include information that:
+
+- is or becomes public through no fault of the Receiving Party;
+- was already lawfully known to the Receiving Party without confidentiality obligation;
+- is lawfully received from a third party without breach of duty; or
+- is independently developed without use of the Disclosing Party's Confidential Information.
+
+10.4 If disclosure is required by law, subpoena, or court order, the Receiving Party may disclose the minimum necessary information, provided it gives prompt notice where legally permitted.
+
+10.5 Upon request or termination, each party will return or destroy the other party's Confidential Information, except for archival copies kept in the ordinary course of business, backups, or records retained for legal compliance.
+
+---
+
+## 11. Data Security and Privacy
+
+11.1 The parties acknowledge that Toprock Labs may have access to personal data stored on Client's website or systems solely as necessary to perform the services.
+
+11.2 Toprock Labs does not collect Client website visitor data for its own independent use.
+
+11.3 Payment processing, where applicable, is handled through Stripe or another designated third-party processor, and Toprock Labs does not assume responsibility for the acts or omissions of such processor.
+
+11.4 Each party will use reasonable security measures appropriate to its role, including:
+
+- maintaining strong password hygiene;
+- limiting access to authorized persons;
+- promptly notifying the other party of any known security incident or breach affecting the services or shared credentials; and
+- taking reasonable steps to prevent unauthorized access.
+
+11.5 Client is responsible for its own compliance with privacy laws, notices, disclosures, consent requirements, and lawful basis for collecting and processing data through its website, except to the extent a separate signed DPA expressly assigns obligations to Toprock Labs.
+
+11.6 If the parties execute a Data Processing Addendum, that DPA will govern the processing of personal data to the extent of any conflict with this Agreement.
+
+11.7 Toprock Labs disclaims responsibility for breaches, incidents, or data loss caused by third-party providers, Client systems, Client personnel, Client credentials, or Client's failure to maintain reasonable security.
+
+---
+
+## 12. Warranty
+
+12.1 Toprock Labs warrants that for a period of 60 days after formal acceptance or launch, whichever occurs first, the custom implementation deliverables will substantially conform to the specifications expressly stated in the applicable SOW.
+
+12.2 Client's exclusive remedy for breach of this warranty is that Toprock Labs will, in its discretion, use commercially reasonable efforts to correct the nonconforming portion of the deliverables.
+
+12.3 This warranty does not apply to:
+
+- issues caused by third-party software, hosting providers, plug-ins, APIs, themes, or services;
+- defects caused by Client changes, misuse, unauthorized modifications, or failure to follow instructions;
+- browser, platform, device, or third-party updates occurring after launch;
+- content errors, legal claims, or compliance issues in Client-provided materials; or
+- services provided under a separate maintenance plan after the warranty period.
+
+---
+
+## 13. Disclaimer of Warranties
+
+EXCEPT AS EXPRESSLY STATED IN SECTION 12, THE SERVICES, DELIVERABLES, HOSTING, AND ALL RELATED WORK ARE PROVIDED "AS IS" AND "AS AVAILABLE." TOPROCK LABS DISCLAIMS ALL IMPLIED WARRANTIES, INCLUDING ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, AND ANY WARRANTIES ARISING FROM COURSE OF DEALING, USAGE, OR TRADE PRACTICE. TOPROCK LABS DOES NOT WARRANT THAT THE SERVICES WILL BE UNINTERRUPTED, ERROR-FREE, SECURE, OR COMPATIBLE WITH ALL THIRD-PARTY SYSTEMS OR FUTURE PLATFORM CHANGES.
+
+---
+
+## 14. Indemnification
+
+14.1 **Client Indemnity.** Client will defend, indemnify, and hold harmless Toprock Labs and its officers, members, employees, and agents from and against any third-party claims, damages, liabilities, judgments, losses, costs, and expenses arising out of or related to:
+
+- Client content, products, services, data, or business practices;
+- Client's breach of this Agreement;
+- Client's violation of law, privacy obligations, or intellectual property rights;
+- Client-provided materials, including logos, photographs, videos, trademarks, copy, claims, or other assets;
+- Client's instructions, changes, or misuse of the deliverables.
+
+14.2 Toprock Labs will promptly notify Client of any indemnified claim and reasonably cooperate in the defense at Client's expense. Client may not settle any claim in a manner that admits fault by or imposes obligations on Toprock Labs without Toprock Labs' prior written consent.
+
+---
+
+## 15. Limitation of Liability
+
+15.1 TO THE MAXIMUM EXTENT PERMITTED BY LAW, NEITHER PARTY WILL BE LIABLE TO THE OTHER FOR ANY INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF PROFITS, REVENUE, GOODWILL, DATA, BUSINESS INTERRUPTION, OR LOSS OF BUSINESS OPPORTUNITY, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+15.2 TOPROCK LABS' TOTAL AGGREGATE LIABILITY ARISING OUT OF OR RELATING TO THIS AGREEMENT, ALL SOWS, AND ALL SERVICES WILL NOT EXCEED THE TOTAL FEES PAID BY CLIENT TO TOPROCK LABS DURING THE THREE (3) MONTHS IMMEDIATELY PRECEDING THE EVENT GIVING RISE TO THE CLAIM.
+
+15.3 The foregoing exclusions and cap do not apply to:
+
+- a party's fraud, gross negligence, or willful misconduct;
+- Client's payment obligations;
+- Client's indemnification obligations;
+- a party's breach of confidentiality; or
+- liability that cannot be limited under applicable law.
+
+---
+
+## 16. Term and Termination
+
+16.1 This Agreement begins on the Effective Date and continues until terminated as provided herein.
+
+16.2 Either party may terminate this Agreement or any SOW for material breach if the breaching party fails to cure such breach within 10 business days after written notice, except that Toprock Labs may suspend or terminate sooner for nonpayment under Section 4.
+
+16.3 Toprock Labs may suspend services immediately if Client's nonpayment, misuse, unlawful conduct, or security practices create risk to Toprock Labs, the hosted environment, or third parties.
+
+16.4 Upon termination:
+
+- Client will immediately pay all amounts accrued through the termination date;
+- Toprock Labs may cease services and disable hosted services;
+- any licenses granted to Client for unpaid work terminate automatically; and
+- Sections intended to survive will remain in effect, including payment, confidentiality, IP, disclaimers, indemnity, limitations of liability, and dispute resolution.
+
+16.5 Unless otherwise required by law or stated in an SOW, transition assistance, migration support, exports, and post-termination handoff services are billable at Toprock Labs' then-current rates.
+
+---
+
+## 17. Effect of Nonpayment
+
+17.1 If Client does not pay all amounts due, Toprock Labs may withhold publication, suspend access, disable hosted services, refuse handoff, and retain possession of unreleased deliverables until all outstanding fees are paid in full.
+
+17.2 Client acknowledges that maintenance and hosting may be turned off for nonpayment.
+
+17.3 Toprock Labs is not liable for losses resulting from suspension or disablement due to Client's nonpayment.
+
+---
+
+## 18. Dispute Resolution
+
+18.1 **Good-Faith Negotiation.** Before initiating formal proceedings, the parties will first attempt in good faith to resolve any dispute arising out of or related to this Agreement by written notice and business-level negotiations.
+
+18.2 **Mediation.** If the dispute is not resolved within 30 days after written notice, the parties will attempt to resolve the dispute through non-binding mediation in Salt Lake County, Utah.
+
+18.3 **Binding Arbitration.** If mediation does not resolve the dispute, the dispute will be resolved by binding arbitration in Salt Lake County, Utah, administered by the American Arbitration Association (AAA) under its Commercial Arbitration Rules then in effect. AAA publishes those commercial rules and procedures for business disputes.
+
+18.4 **Governing Law.** This Agreement is governed by the laws of the State of Utah, without regard to conflict-of-law principles. Utah's arbitration statute includes provisions addressing the validity of arbitration agreements, court motions to compel arbitration, and provisional remedies in aid of arbitration.
+
+18.5 **Court Carve-Outs.** Either party may seek temporary, preliminary, or injunctive relief in a court of competent jurisdiction to protect confidential information, intellectual property, or to preserve the status quo pending arbitration. Either party may also petition a court to compel arbitration or enforce an arbitration award. Utah law provides mechanisms for both provisional remedies and enforcement related to arbitration proceedings.
+
+18.6 **Attorneys' Fees.** Each party will bear its own attorneys' fees and costs, except as may be required by applicable law or by the arbitrator to the extent non-waivable law so provides. Utah's arbitration statute separately addresses judgment on an award and attorney fees/litigation expenses.
+
+---
+
+## 19. Publicity; No Consumer Use
+
+19.1 Client acknowledges that this Agreement is intended solely for business-to-business services.
+
+19.2 Except for Toprock Labs' portfolio rights expressly granted herein, neither party will issue public statements that falsely imply endorsement by the other.
+
+---
+
+## 20. Force Majeure
+
+Toprock Labs is not liable for delay or failure to perform caused by events beyond its reasonable control, including acts of God, natural disasters, labor disputes, Internet outages, power failures, governmental actions, cyberattacks, or failures of third-party providers.
+
+---
+
+## 21. Independent Contractor
+
+Toprock Labs is an independent contractor and not an employee, partner, joint venturer, or fiduciary of Client.
+
+---
+
+## 22. Assignment
+
+Neither party may assign this Agreement without the other party's prior written consent, except in connection with a merger, acquisition, sale of substantially all assets, or internal reorganization.
+
+---
+
+## 23. Notices
+
+All legal notices under this Agreement must be in writing and sent to the contact information listed in the applicable SOW or, for Toprock Labs, to:
+
+**Toprock Labs, LLC**  
+8809 South 2240 West  
+West Jordan, UT 84088  
+Email: info@toprocklabs.com
+
+---
+
+## 24. Entire Agreement; Amendments
+
+This Agreement, together with all applicable SOWs, maintenance addenda, DPAs, and incorporated policies, constitutes the entire agreement between the parties regarding its subject matter and supersedes prior discussions or proposals on that subject. Any amendment must be in writing, except that Toprock Labs may update these Terms for future SOWs or renewals by written notice.
+
+---
+
+## 25. Severability; Waiver
+
+If any provision is held unenforceable, the remaining provisions will remain in full force to the fullest extent permitted by law. A waiver of any breach is not a waiver of any other breach.
+
+---
+
+## 26. Counterparts; Electronic Acceptance
+
+This Agreement and any SOW may be executed electronically, in counterparts, or accepted by electronic signature, payment, click-through acceptance, or written confirmation, each of which will be deemed binding.

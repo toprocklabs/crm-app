@@ -13,7 +13,8 @@ import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { scrapeCompanyWebsite } from "@/lib/enrich";
 import { geocodeAddress } from "@/lib/geocode";
 import { sourceNearbyBusinesses } from "@/lib/source-nearby";
-import { activities, agentRuns, companies, contacts, deals, placeEnrichment, relationships, salesTasks, suggestions, users } from "@/lib/schema";
+import { activities, agentRuns, companies, contacts, deals, placeEnrichment, proposals, relationships, salesTasks, suggestions, users } from "@/lib/schema";
+import { generatePin } from "@/lib/proposal/pin";
 
 const optionalCompanyIndustrySchema = z.enum(companyIndustries).optional().or(z.literal(""));
 const accountStageSchema = z.enum(accountStageOptions);
@@ -1162,4 +1163,168 @@ export async function deleteRelationship(formData: FormData) {
     revalidatePath(parsed.returnPath);
   }
   await setFlashToast("Relationship removed");
+}
+
+// ── Proposals ────────────────────────────────────────────────────────────────
+
+const proposalStatusSchema = z.enum(["draft", "sent", "viewed", "signed", "declined", "superseded"]);
+
+const proposalCreateSchema = z.object({
+  companyId: z.coerce.number().int().positive(),
+  dealId: z.coerce.number().int().positive().optional(),
+  contactId: z.coerce.number().int().positive().optional(),
+  title: z.string().trim().min(2),
+  clientName: z.string().trim().optional(),
+  business: z.string().trim().optional(),
+  proposalDate: z.string().trim().optional(),
+  slug: z.string().trim().optional(),
+  pin: z.string().trim().optional(),
+  contentMd: z.string().optional(),
+  returnPath: z.string().optional(),
+});
+
+const proposalUpdateSchema = z.object({
+  proposalId: z.coerce.number().int().positive(),
+  dealId: z.coerce.number().int().positive().optional(),
+  contactId: z.coerce.number().int().positive().optional(),
+  title: z.string().trim().min(2),
+  clientName: z.string().trim().optional(),
+  business: z.string().trim().optional(),
+  proposalDate: z.string().trim().optional(),
+  pin: z.string().trim().min(3),
+  status: proposalStatusSchema,
+  contentMd: z.string().optional(),
+  returnPath: z.string().optional(),
+});
+
+function slugifyProposal(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+async function uniqueProposalSlug(db: NonNullable<ReturnType<typeof getDb>>, base: string) {
+  const root = slugifyProposal(base) || "proposal";
+  let candidate = root;
+  for (let i = 2; ; i++) {
+    const existing = await db.query.proposals.findFirst({ where: eq(proposals.slug, candidate) });
+    if (!existing) {
+      return candidate;
+    }
+    candidate = `${root}_${i}`;
+  }
+}
+
+export async function createProposal(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const rawDealId = formData.get("dealId")?.toString();
+  const rawContactId = formData.get("contactId")?.toString();
+
+  const parsed = proposalCreateSchema.parse({
+    companyId: formData.get("companyId"),
+    dealId: rawDealId ? Number(rawDealId) : undefined,
+    contactId: rawContactId ? Number(rawContactId) : undefined,
+    title: formData.get("title"),
+    clientName: formData.get("clientName"),
+    business: formData.get("business"),
+    proposalDate: formData.get("proposalDate"),
+    slug: formData.get("slug"),
+    pin: formData.get("pin"),
+    contentMd: formData.get("contentMd"),
+    returnPath: formData.get("returnPath"),
+  });
+
+  const company = await db.query.companies.findFirst({ where: eq(companies.id, parsed.companyId) });
+  if (!company) {
+    throw new Error("Account not found.");
+  }
+
+  const business = cleanOptionalText(parsed.business) ?? company.name;
+  const slug = await uniqueProposalSlug(db, cleanOptionalText(parsed.slug) ?? business);
+  const proposalDate =
+    cleanOptionalText(parsed.proposalDate) ??
+    new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
+  await db.insert(proposals).values({
+    companyId: parsed.companyId,
+    dealId: parsed.dealId ?? null,
+    contactId: parsed.contactId ?? null,
+    title: parsed.title,
+    slug,
+    pin: cleanOptionalText(parsed.pin) ?? generatePin(),
+    clientName: cleanOptionalText(parsed.clientName) ?? "",
+    business,
+    proposalDate,
+    contentMd: parsed.contentMd ?? "",
+  });
+
+  revalidatePath("/proposals");
+  if (parsed.returnPath?.startsWith("/")) {
+    revalidatePath(parsed.returnPath);
+  }
+  await setFlashToast("Proposal created");
+}
+
+export async function updateProposal(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const rawDealId = formData.get("dealId")?.toString();
+  const rawContactId = formData.get("contactId")?.toString();
+
+  const parsed = proposalUpdateSchema.parse({
+    proposalId: formData.get("proposalId"),
+    dealId: rawDealId ? Number(rawDealId) : undefined,
+    contactId: rawContactId ? Number(rawContactId) : undefined,
+    title: formData.get("title"),
+    clientName: formData.get("clientName"),
+    business: formData.get("business"),
+    proposalDate: formData.get("proposalDate"),
+    pin: formData.get("pin"),
+    status: formData.get("status"),
+    contentMd: formData.get("contentMd"),
+    returnPath: formData.get("returnPath"),
+  });
+
+  const existing = await db.query.proposals.findFirst({ where: eq(proposals.id, parsed.proposalId) });
+  if (!existing) {
+    throw new Error("Proposal not found.");
+  }
+
+  await db
+    .update(proposals)
+    .set({
+      dealId: parsed.dealId ?? null,
+      contactId: parsed.contactId ?? null,
+      title: parsed.title,
+      clientName: cleanOptionalText(parsed.clientName) ?? "",
+      business: cleanOptionalText(parsed.business) ?? existing.business,
+      proposalDate: cleanOptionalText(parsed.proposalDate) ?? existing.proposalDate,
+      pin: parsed.pin,
+      status: parsed.status,
+      contentMd: parsed.contentMd ?? existing.contentMd,
+      sentAt: parsed.status !== "draft" && !existing.sentAt ? new Date() : existing.sentAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(proposals.id, parsed.proposalId));
+
+  revalidatePath("/proposals");
+  revalidatePath(`/proposals/${parsed.proposalId}`);
+  revalidatePath(`/p/${existing.slug}`);
+  if (parsed.returnPath?.startsWith("/")) {
+    revalidatePath(parsed.returnPath);
+  }
+  await setFlashToast("Proposal saved");
 }
