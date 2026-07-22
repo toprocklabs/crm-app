@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { desc, eq, isNotNull } from "drizzle-orm";
+import { updateProposalPin } from "@/app/actions";
+import { AutoSaveProposalPinField } from "@/components/auto-save-proposal-pin-field";
 import { getDb } from "@/lib/db";
 import { proposalStatusLabels, proposalStatusPillClasses } from "@/lib/proposal/status-ui";
 import { proposals } from "@/lib/schema";
@@ -80,8 +82,14 @@ export async function ProposalsPanel({
                     {proposal.title}
                   </Link>
                 </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {proposal.proposalDate} · PIN {proposal.pin}
+                <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
+                  <span>{proposal.proposalDate} · PIN</span>
+                  <AutoSaveProposalPinField
+                    proposalId={proposal.id}
+                    defaultValue={proposal.pin}
+                    action={updateProposalPin}
+                    returnPath={dealId ? `/opportunities/${dealId}` : `/accounts/${companyId}`}
+                  />
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">

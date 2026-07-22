@@ -1273,6 +1273,51 @@ export async function createProposal(formData: FormData) {
   await setFlashToast("Proposal created");
 }
 
+const proposalPinUpdateSchema = z.object({
+  proposalId: z.coerce.number().int().positive(),
+  pin: z
+    .string()
+    .trim()
+    .regex(/^\d{3,6}$/, "PIN must be 3-6 digits."),
+  returnPath: z.string().optional(),
+});
+
+export async function updateProposalPin(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const parsed = proposalPinUpdateSchema.parse({
+    proposalId: formData.get("proposalId"),
+    pin: formData.get("pin"),
+    returnPath: formData.get("returnPath"),
+  });
+
+  const existing = await db.query.proposals.findFirst({
+    columns: { id: true, slug: true },
+    where: eq(proposals.id, parsed.proposalId),
+  });
+  if (!existing) {
+    throw new Error("Proposal not found.");
+  }
+
+  await db
+    .update(proposals)
+    .set({ pin: parsed.pin, updatedAt: new Date() })
+    .where(eq(proposals.id, parsed.proposalId));
+
+  revalidatePath("/proposals");
+  revalidatePath(`/proposals/${parsed.proposalId}`);
+  revalidatePath(`/p/${existing.slug}`);
+  if (parsed.returnPath?.startsWith("/")) {
+    revalidatePath(parsed.returnPath);
+  }
+  await setFlashToast("PIN updated");
+}
+
 export async function updateProposal(formData: FormData) {
   await requireUser();
 

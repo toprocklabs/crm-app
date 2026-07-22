@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
-import { createProposal } from "@/app/actions";
+import { createProposal, updateProposalPin } from "@/app/actions";
+import { AutoSaveProposalPinField } from "@/components/auto-save-proposal-pin-field";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { EmptyState } from "@/components/empty-state";
@@ -25,6 +26,7 @@ export default async function ProposalsPage() {
         id: proposals.id,
         title: proposals.title,
         slug: proposals.slug,
+        pin: proposals.pin,
         status: proposals.status,
         business: proposals.business,
         proposalDate: proposals.proposalDate,
@@ -142,6 +144,7 @@ export default async function ProposalsPage() {
                     <th className="py-2 pr-4">Proposal</th>
                     <th className="py-2 pr-4">Account</th>
                     <th className="py-2 pr-4">Status</th>
+                    <th className="py-2 pr-4">PIN</th>
                     <th className="py-2 pr-4">Date</th>
                     <th className="py-2">Link</th>
                   </tr>
@@ -173,6 +176,14 @@ export default async function ProposalsPage() {
                             {proposal.signedAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                           </p>
                         ) : null}
+                      </td>
+                      <td className="py-2.5 pr-4">
+                        <AutoSaveProposalPinField
+                          proposalId={proposal.id}
+                          defaultValue={proposal.pin}
+                          action={updateProposalPin}
+                          returnPath="/proposals"
+                        />
                       </td>
                       <td className="py-2.5 pr-4 text-slate-600">{proposal.proposalDate}</td>
                       <td className="py-2.5">
