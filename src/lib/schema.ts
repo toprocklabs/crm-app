@@ -74,6 +74,16 @@ export const dataSource = pgEnum("data_source", [
   "agent",
 ]);
 
+// Lifecycle of a client-facing proposal / statement of work.
+export const proposalStatus = pgEnum("proposal_status", [
+  "draft",
+  "sent",
+  "viewed",
+  "signed",
+  "declined",
+  "superseded",
+]);
+
 export const users = pgTable(
   "users",
   {
@@ -250,6 +260,47 @@ export const agentRuns = pgTable("agent_runs", {
   finishedAt: timestamp("finished_at", { withTimezone: true }),
 });
 
+// Client-facing proposals / statements of work, served at /p/[slug].
+// Content stays the four-section markdown from the old proposal_creator repo
+// (Overview / Pricing table / What's Included / Notes). The signed PDF is
+// produced client-side at signing time and stored base64 (tiny volume; avoids
+// bytea quirks over the neon-http driver).
+export const proposals = pgTable(
+  "proposals",
+  {
+    id: serial("id").primaryKey(),
+    companyId: integer("company_id")
+      .references(() => companies.id, { onDelete: "cascade" })
+      .notNull(),
+    dealId: integer("deal_id").references(() => deals.id, { onDelete: "set null" }),
+    contactId: integer("contact_id").references(() => contacts.id, {
+      onDelete: "set null",
+    }),
+    title: text("title").notNull(),
+    slug: text("slug").notNull(),
+    pin: text("pin").notNull(),
+    status: proposalStatus("status").default("draft").notNull(),
+    clientName: text("client_name").notNull().default(""),
+    business: text("business").notNull().default(""),
+    // Display date shown in the header, e.g. "April 11, 2026" (old frontmatter `date`).
+    proposalDate: text("proposal_date").notNull().default(""),
+    contentMd: text("content_md").notNull().default(""),
+    signedPdfBase64: text("signed_pdf_base64"),
+    signerName: text("signer_name"),
+    signerEmail: text("signer_email"),
+    signedAt: timestamp("signed_at", { withTimezone: true }),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    firstViewedAt: timestamp("first_viewed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("proposals_slug_unique").on(table.slug),
+    index("proposals_company_idx").on(table.companyId),
+    index("proposals_status_idx").on(table.status),
+  ],
+);
+
 // Geocode + cluster cache so we don't re-hit the geocoding API every render.
 export const placeEnrichment = pgTable(
   "place_enrichment",
@@ -278,3 +329,4 @@ export type EdgeType = (typeof edgeType.enumValues)[number];
 export type EntityType = (typeof entityType.enumValues)[number];
 export type DataSource = (typeof dataSource.enumValues)[number];
 export type SuggestionStatus = (typeof suggestionStatus.enumValues)[number];
+export type ProposalStatus = (typeof proposalStatus.enumValues)[number];

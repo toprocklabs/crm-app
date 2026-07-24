@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<!--
+  planning/002-proposal-creator-merge/spec.html — the WHAT and WHY.
+  Implementation detail lives in plan.html. Keep section order stable for clean diffs.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec · Proposal creator merge</title>
+<style>
+  :root{--bg:#fbfaf8;--ink:#1c1b1a;--muted:#6b6660;--line:#e6e2db;--accent:#3a5a78;--soft:#eef2f6;--codebg:#f3f1ec;
+    --proposed:#9a7b2f;--proposed-bg:#f6efdd;--accepted:#3f6b4a;--accepted-bg:#e9f1ea;
+    --superseded:#8a8580;--superseded-bg:#efece8;--deprecated:#9a4b3f;--deprecated-bg:#f5e8e5;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  main{max-width:800px;margin:0 auto;padding:44px 28px 80px}
+  .top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+  .top a{color:var(--accent);text-decoration:none}
+  .status{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;padding:3px 11px;border-radius:20px;text-transform:capitalize}
+  .s-proposed{color:var(--proposed);background:var(--proposed-bg)}
+  .s-accepted{color:var(--accepted);background:var(--accepted-bg)}
+  .kicker{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-top:18px}
+  h1{font-size:30px;margin:6px 0 6px;letter-spacing:-.01em}
+  .lede{color:var(--muted);font-size:17px;margin:0 0 8px}
+  h2{font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);
+    border-top:1px solid var(--line);padding-top:22px;margin:32px 0 10px}
+  p{margin:8px 0}ul,ol{margin:8px 0;padding-left:22px}li{margin:5px 0}
+  code{background:var(--codebg);padding:1.5px 5px;border-radius:4px;font-size:13.5px;font-family:"SF Mono",Consolas,Menlo,monospace}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+  th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;color:var(--muted);background:var(--soft)}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
+  .must{color:#7a3b18;background:#f6e6db}.should{color:#3a5a78;background:#e6eef6}.could{color:#6b6660;background:#efece8}
+  .callout{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:12px 16px;margin:14px 0}
+  .flow{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}
+  .ff{flex:1 1 320px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .ff h3{margin:0 0 4px;font-size:15px;color:var(--accent)}
+  .ff p{margin:0;font-size:14px;color:var(--muted)}
+  footer{margin-top:36px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a href="../index.html">← Planning index</a>
+    <span class="status s-accepted">Accepted</span>
+  </div>
+
+  <div class="kicker">Spec · Feature 002</div>
+  <h1>Merge the proposal creator into the CRM</h1>
+  <p class="lede">Fold the standalone <code>proposal_creator</code> tool into Toprock CRM so proposals and signed agreements become first-class records tied to accounts and opportunities — one tool, one place.</p>
+
+  <h2>Problem</h2>
+  <p>Proposals live in a separate repo (<code>proposal_creator</code>) with its own workflow: a markdown file per client → a Python script builds a branded DOCX and a PIN-gated hosted HTML page (static, deployed on Vercel) → the client signs in-page → a Google Apps Script webhook saves the signed PDF to Google Drive and emails both parties.</p>
+  <div class="callout"><strong>The CRM — the system of record for accounts and deals — never learns any of this happened.</strong> Signed contracts sit in a Drive folder; proposal state (drafted / sent / viewed / signed) exists nowhere; and creating a proposal means switching repos and tools.</div>
+  <p>Concretely: 8 client proposal folders and 7+ generated DOCX files exist today with no link to the <code>companies</code> or <code>deals</code> rows they belong to.</p>
+
+  <h2>Target workflow</h2>
+  <div class="flow">
+    <div class="ff"><h3>1 · Create</h3><p>Prompt the CRM (Claude Code session in this repo, or an in-app form) with a transcript or pricing notes. A proposal record is created against the account/opportunity.</p></div>
+    <div class="ff"><h3>2 · Send &amp; sign</h3><p>The CRM serves the PIN-gated proposal page itself. The client signs in-page; the signed PDF and timestamp land on the proposal record.</p></div>
+    <div class="ff"><h3>3 · Track</h3><p>Proposal status is visible on the account and opportunity detail pages; signing logs an activity and can advance the deal stage.</p></div>
+  </div>
+
+  <h2>Goals</h2>
+  <ul>
+    <li><strong>Proposals as CRM entities.</strong> A <code>proposals</code> table linked to <code>companies</code> (required) and <code>deals</code> (optional), with a status lifecycle and the signed PDF attached.</li>
+    <li><strong>One creation surface.</strong> Author proposals by prompting this repo's Claude Code (the established pattern here — same as enrichment) with markdown content stored in the DB, not loose files in another repo.</li>
+    <li><strong>CRM-hosted signing.</strong> Replace the static Vercel site + Apps Script webhook with CRM routes and server actions, preserving the exact client-facing experience (branding, PIN gate, signature pad, confirmation email).</li>
+    <li><strong>Backfill.</strong> Import all 8 existing client proposals and every signed agreement, matched to their accounts.</li>
+    <li><strong>Decommission.</strong> Retire <code>proposal_creator</code> once parity is verified, so there is exactly one tool.</li>
+  </ul>
+
+  <h2>Non-goals</h2>
+  <ul>
+    <li><strong>No redesign of the proposal look.</strong> The client-facing page and brand rules (fonts, palette, tone in <code>toprock_branding.md</code>) carry over as-is.</li>
+    <li><strong>No general document management.</strong> This stores proposals and their signed PDFs — not an arbitrary file cabinet per account.</li>
+    <li><strong>No e-signature service integration</strong> (DocuSign etc.). The existing lightweight signature-pad flow has worked with real clients; keep it.</li>
+    <li><strong>No multi-tenant / per-user permissions.</strong> Same single-tenant model as the rest of the CRM.</li>
+    <li><strong>DOCX generation is optional to carry over.</strong> The hosted page + signed PDF is the primary artifact; keep the Python DOCX script only if it's still actually used (open question).</li>
+  </ul>
+
+  <h2>Requirements</h2>
+  <table>
+    <thead><tr><th>#</th><th>Requirement</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td>R1</td><td><code>proposals</code> table: linked to a company (and optionally a deal/contact), holding the proposal content (markdown), slug, PIN, status (<code>draft / sent / signed / declined / superseded</code>), and signing metadata.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R2</td><td>Public proposal route (e.g. <code>/p/[slug]</code>) that bypasses CRM login but is PIN-gated — client PIN per proposal + internal master PIN — rendering the existing branded template.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R3</td><td>In-page signing: signature pad → signed PDF captured and stored on the proposal record with signer name/date; status flips to <code>signed</code>.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R4</td><td>Signing side-effects: log an <code>activities</code> row on the account, and email notifications to Austin + the client (replacing the Apps Script webhook).</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R5</td><td>Proposals visible on <code>/accounts/[id]</code> and <code>/opportunities/[id]</code>, plus a <code>/proposals</code> list page with statuses.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R6</td><td>Backfill: all 8 existing proposals imported and matched to accounts (creating accounts where missing); all signed PDFs retrieved from Drive/repo and attached; already-signed ones marked <code>signed</code>.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R7</td><td>Creation flow: a documented prompt-driven path (transcript → proposal record) plus a minimal in-app create/edit form for the markdown content.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R8</td><td>Signed PDFs stored durably and served only to authenticated CRM users (download link on the proposal record).</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R9</td><td>Signing a proposal can advance the linked deal (e.g. prompt/auto move toward <code>won</code>).</td><td><span class="pill should">Should</span></td></tr>
+      <tr><td>R10</td><td>View tracking: record first/last time the client opened the proposal page (<code>sent → viewed</code>).</td><td><span class="pill could">Could</span></td></tr>
+      <tr><td>R11</td><td>DOCX export parity with the current Python generator.</td><td><span class="pill could">Could</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Success criteria</h2>
+  <ul>
+    <li>Every historical signed agreement is attached to the correct account in the CRM and downloadable from it.</li>
+    <li>A brand-new proposal can go transcript → live PIN-gated page → client signature → signed PDF on the account <strong>without touching the proposal_creator repo</strong>.</li>
+    <li>A signed proposal is visible on the account and opportunity pages, with an activity logged at signing time.</li>
+    <li>The client-facing page is visually indistinguishable from the current hosted proposals (brand parity).</li>
+    <li><code>proposal_creator</code> can be archived with nothing lost.</li>
+  </ul>
+
+  <h2>Open questions</h2>
+  <ul>
+    <li><strong>Where do signed PDFs live?</strong> Postgres <code>bytea</code> in Neon (zero new infra; volume is tiny — recommended), vs. Vercel Blob / S3. Affects R8.</li>
+    <li><strong>Is the CRM publicly deployed?</strong> The proposal page must be reachable by clients. If the CRM is local-only today, deployment (Vercel) becomes a prerequisite for R2.</li>
+    <li><strong>Email sending mechanism</strong> for R4 — a transactional provider (e.g. Resend) needs a key; alternatively keep the existing Apps Script webhook as a stopgap and swap later.</li>
+    <li><strong>Is the DOCX still needed</strong> once the hosted page + signed PDF is canonical, or was it a stepping stone? Determines whether R11 exists at all.</li>
+    <li><strong>Terms of service page</strong> (<code>terms.html.j2</code>) — one shared CRM route, or per-proposal snapshot of the terms as signed?</li>
+  </ul>
+
+  <footer>Spec · html-context-planning. The companion <a href="plan.html">plan.html</a> covers the how.</footer>
+</main>
+</body>
+</html>

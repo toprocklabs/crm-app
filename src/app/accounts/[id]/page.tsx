@@ -22,6 +22,7 @@ import { CallLink } from "@/components/call-link";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { EmptyState } from "@/components/empty-state";
+import { ProposalsPanel } from "@/components/proposals-panel";
 import { RelationshipEditor } from "@/components/relationship-editor";
 import { activityTypeOptions, getActivityMeta } from "@/lib/activity-ui";
 import { accountStageOptions, getAccountStageLabel, getAccountStageTone } from "@/lib/account-stage";
@@ -903,6 +904,8 @@ export default async function AccountDetailPage({ params }: Props) {
           </ul>
         </article>
       </section>
+
+      <ProposalsPanel companyId={company.id} />
 
       <section className="grid gap-6 lg:grid-cols-2">
         <article id="account-tasks" className="gong-panel rounded-xl p-5">

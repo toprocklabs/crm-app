@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<!--
+  planning/002-proposal-creator-merge/plan.html — the HOW.
+  What/why lives in spec.html. Keep section order stable for clean diffs.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan · Proposal creator merge</title>
+<style>
+  :root{--bg:#fbfaf8;--ink:#1c1b1a;--muted:#6b6660;--line:#e6e2db;--accent:#3a5a78;--soft:#eef2f6;--codebg:#f3f1ec;
+    --proposed:#9a7b2f;--proposed-bg:#f6efdd;--accepted:#3f6b4a;--accepted-bg:#e9f1ea;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  main{max-width:820px;margin:0 auto;padding:44px 28px 80px}
+  .top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+  .top a{color:var(--accent);text-decoration:none}
+  .status{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;padding:3px 11px;border-radius:20px;text-transform:capitalize}
+  .s-proposed{color:var(--proposed);background:var(--proposed-bg)}
+  .kicker{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-top:18px}
+  h1{font-size:30px;margin:6px 0 6px;letter-spacing:-.01em}
+  .lede{color:var(--muted);font-size:17px;margin:0 0 8px}
+  h2{font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);
+    border-top:1px solid var(--line);padding-top:22px;margin:32px 0 10px}
+  h3{font-size:15.5px;margin:18px 0 6px}
+  p{margin:8px 0}ul,ol{margin:8px 0;padding-left:22px}li{margin:5px 0}
+  code{background:var(--codebg);padding:1.5px 5px;border-radius:4px;font-size:13.5px;font-family:"SF Mono",Consolas,Menlo,monospace}
+  pre{background:var(--codebg);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:13px;line-height:1.5}
+  pre code{background:none;padding:0}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+  th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;color:var(--muted);background:var(--soft)}
+  .callout{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:12px 16px;margin:14px 0}
+  .phase{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:14px 0}
+  .phase h3{margin:0 0 6px;color:var(--accent)}
+  .phase .tag{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  footer{margin-top:36px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a href="../index.html">← Planning index</a>
+    <span class="status s-accepted">Accepted</span>
+  </div>
+
+  <div class="kicker">Plan · Feature 002</div>
+  <h1>Proposal creator merge — implementation plan</h1>
+  <p class="lede">Four phases: data model → CRM-hosted proposal pages &amp; signing → backfill of existing agreements → creation flow and decommission. Each phase ships independently.</p>
+
+  <h2>Source system inventory</h2>
+  <p>What <code>proposal_creator</code> contains and what happens to each piece:</p>
+  <table>
+    <thead><tr><th>Piece</th><th>Today</th><th>Destination</th></tr></thead>
+    <tbody>
+      <tr><td><code>proposals/&lt;slug&gt;/proposal.md</code> (8 clients)</td><td>Markdown + YAML frontmatter (client, business, date, slug, pin)</td><td>Rows in new <code>proposals</code> table (content stored as markdown text)</td></tr>
+      <tr><td><code>templates/proposal.html.j2</code> (~950 lines)</td><td>Jinja2 → static PIN-gated page with signature pad</td><td>Ported to a Next.js route <code>/p/[slug]</code>; markup/CSS reused nearly verbatim</td></tr>
+      <tr><td><code>templates/terms.html.j2</code>, <code>dashboard.html.j2</code></td><td>Static terms page + internal PIN dashboard</td><td>Terms → <code>/p/[slug]/terms</code>; dashboard replaced by CRM <code>/proposals</code> page</td></tr>
+      <tr><td><code>apps_script/send_proposal.gs</code></td><td>Webhook: signed PDF → Drive + email both parties</td><td>Replaced by a server action (store PDF in Postgres, send emails)</td></tr>
+      <tr><td>Signed PDFs (Drive folder "Signed Proposals — toprock labs")</td><td>Disconnected from CRM</td><td>Downloaded once, attached to proposal rows during backfill</td></tr>
+      <tr><td><code>generate_proposal_from_md.py</code> / DOCX output</td><td>Branded DOCX per client</td><td>Kept in the archived repo; only ported if DOCX still proves needed (spec R11, Could)</td></tr>
+      <tr><td><code>toprock_branding.md</code>, <code>instruction.md</code>, logo</td><td>Brand rules + assets</td><td>Copied into this repo under <code>src/lib/proposal/</code> + <code>public/</code>; rules summarized in AGENTS.md</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Architecture decisions</h2>
+  <ul>
+    <li><strong>Content model: keep markdown.</strong> The proposal body stays the existing four-section markdown (Overview / Pricing table / What's Included / Notes) stored in <code>proposals.contentMd</code>. It's already the authoring format, diffs well, and the renderer parses it the same way <code>build_proposal.py</code> does. No structured pricing schema in v1.</li>
+    <li><strong>PDF storage: Postgres <code>bytea</code> on Neon.</strong> Volume is ~10 documents at a few hundred KB each; a blob store is not warranted. Column on the proposal row; served via an authenticated route handler. Revisit only if size becomes real.</li>
+    <li><strong>Signed PDF produced client-side</strong>, exactly as today (the page already builds the PDF in-browser and POSTs base64). The server action validates size/type, stores it, and fires side-effects — this is a near drop-in replacement for the Apps Script endpoint.</li>
+    <li><strong>Public route carve-out.</strong> <code>/p/*</code> skips the auth redirect (like <code>/login</code>); protection is the per-proposal PIN. PIN check happens server-side (POST → sets a short-lived signed cookie scoped to that slug) instead of today's client-side JS check — mild security upgrade, same UX.</li>
+    <li><strong>Email: decide at P2 kickoff.</strong> Default recommendation is Resend (one env key, ~10 lines); fallback is keeping the existing Apps Script webhook purely for notification (it already works, zero new keys) while the PDF stays in the CRM either way.</li>
+  </ul>
+
+  <h2>Data model</h2>
+  <pre><code>// src/lib/schema.ts additions
+proposalStatusEnum = pgEnum("proposal_status",
+  ["draft", "sent", "viewed", "signed", "declined", "superseded"]);
+
+proposals = pgTable("proposals", {
+  id: serial,
+  companyId:  integer → companies.id   (not null)
+  dealId:     integer → deals.id       (nullable)
+  contactId:  integer → contacts.id    (nullable; signer/POC)
+  title:      text                     // "Pacific Scuba — Website & Intake"
+  slug:       text unique              // hosted URL: /p/[slug]
+  pin:        text                     // client PIN; internal master PIN via env
+  status:     proposal_status default 'draft'
+  contentMd:  text                     // four-section markdown body
+  clientName: text, business: text     // header fields (from old frontmatter)
+  signedPdf:  bytea (nullable)         // custom Drizzle bytea type
+  signerName: text, signedAt: timestamp
+  sentAt / firstViewedAt: timestamp    // R10
+  createdAt / updatedAt
+});</code></pre>
+  <p>Follow the repo's DB workflow: schema edit → <code>db:generate</code> → review SQL → <code>db:push</code> (push is source of truth per known drizzle-meta drift).</p>
+
+  <h2>Phases</h2>
+
+  <div class="phase">
+    <span class="tag">Phase 1 · Foundation</span>
+    <h3>Schema + internal CRM surfaces</h3>
+    <ul>
+      <li>Add <code>proposals</code> table + enum; migrate.</li>
+      <li><code>/proposals</code> list page (status pills, linked account/deal) in the existing Gong-style shell; add to nav in <code>crm-shell.tsx</code>.</li>
+      <li>Proposal panels on <code>/accounts/[id]</code> and <code>/opportunities/[id]</code>.</li>
+      <li>Server actions: <code>createProposal</code>, <code>updateProposal</code> (Zod-validated, <code>requireUser()</code>-gated), plus authenticated <code>GET /proposals/[id]/pdf</code> download.</li>
+    </ul>
+    <p><strong>Done when:</strong> a proposal row can be created/edited in-app and shows on its account. <em>~1 session.</em></p>
+  </div>
+
+  <div class="phase">
+    <span class="tag">Phase 2 · Client-facing</span>
+    <h3>Hosted proposal page + signing</h3>
+    <ul>
+      <li>Port <code>proposal.html.j2</code> to <code>/p/[slug]</code>: PIN gate (server-checked, signed cookie), branded render of <code>contentMd</code>, terms page, signature pad (keep <code>signature_pad</code> + client-side PDF build).</li>
+      <li><code>signProposal</code> server action: validate → store PDF bytea + signer/date → status <code>signed</code> → log <code>activities</code> row on the account → notify (Resend or legacy webhook) → if <code>dealId</code> set, surface "mark deal won?" on the opportunity page (R9, human-confirmed).</li>
+      <li>Record <code>firstViewedAt</code> on successful PIN entry (R10 cheaply).</li>
+      <li>Verify the CRM's public deployment serves <code>/p/*</code> unauthenticated; middleware/auth carve-out tested.</li>
+    </ul>
+    <p><strong>Done when:</strong> a test proposal is signed end-to-end on the deployed CRM and the PDF lands on the record. Pixel-compare against a current hosted proposal for brand parity. <em>~1–2 sessions.</em></p>
+  </div>
+
+  <div class="phase">
+    <span class="tag">Phase 3 · Backfill</span>
+    <h3>Import the 8 existing proposals + signed agreements</h3>
+    <ul>
+      <li>One-off script <code>scripts/import-proposals.mjs</code>: parse each <code>proposals/&lt;slug&gt;/proposal.md</code> (frontmatter + body) → match business name to <code>companies</code> (create if missing, correct stage) → insert proposal rows preserving slug + PIN so existing client URLs can be redirected or re-issued.</li>
+      <li>Collect signed PDFs from the Drive folder (manual download to a local dir the script reads — simplest, no Drive API) and attach; mark those <code>signed</code> with best-known dates. Unsigned ones become <code>sent</code>.</li>
+      <li>Log a backdated <code>signed proposal</code> activity per signed agreement.</li>
+      <li>Human review pass in the CRM: every proposal on the right account, right status.</li>
+    </ul>
+    <p><strong>Done when:</strong> spec success criterion #1 holds — every historical signed agreement is on its account and downloadable. <em>~1 session, plus a manual Drive download.</em></p>
+  </div>
+
+  <div class="phase">
+    <span class="tag">Phase 4 · Consolidate</span>
+    <h3>Prompt-driven creation + decommission</h3>
+    <ul>
+      <li>Document the creation prompt-flow in AGENTS.md: paste/point at a transcript → Claude Code drafts the four-section markdown honoring <code>toprock_branding.md</code> rules (copied into this repo) → calls <code>createProposal</code> via a script or the app → Austin reviews in-app → sends link.</li>
+      <li>Point any live client URLs at the CRM (Vercel redirect from the old proposal site, or re-send new links).</li>
+      <li>Archive <code>proposal_creator</code> (README pointer: "merged into crm-app, plan 002"); stop deploying it.</li>
+    </ul>
+    <p><strong>Done when:</strong> a new proposal ships start-to-finish from this repo only. <em>~1 session.</em></p>
+  </div>
+
+  <h2>Risks &amp; mitigations</h2>
+  <table>
+    <thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>Template port drifts from brand (fonts, accent discipline, tone rules)</td><td>Reuse the j2 markup/CSS nearly verbatim; side-by-side visual check against a live proposal before P2 sign-off.</td></tr>
+      <tr><td>Auth carve-out for <code>/p/*</code> accidentally exposes CRM pages</td><td>Carve-out is an explicit path allowlist; verify guarded routes still redirect (existing validation checklist).</td></tr>
+      <tr><td>CRM not publicly deployed / clients can't reach pages</td><td>Resolve spec open question before P2; deployment is a P2 prerequisite, not an afterthought.</td></tr>
+      <tr><td>Backfill mismatches (business names ≠ account names)</td><td>Script proposes matches, human confirms; only 8 records — review each.</td></tr>
+      <tr><td>Losing the still-working legacy flow mid-migration</td><td>proposal_creator stays untouched and deployable until Phase 4 parity check passes.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Out of scope (per spec)</h2>
+  <p>Proposal redesign, DocuSign-style providers, general file storage, multi-tenant permissions. DOCX export only if it turns out to still be needed after the hosted flow is canonical.</p>
+
+  <footer>Plan · html-context-planning. The companion <a href="spec.html">spec.html</a> covers the what &amp; why.</footer>
+</main>
+</body>
+</html>

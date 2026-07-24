@@ -45,8 +45,10 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `/accounts`, `/accounts/[id]`
 - `/contacts`, `/contacts/[id]`
 - `/opportunities`, `/opportunities/[id]`
+- `/proposals`, `/proposals/[id]` (internal proposal management + signed-PDF download at `/proposals/[id]/pdf`)
 - `/tasks`
 - `/activities`
+- **Public, PIN-gated (no login):** `/p/[slug]` client-facing Statement of Work + signing, `/p/[slug]/terms` Terms of Service, `POST /p/[slug]/sign` signing endpoint
 - compatibility redirects: `/customers` and `/customers/[id]`
 
 ## Data Model (Drizzle)
@@ -56,11 +58,13 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `deals`
 - `sales_tasks`
 - `activities`
+- `proposals` (client-facing statements of work; markdown content, PIN, status lifecycle, signed PDF stored base64)
 - Enums:
   - `account_stage`: new_lead, attempting_to_engage, engaged, in_pipeline, customer
   - `deal_stage`: lead, qualified, proposal, negotiation, won, lost
   - `activity_type`: note, call, meeting, email, instagram, linkedin, task
   - `task_status`: open, done
+  - `proposal_status`: draft, sent, viewed, signed, declined, superseded
 
 ## Coding Conventions (Repo-Specific)
 - Prefer server components for pages and data reads.
@@ -95,6 +99,18 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - Many create/log forms are wrapped in `CollapsibleFormSection` and default collapsed.
 - Collapsible sections auto-close on submit (`onSubmitCapture`) and remain minimized after refresh.
 
+## Proposals / Signed Agreements (merged from proposal_creator — plan 002)
+- Proposals are CRM records (`proposals` table) tied to an account (required) and optionally an opportunity/contact. The old standalone `proposal_creator` repo is superseded; do not add new proposals there.
+- Content stays the legacy four-section markdown: `## Overview`, `## Pricing` (GFM table: Phase / Item | Description | Cost), `## What's Included` (bullets), `## Notes` (optional). Parsers live in `src/lib/proposal/markdown.ts`.
+- **Creating a proposal by prompting Claude Code** (the standard flow): give it a transcript or pricing notes → it drafts the four-section markdown following the brand rules in `src/lib/proposal/toprock_branding.md` (tone: direct, second person, no jargon, no exclamation marks; accent used sparingly) → it inserts the row via SQL or you paste into the `/proposals` create + edit forms → review in-app, then send the client `/p/[slug]` + the PIN.
+- **Smart create:** the `/proposals` form accepts a "New account name" — `createProposal` creates the account (case-insensitive match first, stage `in_pipeline`) and, unless an existing opportunity is picked, auto-creates one from the proposal (stage `proposal`, MRR/one-time parsed from the Pricing table via `parsePricingTotals`). Saving proposal content later back-fills the linked opportunity's value only while it's still 0/0.
+- **Tying SOWs to opportunities:** the Agreements panel (account + opportunity pages) has a per-proposal dropdown backed by `updateProposalDeal` (validates same-account). Never render these autosave `<form>` components inside a `<p>` — invalid HTML → hydration mismatch that silently kills the panel's interactivity.
+- Client flow: `/p/[slug]` is public but PIN-gated server-side (per-proposal `pin`, internal master PIN via `PROPOSAL_INTERNAL_PIN`, default 3067). PIN entry sets a slug-scoped cookie and flips `sent → viewed`. Signing (draw or type) builds the PDF client-side (JPEG-based, ~200KB) and POSTs to `/p/[slug]/sign`, which stores the PDF on the row, flips status to `signed`, logs an account activity, and notifies.
+- Notifications on signing (`src/lib/proposal/notify.ts`): `RESEND_API_KEY` → Resend emails (internal + client); else `PROPOSAL_SIGNED_WEBHOOK_URL` → legacy Apps Script payload; else skip (PDF is stored regardless). Optional: `PROPOSAL_NOTIFY_EMAIL`, `PROPOSAL_FROM_EMAIL`.
+- Legacy backfill: `node scripts/import-proposals.mjs [--dry-run] [--source <proposal_creator path>] [--pdf-dir <dir of <slug>.pdf signed files>]`. Idempotent (upsert by slug); never downgrades a `signed` status.
+- Never `select()` all proposal columns in list/detail views — always use explicit column lists so the multi-MB `signed_pdf_base64` stays out of page queries (only `/proposals/[id]/pdf` reads it).
+- The client page must stay visually identical to the legacy hosted proposals (CSS ported verbatim in `src/app/p/proposal-public.css`).
+
 ## When Editing Existing Features
 - If touching contact profile editing, preserve blur autosave behavior.
 - If touching phone display, preserve `Call` button (`tel:` link behavior).
@@ -118,6 +134,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - If schema touched: verify migration generated and applied
 - If account stage touched: verify `/accounts` create flow and `/accounts/[id]` stage updates
 - If opportunity workflow touched: verify `/opportunities/[id]` save + stage updates + timeline logging
+- If proposals touched: verify `/proposals` create/edit, the public `/p/[slug]` PIN gate + render, and (for signing changes) an end-to-end test signature against a throwaway proposal row
 
 ## Safety Notes
 - Do not store plaintext passwords; always hash with bcrypt (`bcryptjs`).
