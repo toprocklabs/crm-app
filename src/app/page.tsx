@@ -1,4 +1,5 @@
 import { desc, eq, sql } from "drizzle-orm";
+import Link from "next/link";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { CrmShell } from "@/components/crm-shell";
 import { EmptyState } from "@/components/empty-state";
@@ -10,21 +11,25 @@ import { activities, companies, contacts, deals, users } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
+// Every KPI drills into the view it summarizes; `href` is required so a card
+// can't silently go back to being a dead end.
 function Card({
   title,
   value,
   subtitle,
+  href,
 }: {
   title: string;
   value: string;
   subtitle: string;
+  href: string;
 }) {
   return (
-    <article className="gong-panel gong-kpi rounded-lg p-5">
+    <Link href={href} className="gong-panel gong-kpi gong-kpi-link block rounded-lg p-5">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{title}</p>
       <p className="mt-3 text-4xl font-semibold tracking-tight text-slate-950">{value}</p>
       <p className="mt-2 text-sm leading-6 text-slate-600">{subtitle}</p>
-    </article>
+    </Link>
   );
 }
 
@@ -58,6 +63,7 @@ export default async function Home() {
         stage: deals.stage,
         valueCents: deals.valueCents,
         implementationCostCents: deals.implementationCostCents,
+        companyId: companies.id,
         companyName: companies.name,
         ownerName: deals.ownerName,
         nextStep: deals.nextStep,
@@ -114,27 +120,31 @@ export default async function Home() {
       description="Track pipeline, enforce next steps, and run a clean follow-up cadence for your SMB opportunities."
     >
       <section className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
-        <Card title="Accounts" value={String(stats.companies)} subtitle="Active SMB accounts" />
-        <Card title="Contacts" value={String(stats.contacts)} subtitle="People in your funnel" />
+        <Card title="Accounts" value={String(stats.companies)} subtitle="Active SMB accounts" href="/accounts" />
+        <Card title="Contacts" value={String(stats.contacts)} subtitle="People in your funnel" href="/contacts" />
         <Card
           title="Pipeline MRR"
           value={currency.format(Math.round((stats.pipelineCents ?? 0) / 100))}
           subtitle="Active pipeline (excl. won/lost)"
+          href="/opportunities"
         />
         <Card
           title="Won MRR"
           value={currency.format(Math.round((stats.wonMrrCents ?? 0) / 100))}
           subtitle="Closed-won opportunities"
+          href="/opportunities?stage=won"
         />
         <Card
           title="Pipeline Impl."
           value={currency.format(Math.round((stats.pipelineImplementationCents ?? 0) / 100))}
           subtitle="Active implementation fees"
+          href="/opportunities"
         />
         <Card
           title="Won Impl."
           value={currency.format(Math.round((stats.wonImplementationCents ?? 0) / 100))}
           subtitle="Closed-won implementation fees"
+          href="/opportunities?stage=won"
         />
       </section>
 
@@ -144,7 +154,15 @@ export default async function Home() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Pipeline Focus</p>
             <h2 className="mt-2 text-lg font-semibold text-slate-950">Opportunities with next steps</h2>
           </div>
-          <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{dealRows.length} tracked</span>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{dealRows.length} tracked</span>
+            <Link
+              href="/opportunities"
+              className="inline-flex rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              View all
+            </Link>
+          </div>
         </div>
         <ul className="mt-4 space-y-3">
           {dealRows.length === 0 ? <li><EmptyState icon="opportunity" message="No opportunities yet." action={{ label: "Create opportunity", href: "/opportunities" }} /></li> : null}
@@ -152,12 +170,33 @@ export default async function Home() {
             const stepLate = Boolean(deal.nextStepDueDate && deal.nextStepDueDate < today && deal.stage !== "won" && deal.stage !== "lost");
 
             return (
-              <li key={deal.id} className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
+              // `relative` + the stretched link on the deal name makes the whole
+              // row clickable; the account link sits above it via z-10.
+              <li
+                key={deal.id}
+                className="relative rounded-lg border border-slate-200 bg-slate-50/70 p-4 transition hover:border-cyan-300 hover:bg-white"
+              >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="font-medium text-slate-900">{deal.name}</p>
+                    <p className="font-medium text-slate-900">
+                      <Link
+                        href={`/opportunities/${deal.id}`}
+                        className="underline decoration-slate-300 underline-offset-2 after:absolute after:inset-0 after:content-['']"
+                      >
+                        {deal.name}
+                      </Link>
+                    </p>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-slate-600">
-                      <span>{deal.companyName ?? "No account"}</span>
+                      {deal.companyId && deal.companyName ? (
+                        <Link
+                          href={`/accounts/${deal.companyId}`}
+                          className="relative z-10 underline decoration-slate-300 underline-offset-2 hover:text-slate-900"
+                        >
+                          {deal.companyName}
+                        </Link>
+                      ) : (
+                        <span>No account</span>
+                      )}
                       <span>•</span>
                       <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getDealStageTone(deal.stage)}`}>
                         {getDealStageLabel(deal.stage)}
@@ -189,7 +228,15 @@ export default async function Home() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Signals</p>
             <h2 className="mt-2 text-lg font-semibold text-slate-950">Recent activity timeline</h2>
           </div>
-          <span className="inline-flex rounded-full bg-cyan-100 px-2.5 py-1 text-xs font-semibold text-cyan-800">Live feed</span>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex rounded-full bg-cyan-100 px-2.5 py-1 text-xs font-semibold text-cyan-800">Live feed</span>
+            <Link
+              href="/activities"
+              className="inline-flex rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              View all
+            </Link>
+          </div>
         </div>
         <ActivityTimeline
           emptyMessage="No activity logged yet."

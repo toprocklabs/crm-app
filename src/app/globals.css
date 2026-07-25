@@ -273,6 +273,24 @@ body {
   background: linear-gradient(90deg, rgb(14 165 233), rgb(59 130 246), transparent 85%);
 }
 
+/* KPI cards that drill into a filtered view. Defined here (not as Tailwind
+   hover: utilities) because .crm-shell .gong-panel sets border/box-shadow at
+   equal specificity and would otherwise win. */
+.crm-shell .gong-kpi-link {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.crm-shell .gong-kpi-link:hover {
+  transform: translateY(-2px);
+  border-color: rgb(103 232 249);
+  box-shadow: 0 6px 18px rgb(15 23 42 / 0.1);
+}
+
+.crm-shell .gong-kpi-link:focus-visible {
+  outline: 2px solid rgb(14 165 233);
+  outline-offset: 2px;
+}
+
 .crm-sidebar {
   overflow-y: auto;
 }
