@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<!--
+  planning/003-stripe-payments/spec.html — the WHAT and WHY.
+  Implementation detail lives in plan.html. Keep section order stable for clean diffs.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec · Stripe payment mirror</title>
+<style>
+  :root{--bg:#fbfaf8;--ink:#1c1b1a;--muted:#6b6660;--line:#e6e2db;--accent:#3a5a78;--soft:#eef2f6;--codebg:#f3f1ec;
+    --proposed:#9a7b2f;--proposed-bg:#f6efdd;--accepted:#3f6b4a;--accepted-bg:#e9f1ea;
+    --superseded:#8a8580;--superseded-bg:#efece8;--deprecated:#9a4b3f;--deprecated-bg:#f5e8e5;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  main{max-width:800px;margin:0 auto;padding:44px 28px 80px}
+  .top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+  .top a{color:var(--accent);text-decoration:none}
+  .status{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;padding:3px 11px;border-radius:20px;text-transform:capitalize}
+  .s-proposed{color:var(--proposed);background:var(--proposed-bg)}
+  .s-accepted{color:var(--accepted);background:var(--accepted-bg)}
+  .kicker{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-top:18px}
+  h1{font-size:30px;margin:6px 0 6px;letter-spacing:-.01em}
+  .lede{color:var(--muted);font-size:17px;margin:0 0 8px}
+  h2{font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);
+    border-top:1px solid var(--line);padding-top:22px;margin:32px 0 10px}
+  p{margin:8px 0}ul,ol{margin:8px 0;padding-left:22px}li{margin:5px 0}
+  code{background:var(--codebg);padding:1.5px 5px;border-radius:4px;font-size:13.5px;font-family:"SF Mono",Consolas,Menlo,monospace}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+  th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;color:var(--muted);background:var(--soft)}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
+  .must{color:#7a3b18;background:#f6e6db}.should{color:#3a5a78;background:#e6eef6}.could{color:#6b6660;background:#efece8}
+  .callout{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:12px 16px;margin:14px 0}
+  .warn{background:#fff;border:1px solid var(--line);border-left:3px solid #9a7b2f;border-radius:8px;padding:12px 16px;margin:14px 0}
+  .flow{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}
+  .ff{flex:1 1 220px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .ff h3{margin:0 0 4px;font-size:15px;color:var(--accent)}
+  .ff p{margin:0;font-size:14px;color:var(--muted)}
+  footer{margin-top:36px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a href="../index.html">← Planning index</a>
+    <span class="status s-proposed">Proposed</span>
+  </div>
+
+  <div class="kicker">Spec · Feature 003</div>
+  <h1>Stripe payment mirror</h1>
+  <p class="lede">Mirror Stripe payments into the CRM read-only, so every account shows what it has actually paid — and so the MRR we <em>think</em> we sold can be checked against the MRR Stripe is <em>actually billing</em>.</p>
+
+  <h2>Problem</h2>
+  <p>Stripe collects the money. The CRM tracks the relationship. Nothing connects them, so the system of record for accounts and deals has no idea whether a client has ever paid us a dollar. Answering "how much has this client paid?" means leaving the CRM, opening the Stripe dashboard, and searching by a name that may not match the account name.</p>
+  <div class="callout"><strong>Worse: the revenue numbers on our dashboard are guesses.</strong> "Won MRR" sums <code>deals.valueCents</code> — a figure a human typed into an opportunity. Stripe knows what is actually being billed every month. Those two numbers have never been compared, so nothing catches the gap.</div>
+  <p>That gap is where money leaks, quietly and for months:</p>
+  <ul>
+    <li>A client signs a $250/mo care plan; the subscription is never created. We do the work for free.</li>
+    <li>A card fails, the subscription lapses, nobody notices. We keep doing the work.</li>
+    <li>A signed SOW says $3,500 implementation; only $1,500 is ever invoiced.</li>
+  </ul>
+  <p>Plan 002 put signed agreements in the CRM. This plan closes the loop: what they <em>agreed</em> to pay now sits next to what they <em>have</em> paid.</p>
+
+  <h2>Target workflow</h2>
+  <div class="flow">
+    <div class="ff"><h3>1 · Link</h3><p>Each CRM account is linked to its Stripe customer — auto-matched on email where confident, picked from a list otherwise.</p></div>
+    <div class="ff"><h3>2 · Mirror</h3><p>Every charge and subscription syncs into the CRM automatically via webhook, with a one-time backfill for history.</p></div>
+    <div class="ff"><h3>3 · Read</h3><p>The account page shows lifetime paid, the active subscription, and real MRR beside expected MRR.</p></div>
+  </div>
+
+  <h2>Goals</h2>
+  <ul>
+    <li><strong>Lifetime paid, per account.</strong> Open any account and see the total it has paid us, with the individual payments behind that number.</li>
+    <li><strong>Real MRR vs. expected MRR.</strong> Stripe's active recurring billing for an account, shown next to the MRR recorded on its won opportunities, with the difference made obvious.</li>
+    <li><strong>Catch every payment regardless of how it was collected.</strong> Subscriptions, one-off invoices, and payment links all land in the same ledger — the billing process is inconsistent today and the mirror must not care.</li>
+    <li><strong>Stay strictly read-only.</strong> The CRM observes Stripe. It never creates, charges, refunds, or modifies anything.</li>
+    <li><strong>Attribute or surface.</strong> A payment that can't be matched to an account is visibly unlinked, never silently dropped.</li>
+  </ul>
+
+  <h2>Non-goals</h2>
+  <ul>
+    <li><strong>No writing to Stripe.</strong> No creating invoices, subscriptions, or charges from the CRM. This is deliberate for v1 — see plan 003's phasing for where that could go later.</li>
+    <li><strong>No dunning or collections workflow.</strong> Overdue-invoice tracking is a natural follow-on, but is out of scope here; only the data needed for it gets synced.</li>
+    <li><strong>Not a Stripe dashboard replacement.</strong> Disputes, payouts, fee reporting, and balance management stay in Stripe. Deep links from the CRM cover those.</li>
+    <li><strong>No customer-facing billing portal.</strong> Clients don't log into the CRM.</li>
+    <li><strong>Not an accounting system.</strong> Gross amounts collected, not revenue recognition, tax treatment, or bookkeeping export.</li>
+  </ul>
+
+  <h2>Requirements</h2>
+  <table>
+    <thead><tr><th>#</th><th>Requirement</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td>R1</td><td><code>companies.stripeCustomerId</code> links a CRM account to a Stripe customer; one account maps to at most one customer.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R2</td><td>A local <code>payments</code> ledger mirroring Stripe charges (gross amount, status, paid date, description, receipt link, and the originating invoice/subscription where present).</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R3</td><td>A local <code>stripe_subscriptions</code> mirror with status and amount <strong>normalized to a monthly figure</strong>, so annual plans compare correctly against MRR.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R4</td><td>Webhook endpoint that keeps the mirror current within seconds, with Stripe signature verification — an unverified request must never be able to write a payment row.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R5</td><td>Idempotent backfill script for historical charges and subscriptions; re-running it never duplicates or double-counts.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R6</td><td>Billing panel on <code>/accounts/[id]</code>: lifetime paid, active subscription + status, real vs. expected MRR, and recent payments.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R7</td><td>Account linking UI: auto-link on exact email match; anything less certain is listed as an unlinked Stripe customer that a human assigns in a couple of clicks.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R8</td><td>The CRM's Stripe credential is a <strong>restricted, read-only API key</strong>, so the application is structurally incapable of moving money.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R9</td><td>Test-mode and live-mode records are distinguishable (<code>livemode</code> flag) so sandbox data can never inflate real totals.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R10</td><td>A <code>/payments</code> page listing all synced payments with account attribution and an unlinked-customers section.</td><td><span class="pill should">Should</span></td></tr>
+      <tr><td>R11</td><td>Refunds reduce an account's lifetime-paid total rather than being ignored.</td><td><span class="pill should">Should</span></td></tr>
+      <tr><td>R12</td><td>Real-vs-expected MRR comparison also visible on <code>/opportunities/[id]</code>, next to the deal's own value.</td><td><span class="pill should">Should</span></td></tr>
+      <tr><td>R13</td><td>Dashboard KPI for total collected, alongside the existing pipeline cards.</td><td><span class="pill could">Could</span></td></tr>
+      <tr><td>R14</td><td>Capture Stripe fees so net received is available in addition to gross paid.</td><td><span class="pill could">Could</span></td></tr>
+      <tr><td>R15</td><td>Manual payment entry for money collected outside Stripe (check, ACH, Venmo), so lifetime-paid isn't misleading.</td><td><span class="pill could">Could</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Success criteria</h2>
+  <ul>
+    <li>Opening any linked account answers <strong>"how much have they paid us?"</strong> without leaving the CRM.</li>
+    <li>Every historical Stripe charge appears in the ledger <strong>exactly once</strong>, and the sum reconciles against the Stripe dashboard total.</li>
+    <li>A payment that clears in Stripe shows up on the account <strong>within seconds</strong>, without anyone running a script.</li>
+    <li>At least one <strong>real discrepancy</strong> between expected and actual MRR is surfaced on first run — or we confirm with evidence there are none.</li>
+    <li>No Stripe customer with payment history is left unattributed and invisible.</li>
+    <li>The API key in the environment <strong>cannot create a charge</strong>, verified by attempting one.</li>
+  </ul>
+
+  <h2>Open questions</h2>
+  <div class="warn"><strong>The one that most affects correctness:</strong> do any clients pay outside Stripe — check, ACH transfer, Venmo, cash? If so, "lifetime paid" sourced purely from Stripe is wrong for those accounts, and R15 (manual payment entry) moves from Could to Must.</div>
+  <ul>
+    <li><strong>How far back should the backfill go</strong> — all history, or a cutoff date?</li>
+    <li><strong>Is there more than one Stripe account</strong> (e.g. a legacy or personal account) that also holds client payments?</li>
+    <li><strong>Do any subscriptions bill annually</strong>, or is everything monthly? Determines how much the MRR normalization actually matters in practice.</li>
+    <li><strong>Should a refunded payment</strong> reduce lifetime paid outright, or show as a separate credited figure?</li>
+    <li><strong>Expected MRR source:</strong> sum of <code>won</code> opportunities only, or should <code>proposal</code>/<code>negotiation</code> stages count toward a forecast column too?</li>
+  </ul>
+
+  <footer>Spec · html-context-planning. The companion <a href="plan.html">plan.html</a> covers the how.</footer>
+</main>
+</body>
+</html>
