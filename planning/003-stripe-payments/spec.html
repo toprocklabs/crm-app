@@ -132,7 +132,7 @@
       <tr><td>R12</td><td>Real-vs-expected MRR comparison also visible on <code>/opportunities/[id]</code>, next to the deal's own value.</td><td><span class="pill should">Should</span></td></tr>
       <tr><td>R13</td><td>Dashboard KPI for total collected, alongside the existing pipeline cards.</td><td><span class="pill could">Could</span></td></tr>
       <tr><td>R14</td><td>Capture Stripe fees so net received is available in addition to gross paid — material at our ticket sizes (~6% of a $10/mo plan).</td><td><span class="pill should">Should</span></td></tr>
-      <tr><td>R15</td><td>Manual payment entry for money collected outside Stripe (check, ACH, Venmo), so lifetime-paid isn't misleading.</td><td><span class="pill could">Could</span></td></tr>
+      <tr><td>R15</td><td><s>Manual payment entry for money collected outside Stripe.</s> <strong>Dropped</strong> — confirmed all client payments go through Stripe, so the mirror is complete by construction and <code>stripeChargeId</code> stays non-null.</td><td><span class="pill could">N/A</span></td></tr>
     </tbody>
   </table>
 
@@ -147,7 +147,6 @@
   </ul>
 
   <h2>Open questions</h2>
-  <div class="warn"><strong>The one that most affects correctness:</strong> do any clients pay outside Stripe — check, ACH transfer, Venmo, cash? If so, "lifetime paid" sourced purely from Stripe is wrong for those accounts, and R15 (manual payment entry) moves from Could to Must.</div>
   <ul>
     <li><strong>How far back should the backfill go</strong> — all history, or a cutoff date?</li>
     <li><strong>Is there more than one Stripe account</strong> (e.g. a legacy or personal account) that also holds client payments?</li>
@@ -160,6 +159,7 @@
   <ul>
     <li><s>Do any subscriptions bill annually?</s> — All seven SOWs price maintenance monthly; none are annual. ToS §4.2 still permits annual billing, so the monthly normalization stays in the design as cheap insurance, but it has no effect on today's data.</li>
     <li><s>Are one-off fees a single payment?</s> — No. Deposits and phased billing are the norm (ToS §4.1 allows requiring a deposit), which is why R6b treats one-off as progress rather than equality.</li>
+    <li><s>Do any clients pay outside Stripe?</s> — No, everything goes through Stripe. The mirror is therefore complete by construction: lifetime paid needs no caveat, <code>stripeChargeId</code> stays non-null, and R15 is dropped.</li>
   </ul>
 
   <footer>Spec · html-context-planning. The companion <a href="plan.html">plan.html</a> covers the how.</footer>

@@ -84,6 +84,19 @@ export const proposalStatus = pgEnum("proposal_status", [
   "superseded",
 ]);
 
+// Money in. `type` is derived from Stripe (a charge carrying a subscription is
+// recurring maintenance; anything else is a one-off build fee) so the two
+// reconcile against deals.valueCents and deals.implementationCostCents
+// respectively — see planning/003-stripe-payments/.
+export const paymentStatus = pgEnum("payment_status", [
+  "succeeded",
+  "refunded",
+  "partially_refunded",
+  "failed",
+]);
+
+export const paymentType = pgEnum("payment_type", ["one_time", "recurring"]);
+
 export const users = pgTable(
   "users",
   {
@@ -112,6 +125,8 @@ export const companies = pgTable("companies", {
   lat: doublePrecision("lat"),
   lng: doublePrecision("lng"),
   plazaKey: text("plaza_key"),
+  // Links this account to its Stripe customer. Nullable until matched.
+  stripeCustomerId: text("stripe_customer_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -301,6 +316,75 @@ export const proposals = pgTable(
   ],
 );
 
+// Read-only mirror of Stripe charges — the ledger of every dollar collected.
+// Mirrored at the charge level (not invoice) because every successful payment
+// produces exactly one charge regardless of whether it came from a
+// subscription, a one-off invoice, or a payment link. Rebuildable at any time
+// from Stripe, which stays the source of truth.
+export const payments = pgTable(
+  "payments",
+  {
+    id: serial("id").primaryKey(),
+    stripeChargeId: text("stripe_charge_id").notNull(),
+    // Nullable: a payment is never dropped because we couldn't match an
+    // account. It shows as unlinked until a human assigns it.
+    companyId: integer("company_id").references(() => companies.id, {
+      onDelete: "set null",
+    }),
+    stripeCustomerId: text("stripe_customer_id"),
+    amountCents: integer("amount_cents").notNull(),
+    // Stripe's cut. Material here: ~6% of a $10/mo plan.
+    feeCents: integer("fee_cents").default(0).notNull(),
+    refundedCents: integer("refunded_cents").default(0).notNull(),
+    currency: text("currency").default("usd").notNull(),
+    status: paymentStatus("status").default("succeeded").notNull(),
+    type: paymentType("type").default("one_time").notNull(),
+    description: text("description"),
+    receiptUrl: text("receipt_url"),
+    stripeInvoiceId: text("stripe_invoice_id"),
+    stripeSubscriptionId: text("stripe_subscription_id"),
+    // Keeps sandbox data from ever inflating real revenue totals.
+    livemode: boolean("livemode").default(true).notNull(),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    syncedAt: timestamp("synced_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("payments_stripe_charge_unique").on(table.stripeChargeId),
+    index("payments_company_idx").on(table.companyId),
+    index("payments_company_type_idx").on(table.companyId, table.type),
+    index("payments_customer_idx").on(table.stripeCustomerId),
+    index("payments_paid_at_idx").on(table.paidAt),
+  ],
+);
+
+// Read-only mirror of Stripe subscriptions. monthlyAmountCents is normalized
+// at write time (annual / 12, quarterly / 3, etc.) so comparing against
+// deals.valueCents — already an MRR figure — is a plain SUM.
+// Holds the CURRENT amount only, not a rate history (ToS 4.5 permits raises).
+export const stripeSubscriptions = pgTable(
+  "stripe_subscriptions",
+  {
+    id: serial("id").primaryKey(),
+    stripeSubscriptionId: text("stripe_subscription_id").notNull(),
+    companyId: integer("company_id").references(() => companies.id, {
+      onDelete: "set null",
+    }),
+    stripeCustomerId: text("stripe_customer_id"),
+    status: text("status").notNull(), // active | past_due | canceled | trialing | unpaid
+    monthlyAmountCents: integer("monthly_amount_cents").default(0).notNull(),
+    interval: text("interval"), // month | year — kept for display
+    currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+    canceledAt: timestamp("canceled_at", { withTimezone: true }),
+    livemode: boolean("livemode").default(true).notNull(),
+    syncedAt: timestamp("synced_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("stripe_subscriptions_unique").on(table.stripeSubscriptionId),
+    index("stripe_subscriptions_company_idx").on(table.companyId),
+    index("stripe_subscriptions_status_idx").on(table.status),
+  ],
+);
+
 // Geocode + cluster cache so we don't re-hit the geocoding API every render.
 export const placeEnrichment = pgTable(
   "place_enrichment",
@@ -330,3 +414,5 @@ export type EntityType = (typeof entityType.enumValues)[number];
 export type DataSource = (typeof dataSource.enumValues)[number];
 export type SuggestionStatus = (typeof suggestionStatus.enumValues)[number];
 export type ProposalStatus = (typeof proposalStatus.enumValues)[number];
+export type PaymentStatus = (typeof paymentStatus.enumValues)[number];
+export type PaymentType = (typeof paymentType.enumValues)[number];
