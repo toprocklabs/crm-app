@@ -64,6 +64,27 @@
   </ul>
   <p>Plan 002 put signed agreements in the CRM. This plan closes the loop: what they <em>agreed</em> to pay now sits next to what they <em>have</em> paid.</p>
 
+  <h2>Payment types</h2>
+  <p>Two distinct kinds of money come in, and they reconcile against two different fields. Conflating them is the main way this feature could be built wrong. Both patterns are visible in the seven signed SOWs (<code>proposal_creator/proposals/*/proposal.md</code>, now mirrored in the <code>proposals</code> table):</p>
+  <table>
+    <thead><tr><th></th><th>One-off</th><th>Recurring</th></tr></thead>
+    <tbody>
+      <tr><td><strong>What it is</strong></td><td>Implementation / build fees — the SOW's <code>ONE-TIME</code> section</td><td>Monthly hosting + maintenance — the SOW's <code>MONTHLY</code> section</td></tr>
+      <tr><td><strong>Contract basis</strong></td><td>ToS §4.1 Implementation Fees; deposit may be required before work starts</td><td>ToS §4.2 Maintenance Fees, billed monthly or annually; §5.1 auto-renews</td></tr>
+      <tr><td><strong>Reconciles against</strong></td><td><code>deals.implementationCostCents</code></td><td><code>deals.valueCents</code> (MRR)</td></tr>
+      <tr><td><strong>Stripe shape</strong></td><td>Charge with no subscription attached</td><td>Charge carrying a <code>subscription</code> id</td></tr>
+      <tr><td><strong>Real range</strong></td><td>$200 – $750 per SOW</td><td>$10 – $195 / mo</td></tr>
+    </tbody>
+  </table>
+
+  <p>Three details from the real contracts change how the comparison must work:</p>
+  <ul>
+    <li><strong>One-off fees arrive in installments, not one payment.</strong> Pacific Scuba's SOW is $750 total but bills as a $250 deposit for Phase 1, with "Phase 2 will be invoiced separately." Surf n Sport Chiro splits $300 into a $200 branding phase and a $100 build phase. So the honest one-off question is <em>"how much of the contracted total have we collected so far?"</em> — a progress bar with a remaining balance, not an equality check.</li>
+    <li><strong>Not every client has a monthly plan.</strong> Pacific Scuba Repair and its intake SOW have no <code>MONTHLY</code> section at all. For those accounts <strong>expected MRR of zero is correct</strong> and must never be flagged as a missing subscription.</li>
+    <li><strong>Maintenance often starts later than the signature.</strong> Garden of Eden bills "starting once the site is live"; Pacific Scuba's is "billed after build delivery." A signed SOW with no active subscription yet is frequently legitimate, so that state is a <em>question to look at</em>, not an error.</li>
+  </ul>
+  <div class="warn"><strong>Fees are not a rounding error at these ticket sizes.</strong> Stripe takes roughly 2.9% + $0.30. On a $10/mo maintenance plan that is about 6% of the payment, and on a $15/mo plan about 4.5%. Gross collected and net received diverge enough to matter here, which is why fee capture is a <em>Should</em> rather than a nice-to-have.</div>
+
   <h2>Target workflow</h2>
   <div class="flow">
     <div class="ff"><h3>1 · Link</h3><p>Each CRM account is linked to its Stripe customer — auto-matched on email where confident, picked from a list otherwise.</p></div>
@@ -74,7 +95,8 @@
   <h2>Goals</h2>
   <ul>
     <li><strong>Lifetime paid, per account.</strong> Open any account and see the total it has paid us, with the individual payments behind that number.</li>
-    <li><strong>Real MRR vs. expected MRR.</strong> Stripe's active recurring billing for an account, shown next to the MRR recorded on its won opportunities, with the difference made obvious.</li>
+    <li><strong>Recurring: real MRR vs. expected MRR.</strong> Stripe's active monthly billing for an account, shown next to the MRR recorded on its won opportunities, with the difference made obvious.</li>
+    <li><strong>One-off: collected vs. contracted.</strong> How much of an account's contracted implementation fee has actually been collected, and what balance remains — since these are routinely billed as a deposit plus later phases.</li>
     <li><strong>Catch every payment regardless of how it was collected.</strong> Subscriptions, one-off invoices, and payment links all land in the same ledger — the billing process is inconsistent today and the mirror must not care.</li>
     <li><strong>Stay strictly read-only.</strong> The CRM observes Stripe. It never creates, charges, refunds, or modifies anything.</li>
     <li><strong>Attribute or surface.</strong> A payment that can't be matched to an account is visibly unlinked, never silently dropped.</li>
@@ -98,7 +120,10 @@
       <tr><td>R3</td><td>A local <code>stripe_subscriptions</code> mirror with status and amount <strong>normalized to a monthly figure</strong>, so annual plans compare correctly against MRR.</td><td><span class="pill must">Must</span></td></tr>
       <tr><td>R4</td><td>Webhook endpoint that keeps the mirror current within seconds, with Stripe signature verification — an unverified request must never be able to write a payment row.</td><td><span class="pill must">Must</span></td></tr>
       <tr><td>R5</td><td>Idempotent backfill script for historical charges and subscriptions; re-running it never duplicates or double-counts.</td><td><span class="pill must">Must</span></td></tr>
-      <tr><td>R6</td><td>Billing panel on <code>/accounts/[id]</code>: lifetime paid, active subscription + status, real vs. expected MRR, and recent payments.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R5b</td><td>Every payment is classified <code>one_time</code> or <code>recurring</code> (derived from whether the charge carries a subscription), and the two are reported separately everywhere.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R6</td><td>Billing panel on <code>/accounts/[id]</code>: lifetime paid, active subscription + status, real vs. expected MRR, one-off collected vs. contracted, and recent payments.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R6b</td><td>One-off progress shown as <strong>collected of contracted with a remaining balance</strong> — not an equality check — because implementation fees bill as a deposit plus later phases.</td><td><span class="pill must">Must</span></td></tr>
+      <tr><td>R6c</td><td>An account whose SOW has no monthly section shows <strong>expected MRR of zero as correct</strong>, never as a missing subscription.</td><td><span class="pill must">Must</span></td></tr>
       <tr><td>R7</td><td>Account linking UI: auto-link on exact email match; anything less certain is listed as an unlinked Stripe customer that a human assigns in a couple of clicks.</td><td><span class="pill must">Must</span></td></tr>
       <tr><td>R8</td><td>The CRM's Stripe credential is a <strong>restricted, read-only API key</strong>, so the application is structurally incapable of moving money.</td><td><span class="pill must">Must</span></td></tr>
       <tr><td>R9</td><td>Test-mode and live-mode records are distinguishable (<code>livemode</code> flag) so sandbox data can never inflate real totals.</td><td><span class="pill must">Must</span></td></tr>
@@ -106,7 +131,7 @@
       <tr><td>R11</td><td>Refunds reduce an account's lifetime-paid total rather than being ignored.</td><td><span class="pill should">Should</span></td></tr>
       <tr><td>R12</td><td>Real-vs-expected MRR comparison also visible on <code>/opportunities/[id]</code>, next to the deal's own value.</td><td><span class="pill should">Should</span></td></tr>
       <tr><td>R13</td><td>Dashboard KPI for total collected, alongside the existing pipeline cards.</td><td><span class="pill could">Could</span></td></tr>
-      <tr><td>R14</td><td>Capture Stripe fees so net received is available in addition to gross paid.</td><td><span class="pill could">Could</span></td></tr>
+      <tr><td>R14</td><td>Capture Stripe fees so net received is available in addition to gross paid — material at our ticket sizes (~6% of a $10/mo plan).</td><td><span class="pill should">Should</span></td></tr>
       <tr><td>R15</td><td>Manual payment entry for money collected outside Stripe (check, ACH, Venmo), so lifetime-paid isn't misleading.</td><td><span class="pill could">Could</span></td></tr>
     </tbody>
   </table>
@@ -126,9 +151,15 @@
   <ul>
     <li><strong>How far back should the backfill go</strong> — all history, or a cutoff date?</li>
     <li><strong>Is there more than one Stripe account</strong> (e.g. a legacy or personal account) that also holds client payments?</li>
-    <li><strong>Do any subscriptions bill annually</strong>, or is everything monthly? Determines how much the MRR normalization actually matters in practice.</li>
     <li><strong>Should a refunded payment</strong> reduce lifetime paid outright, or show as a separate credited figure?</li>
     <li><strong>Expected MRR source:</strong> sum of <code>won</code> opportunities only, or should <code>proposal</code>/<code>negotiation</code> stages count toward a forecast column too?</li>
+    <li><strong>How long after signing</strong> should a missing maintenance subscription stop being "not started yet" and start reading as a problem? Two SOWs defer billing to launch, so a fixed grace period is a guess until you name one.</li>
+    <li><strong>Do the phase-two amounts get invoiced</strong> when the phase ships, or is the full contracted total billed up front in practice? Determines whether a remaining balance is a red flag or just normal work-in-progress.</li>
+  </ul>
+  <p><strong>Answered by reading the contracts:</strong></p>
+  <ul>
+    <li><s>Do any subscriptions bill annually?</s> — All seven SOWs price maintenance monthly; none are annual. ToS §4.2 still permits annual billing, so the monthly normalization stays in the design as cheap insurance, but it has no effect on today's data.</li>
+    <li><s>Are one-off fees a single payment?</s> — No. Deposits and phased billing are the norm (ToS §4.1 allows requiring a deposit), which is why R6b treats one-off as progress rather than equality.</li>
   </ul>
 
   <footer>Spec · html-context-planning. The companion <a href="plan.html">plan.html</a> covers the how.</footer>

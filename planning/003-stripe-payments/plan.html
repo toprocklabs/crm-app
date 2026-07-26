@@ -48,12 +48,35 @@
 
   <div class="kicker">Plan · Feature 003</div>
   <h1>Stripe payment mirror — implementation plan</h1>
-  <p class="lede">Three phases: mirror the data and link it to accounts → surface it on the account page → keep it live with a webhook. Each ships independently and delivers value on its own.</p>
+  <p class="lede">Three phases: mirror the data and link it to accounts → surface it on the account page → keep it live with a webhook. Each ships independently and delivers value on its own. Two payment types run through all of it: one-off build fees and recurring maintenance.</p>
+
+  <h2>What the signed contracts actually look like</h2>
+  <p>Grounding, read from the seven signed SOWs in <code>proposal_creator/proposals/*/proposal.md</code> (now mirrored in the <code>proposals</code> table). This is what the reconciliation has to cope with:</p>
+  <table>
+    <thead><tr><th>Client SOW</th><th>One-time</th><th>Monthly</th><th>Wrinkle</th></tr></thead>
+    <tbody>
+      <tr><td>Coatary</td><td>$300</td><td>$10/mo</td><td>—</td></tr>
+      <tr><td>Garden of Eden</td><td>$500</td><td>$25/mo</td><td>Maintenance starts "once the site is live"</td></tr>
+      <tr><td>Pacific Scuba</td><td>$750 (2 phases)</td><td>$195/mo</td><td>$250 deposit, Phase 2 "invoiced separately"; billed after delivery</td></tr>
+      <tr><td>Pacific Scuba Repair</td><td>$250</td><td><strong>none</strong></td><td>No maintenance plan at all</td></tr>
+      <tr><td>Pacific Scuba Repair — Intake</td><td>$200</td><td><strong>none</strong></td><td>No maintenance plan at all</td></tr>
+      <tr><td>Pho Hong Chau</td><td>$300 (2 items)</td><td>$15/mo</td><td>—</td></tr>
+      <tr><td>Surf n Sport Chiro</td><td>$300 (2 phases)</td><td>$20/mo</td><td>Phased: $200 branding, then $100 build</td></tr>
+    </tbody>
+  </table>
+  <p>Three consequences fall straight out of that table, and they are the reason this plan changed after reading the contracts:</p>
+  <ol>
+    <li><strong>One-off money is a running total, not a single charge.</strong> Five of seven SOWs bill implementation in more than one piece. Comparing "did we collect exactly $750" would show a false alarm on every account mid-project.</li>
+    <li><strong>Zero expected MRR is a valid state.</strong> Two of seven clients have no maintenance plan. Any "sold but never billed" logic that doesn't check for this will cry wolf on 29% of the book.</li>
+    <li><strong>Signed ≠ billing-should-have-started.</strong> Two SOWs explicitly defer maintenance to launch, so the gap between signature and first subscription charge is expected, not evidence of a leak.</li>
+  </ol>
+  <div class="callout"><strong>The parser already exists.</strong> <code>parsePricingTotals()</code> (added in plan 002, <code>src/app/actions.ts</code>) already splits these tables into MRR and one-time and prefers an explicit <code>Total …</code> row over summing line items — which is exactly what keeps Pacific Scuba's <code>$250</code> deposit row from double-counting against its <code>$750</code> total. Worth knowing that this correctness depends on the <code>Total One-Time</code> row being present; a SOW written without one would sum the deposit as an extra line item.</div>
 
   <h2>Architecture decisions</h2>
   <ul>
     <li><strong>Stripe is the source of truth; the CRM is a cache.</strong> Every row we store is reconstructable by re-running the backfill. That makes the mirror safe to wipe and rebuild, and means a sync bug can never corrupt billing reality — only our view of it.</li>
     <li><strong>Mirror at the <em>charge</em> level, not the invoice level.</strong> Billing is inconsistent today (subscriptions, one-off invoices, and ad-hoc links all in play). Every successful payment produces exactly one charge regardless of origin, so charges are the one ledger that can't miss money. Invoice and subscription IDs ride along on each charge row for context.</li>
+    <li><strong>Payment type is derived, not entered.</strong> A charge carrying a <code>subscription</code> id is <code>recurring</code>; anything else is <code>one_time</code>. Deriving it from Stripe's own data means the classification can't drift out of sync with reality, and it survives however sloppily an invoice was created. Stored as a column so every query can filter on it cheaply.</li>
     <li><strong>Normalize subscription amounts to monthly at write time.</strong> A yearly plan is stored as <code>monthlyAmountCents = annual / 12</code>. Doing this on the way in means every read is a plain <code>SUM()</code> and can be compared directly against <code>deals.valueCents</code>, which is already MRR.</li>
     <li><strong>Restricted, read-only API key.</strong> The spec says read-only; the key enforces it. Grant read on Charges, Customers, Subscriptions, Invoices — nothing else. A code bug then <em>cannot</em> charge a client, which is a far stronger guarantee than our own discipline.</li>
     <li><strong>Payments are stored even when unattributable.</strong> <code>payments.companyId</code> is nullable and <code>stripeCustomerId</code> is always recorded. Money is never dropped because we couldn't guess the account; it just shows up as unlinked until a human assigns it.</li>
@@ -68,15 +91,20 @@ companies.stripeCustomerId: text          // nullable, unique index
 paymentStatus = pgEnum("payment_status",
   ["succeeded", "refunded", "partially_refunded", "failed"]);
 
+paymentType = pgEnum("payment_type", ["one_time", "recurring"]);
+// derived: charge.subscription present -> recurring, else one_time
+
 payments = pgTable("payments", {
   id: serial
   stripeChargeId:       text NOT NULL     // ch_... — unique, the idempotency key
   companyId:            integer -> companies.id (nullable, ON DELETE set null)
   stripeCustomerId:     text              // always recorded, even when unlinked
   amountCents:          integer NOT NULL  // gross the client paid
+  feeCents:             integer default 0 // Stripe's cut — ~6% on a $10 plan
   refundedCents:        integer default 0
   currency:             text default 'usd'
   status:               payment_status
+  type:                 payment_type      // one_time | recurring (derived)
   description:          text
   receiptUrl:           text              // deep link back into Stripe
   stripeInvoiceId:      text              // nullable
@@ -84,7 +112,7 @@ payments = pgTable("payments", {
   livemode:             boolean NOT NULL  // test-mode rows can never inflate totals
   paidAt:               timestamp
   syncedAt:             timestamp
-}, indexes: unique(stripeChargeId), (companyId), (paidAt), (stripeCustomerId))
+}, indexes: unique(stripeChargeId), (companyId), (paidAt), (stripeCustomerId), (companyId, type))
 
 stripeSubscriptions = pgTable("stripe_subscriptions", {
   id: serial
@@ -110,20 +138,34 @@ year,   interval_count = 1  -> amount / 12
 week,   interval_count = 1  -> amount * 52 / 12
 // round to whole cents; sum items -> monthlyAmountCents</code></pre>
 
-  <h2>Real vs. expected MRR</h2>
-  <p>The comparison that makes this worth building. Both sides are one query:</p>
-  <pre><code>expected = SUM(deals.value_cents)              WHERE company_id = ? AND stage = 'won'
-actual   = SUM(subs.monthly_amount_cents)      WHERE company_id = ? AND status IN ('active','trialing')</code></pre>
+  <h2>The two reconciliations</h2>
+  <p>Two payment types, two different questions, two different comparisons. Treating them as one number is the main way to build this wrong.</p>
+
+  <h3>Recurring — is the monthly plan actually billing?</h3>
+  <p>An equality check, because a maintenance plan either bills at the agreed rate or it doesn't:</p>
+  <pre><code>expected = SUM(deals.value_cents)          WHERE company_id = ? AND stage = 'won'
+actual   = SUM(subs.monthly_amount_cents)  WHERE company_id = ? AND status IN ('active','trialing')</code></pre>
   <table>
     <thead><tr><th>Condition</th><th>Meaning</th><th>Shown as</th></tr></thead>
     <tbody>
+      <tr><td><code>expected == 0 &amp;&amp; actual == 0</code></td><td>Build-only client, no maintenance sold. Correct, not a problem — 2 of our 7 SOWs.</td><td>No plan (neutral)</td></tr>
       <tr><td><code>actual == expected</code></td><td>Billing matches what was sold.</td><td>Matched (green)</td></tr>
       <tr><td><code>actual &lt; expected</code></td><td>Under-billing — subscription never created, cancelled, or set too low.</td><td>Shortfall + amount (red)</td></tr>
-      <tr><td><code>actual &gt; expected</code></td><td>Billing more than the CRM records — likely a stale/missing won opportunity.</td><td>Over (amber)</td></tr>
-      <tr><td><code>expected &gt; 0, actual == 0</code></td><td>Sold but never billed. The expensive one.</td><td>Not billing (red)</td></tr>
+      <tr><td><code>actual &gt; expected</code></td><td>Billing more than the CRM records — likely a stale or missing won opportunity.</td><td>Over (amber)</td></tr>
+      <tr><td><code>expected &gt; 0, actual == 0</code>, signed recently</td><td>Maintenance deferred to launch, as two of our SOWs specify. Probably fine.</td><td>Not started yet (neutral)</td></tr>
+      <tr><td><code>expected &gt; 0, actual == 0</code>, signed long ago</td><td>Sold but never billed. The expensive one.</td><td>Not billing (red)</td></tr>
     </tbody>
   </table>
-  <div class="callout">This is a <strong>display-only</strong> comparison in v1 — it reports the discrepancy, it does not act on it. No alerts, no auto-fix, nothing written to Stripe.</div>
+
+  <h3>One-off — how much of the build fee have we collected?</h3>
+  <p>A <em>progress</em> check, not equality, because implementation bills as a deposit plus later phases:</p>
+  <pre><code>contracted = SUM(deals.implementation_cost_cents) WHERE company_id = ? AND stage = 'won'
+collected  = SUM(payments.amount_cents - payments.refunded_cents)
+             WHERE company_id = ? AND type = 'one_time' AND status &lt;&gt; 'failed'
+remaining  = contracted - collected      // negative = collected more than contracted</code></pre>
+  <p>Rendered as "collected $250 of $750 — $500 remaining" with a progress bar. A partial balance is normal mid-project; the useful signal is a balance that stops moving, which a human reads off the last payment date rather than an automated rule.</p>
+
+  <div class="callout">Both comparisons are <strong>display-only</strong> in v1 — they report, they do not act. No alerts, no auto-fix, nothing written to Stripe. The "signed recently" grace period is an open question in the spec; until it's answered, show the signed date and let the human judge instead of hard-coding a threshold.</div>
 
   <h2>Sync flows</h2>
   <h3>Backfill (history)</h3>
@@ -183,8 +225,8 @@ UPDATE companies            SET stripe_customer_id = ? WHERE id = ?;</code></pre
     <span class="tag">Phase 2 · Visibility</span>
     <h3>Billing panel and payments page</h3>
     <ul>
-      <li><code>src/components/billing-panel.tsx</code> — server component in the shape of <code>proposals-panel.tsx</code>: lifetime paid, active subscription + status pill, real vs. expected MRR, recent payments with Stripe receipt links.</li>
-      <li>Mount on <code>/accounts/[id]</code>; add the MRR comparison to <code>/opportunities/[id]</code> (R12).</li>
+      <li><code>src/components/billing-panel.tsx</code> — server component in the shape of <code>proposals-panel.tsx</code>: lifetime paid split by type, active subscription + status pill, the recurring equality check, the one-off progress bar, and recent payments with Stripe receipt links.</li>
+      <li>Mount on <code>/accounts/[id]</code>; add both comparisons to <code>/opportunities/[id]</code> next to that deal's MRR and implementation figures (R12).</li>
       <li><code>/payments</code> list page + nav entry, including the unlinked-customers section and the account-assignment control.</li>
       <li>Money formatting reuses <code>currency</code> from <code>@/lib/format</code>; status pills follow the <code>proposal-status-ui</code> pattern.</li>
     </ul>
@@ -213,6 +255,10 @@ UPDATE companies            SET stripe_customer_id = ? WHERE id = ?;</code></pre
       <tr><td>Payments synced before an account is linked stay orphaned</td><td>Linking triggers retroactive re-attribution by <code>stripeCustomerId</code>.</td></tr>
       <tr><td>A code bug charges a real client</td><td>Restricted read-only API key — the capability doesn't exist. Verify by attempting a charge and expecting a permissions error.</td></tr>
       <tr><td>Money collected outside Stripe makes "lifetime paid" wrong</td><td>Open question in the spec; if confirmed, R15 (manual payment entry) is promoted to Must before Phase 2 ships.</td></tr>
+      <tr><td>Build-only clients flagged as "missing subscription"</td><td>Expected MRR of zero is an explicit, neutral state in the comparison table — verified against Pacific Scuba Repair and its intake SOW, which have no monthly section.</td></tr>
+      <tr><td>Mid-project deposits read as underpayment</td><td>One-off is a progress figure with a remaining balance, never an equality check. Five of seven SOWs bill in phases.</td></tr>
+      <tr><td>A SOW written without a <code>Total One-Time</code> row double-counts its deposit</td><td>Known limitation of <code>parsePricingTotals()</code>; the backfill report prints contracted totals per account so a wrong figure is caught on the first run rather than silently skewing a balance.</td></tr>
+      <tr><td>Subscription price changes over time (ToS §4.5 allows raises on 60 days' notice)</td><td>The mirror stores <em>current</em> subscription amount, not a rate history. Historical MRR is therefore not reconstructable from this table — call that out rather than implying it is.</td></tr>
       <tr><td>Non-USD charges silently mis-summed</td><td><code>currency</code> stored per row; totals filter to a single currency and flag anything else rather than adding across currencies.</td></tr>
     </tbody>
   </table>
