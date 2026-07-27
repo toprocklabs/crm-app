@@ -163,6 +163,8 @@ export function resolveFeeCents(charge: Stripe.Charge): number {
 export type PaymentRow = {
   stripeChargeId: string;
   stripeCustomerId: string | null;
+  billingEmail: string | null;
+  billingName: string | null;
   amountCents: number;
   feeCents: number;
   refundedCents: number;
@@ -188,6 +190,8 @@ export function chargeToPaymentRow(
   return {
     stripeChargeId: charge.id,
     stripeCustomerId: resolveCustomerId(charge),
+    billingEmail: charge.billing_details?.email?.trim().toLowerCase() ?? charge.receipt_email?.trim().toLowerCase() ?? null,
+    billingName: charge.billing_details?.name?.trim() ?? null,
     amountCents: charge.amount ?? 0,
     feeCents: resolveFeeCents(charge),
     refundedCents: charge.amount_refunded ?? 0,

@@ -96,8 +96,65 @@ for (const customer of customers) {
     `  ${customer.id}  ${(name ?? email ?? "(unnamed)").padEnd(28)} ${how || "no match — unlinked"}`,
   );
 }
-console.log("Linking:");
-linkReport.forEach((line) => console.log(line));
+if (customers.length) {
+  console.log("Linking customers:");
+  linkReport.forEach((line) => console.log(line));
+}
+
+// ── 2b. Per-charge resolution ───────────────────────────────────────────────
+// Payment-link charges carry no Stripe Customer, so identity lives in
+// billing_details. Match on email first (unambiguous), then on a contact's
+// full name. Anything else stays unlinked rather than guessed.
+const resolveCache = new Map<string, number | null>();
+
+async function resolveCompanyForCharge(
+  customerId: string | null,
+  email: string | null,
+  name: string | null,
+): Promise<{ companyId: number | null; how: string }> {
+  if (customerId && customerToCompany.has(customerId)) {
+    return { companyId: customerToCompany.get(customerId)!, how: "customer" };
+  }
+
+  const cacheKey = `${email ?? ""}|${name ?? ""}`;
+  if (resolveCache.has(cacheKey)) {
+    const cached = resolveCache.get(cacheKey)!;
+    return { companyId: cached, how: cached ? "cached" : "no match" };
+  }
+
+  let companyId: number | null = null;
+  let how = "no match";
+
+  if (email) {
+    const rows = await sql`
+      select company_id from contacts
+      where lower(email) = ${email} and company_id is not null
+    `;
+    if (rows.length === 1) {
+      companyId = rows[0].company_id as number;
+      how = `email ${email}`;
+    } else if (rows.length > 1) {
+      how = `ambiguous email ${email}`;
+    }
+  }
+
+  if (!companyId && name) {
+    const rows = await sql`
+      select company_id from contacts
+      where lower(trim(first_name || ' ' || last_name)) = lower(${name})
+        and company_id is not null
+    `;
+    if (rows.length === 1) {
+      companyId = rows[0].company_id as number;
+      how = `name "${name}"`;
+    } else if (rows.length > 1) {
+      how = `ambiguous name "${name}"`;
+    }
+  }
+
+  resolveCache.set(cacheKey, companyId);
+  return { companyId, how };
+}
 
 // ── 3. Subscriptions (real MRR) ─────────────────────────────────────────────
 console.log("Fetching subscriptions…");
@@ -164,9 +221,11 @@ for await (const charge of stripe.charges.list({
   const row = chargeToPaymentRow(charge, linkForCharge(charge, linkIndex));
   if (row.status === "failed") continue;
 
-  const companyId = row.stripeCustomerId
-    ? (customerToCompany.get(row.stripeCustomerId) ?? null)
-    : null;
+  const { companyId, how } = await resolveCompanyForCharge(
+    row.stripeCustomerId,
+    row.billingEmail,
+    row.billingName,
+  );
   if (!companyId) unlinked++;
 
   const net = row.amountCents - row.refundedCents;
@@ -174,28 +233,31 @@ for await (const charge of stripe.charges.list({
   else oneTimeTotal += net;
   paid++;
 
-  if (dryRun) {
-    console.log(
-      `  ${row.paidAt.toISOString().slice(0, 10)} ${money(row.amountCents).padStart(9)} ` +
-        `${row.type.padEnd(9)} ${(row.description ?? "").slice(0, 34).padEnd(34)} ` +
-        `-> account ${companyId ?? "UNLINKED"}`,
-    );
-    continue;
-  }
+  const who = row.billingName ?? row.billingEmail ?? "(unknown payer)";
+  console.log(
+    `  ${row.paidAt.toISOString().slice(0, 10)} ${money(row.amountCents).padStart(9)} ` +
+      `${row.type.padEnd(9)} ${who.slice(0, 24).padEnd(24)} ` +
+      `-> ${companyId ? `account #${companyId} via ${how}` : `UNLINKED (${how})`}`,
+  );
+  if (dryRun) continue;
 
   await sql`
     insert into payments (
-      stripe_charge_id, company_id, stripe_customer_id, amount_cents, fee_cents,
+      stripe_charge_id, company_id, stripe_customer_id, billing_email, billing_name,
+      amount_cents, fee_cents,
       refunded_cents, currency, status, type, description, receipt_url,
       stripe_invoice_id, stripe_subscription_id, livemode, paid_at, synced_at
     ) values (
-      ${row.stripeChargeId}, ${companyId}, ${row.stripeCustomerId}, ${row.amountCents},
+      ${row.stripeChargeId}, ${companyId}, ${row.stripeCustomerId},
+      ${row.billingEmail}, ${row.billingName}, ${row.amountCents},
       ${row.feeCents}, ${row.refundedCents}, ${row.currency}, ${row.status}, ${row.type},
       ${row.description}, ${row.receiptUrl}, ${row.stripeInvoiceId},
       ${row.stripeSubscriptionId}, ${row.livemode}, ${row.paidAt}, now()
     )
     on conflict (stripe_charge_id) do update set
       company_id = coalesce(excluded.company_id, payments.company_id),
+      billing_email = excluded.billing_email,
+      billing_name = excluded.billing_name,
       amount_cents = excluded.amount_cents,
       fee_cents = excluded.fee_cents,
       refunded_cents = excluded.refunded_cents,

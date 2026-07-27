@@ -332,6 +332,11 @@ export const payments = pgTable(
       onDelete: "set null",
     }),
     stripeCustomerId: text("stripe_customer_id"),
+    // Payment-link charges carry no Stripe Customer, so the payer's identity
+    // lives only in billing_details. Stored so unattributed money can still
+    // be matched to an account by a human.
+    billingEmail: text("billing_email"),
+    billingName: text("billing_name"),
     amountCents: integer("amount_cents").notNull(),
     // Stripe's cut. Material here: ~6% of a $10/mo plan.
     feeCents: integer("fee_cents").default(0).notNull(),
