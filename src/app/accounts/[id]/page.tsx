@@ -40,6 +40,13 @@ import type { EntityType } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
+// The relationship graph / warm-paths feature is parked: the UI is only
+// half-built, so it's hidden rather than deleted. Flipping this to true
+// restores the section, its three queries, and the nav anchor.
+// Typed as `boolean` (not inferred as literal `false`) so the guarded code
+// still type-checks while switched off.
+const SHOW_RELATIONSHIP_GRAPH: boolean = false;
+
 function getDueTone(dueDate: string | null | undefined, today: string) {
   if (!dueDate) {
     return "bg-slate-100 text-slate-700";
@@ -132,16 +139,18 @@ export default async function AccountDetailPage({ params }: Props) {
       .leftJoin(users, eq(activities.loggedByUserId, users.id))
       .where(eq(activities.companyId, companyId))
       .orderBy(desc(activities.occurredAt)),
-    db
-      .select()
-      .from(relationships)
-      .where(
-        or(
-          and(eq(relationships.fromType, "company"), eq(relationships.fromId, companyId)),
-          and(eq(relationships.toType, "company"), eq(relationships.toId, companyId)),
-        ),
-      )
-      .orderBy(desc(relationships.strength)),
+    SHOW_RELATIONSHIP_GRAPH
+      ? db
+          .select()
+          .from(relationships)
+          .where(
+            or(
+              and(eq(relationships.fromType, "company"), eq(relationships.fromId, companyId)),
+              and(eq(relationships.toType, "company"), eq(relationships.toId, companyId)),
+            ),
+          )
+          .orderBy(desc(relationships.strength))
+      : [],
     db.select({ id: companies.id, name: companies.name }).from(companies).orderBy(companies.name),
     db
       .select({
@@ -152,8 +161,8 @@ export default async function AccountDetailPage({ params }: Props) {
       })
       .from(contacts)
       .orderBy(contacts.firstName),
-    findWarmPaths(db, "company", companyId),
-    findProximityNeighbors(db, companyId),
+    SHOW_RELATIONSHIP_GRAPH ? findWarmPaths(db, "company", companyId) : [],
+    SHOW_RELATIONSHIP_GRAPH ? findProximityNeighbors(db, companyId) : [],
   ]);
 
   if (!company) {
@@ -385,7 +394,9 @@ export default async function AccountDetailPage({ params }: Props) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <a href="#account-overview" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">Overview</a>
-            <a href="#account-relationships" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">Relationships</a>
+            {SHOW_RELATIONSHIP_GRAPH ? (
+              <a href="#account-relationships" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">Relationships</a>
+            ) : null}
             <a href="#account-people" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">People</a>
             <a href="#account-pipeline" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">Pipeline</a>
             <a href="#account-tasks" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">Tasks</a>
@@ -491,6 +502,7 @@ export default async function AccountDetailPage({ params }: Props) {
         </div>
       </section>
 
+      {SHOW_RELATIONSHIP_GRAPH ? (
       <section id="account-relationships" className="gong-panel rounded-xl p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -634,6 +646,7 @@ export default async function AccountDetailPage({ params }: Props) {
           </div>
         </div>
       </section>
+      ) : null}
 
       <section id="account-people" className="grid gap-6 lg:grid-cols-2">
         <article className="gong-panel rounded-xl p-5">
