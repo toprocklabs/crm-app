@@ -21,6 +21,7 @@ import { AutoSaveContactField } from "@/components/auto-save-contact-field";
 import { CallLink } from "@/components/call-link";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
+import { BillingPanel } from "@/components/billing-panel";
 import { EmptyState } from "@/components/empty-state";
 import { ProposalsPanel } from "@/components/proposals-panel";
 import { RelationshipEditor } from "@/components/relationship-editor";
@@ -906,6 +907,8 @@ export default async function AccountDetailPage({ params }: Props) {
       </section>
 
       <ProposalsPanel companyId={company.id} />
+
+      <BillingPanel companyId={company.id} />
 
       <section className="grid gap-6 lg:grid-cols-2">
         <article id="account-tasks" className="gong-panel rounded-xl p-5">

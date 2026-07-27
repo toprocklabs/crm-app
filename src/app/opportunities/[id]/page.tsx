@@ -8,6 +8,7 @@ import { AutoSaveDealSelectField } from "@/components/auto-save-deal-select-fiel
 import { AutoSaveDealStageField } from "@/components/auto-save-deal-stage-field";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
+import { BillingPanel } from "@/components/billing-panel";
 import { EmptyState } from "@/components/empty-state";
 import { ProposalsPanel } from "@/components/proposals-panel";
 import { activityTypeOptions, getActivityMeta } from "@/lib/activity-ui";
@@ -229,6 +230,8 @@ export default async function OpportunityDetailPage({ params }: Props) {
       </section>
 
       <ProposalsPanel companyId={opportunity.companyId} dealId={opportunity.id} />
+
+      {opportunity.companyId ? <BillingPanel companyId={opportunity.companyId} /> : null}
 
       <section className="grid gap-6 lg:grid-cols-2">
         <article id="opportunity-details" className="gong-panel rounded-xl p-5">
