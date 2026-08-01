@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, ilike } from "drizzle-orm";
+import { and, eq, ilike, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { setFlashToast } from "@/lib/flash";
@@ -13,7 +13,7 @@ import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { scrapeCompanyWebsite } from "@/lib/enrich";
 import { geocodeAddress } from "@/lib/geocode";
 import { sourceNearbyBusinesses } from "@/lib/source-nearby";
-import { activities, agentRuns, companies, contacts, deals, placeEnrichment, proposals, relationships, salesTasks, suggestions, users } from "@/lib/schema";
+import { activities, agentRuns, companies, contacts, deals, payments, placeEnrichment, proposals, relationships, salesTasks, stripeSubscriptions, suggestions, users } from "@/lib/schema";
 import { generatePin } from "@/lib/proposal/pin";
 import { parsePricingTable, parseSections } from "@/lib/proposal/markdown";
 
@@ -1164,6 +1164,95 @@ export async function deleteRelationship(formData: FormData) {
     revalidatePath(parsed.returnPath);
   }
   await setFlashToast("Relationship removed");
+}
+
+// ── Payments ─────────────────────────────────────────────────────────────────
+
+const paymentAssignSchema = z.object({
+  paymentId: z.coerce.number().int().positive(),
+  companyId: z.coerce.number().int().positive().optional(),
+  returnPath: z.string().optional(),
+});
+
+/**
+ * Attribute a Stripe payment to an account. Because payment-link charges carry
+ * no Stripe customer, sibling payments are matched by billing email — so
+ * assigning one payment from a payer claims the rest of that payer's
+ * unattributed payments too.
+ */
+export async function assignPaymentAccount(formData: FormData) {
+  await requireUser();
+
+  const db = getDb();
+  if (!db) {
+    throw new Error("DATABASE_URL is not set.");
+  }
+
+  const rawCompanyId = formData.get("companyId")?.toString();
+  const parsed = paymentAssignSchema.parse({
+    paymentId: formData.get("paymentId"),
+    companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+    returnPath: formData.get("returnPath")?.toString() ?? undefined,
+  });
+
+  const existing = await db.query.payments.findFirst({
+    columns: { id: true, billingEmail: true, companyId: true, stripeCustomerId: true },
+    where: eq(payments.id, parsed.paymentId),
+  });
+  if (!existing) {
+    throw new Error("Payment not found.");
+  }
+
+  const targetCompanyId = parsed.companyId ?? null;
+  let alsoUpdated = 0;
+
+  await db
+    .update(payments)
+    .set({ companyId: targetCompanyId })
+    .where(eq(payments.id, parsed.paymentId));
+
+  // Claim this payer's other unattributed payments in the same stroke.
+  if (targetCompanyId && existing.billingEmail) {
+    const siblings = await db
+      .update(payments)
+      .set({ companyId: targetCompanyId })
+      .where(and(eq(payments.billingEmail, existing.billingEmail), isNull(payments.companyId)))
+      .returning({ id: payments.id });
+    alsoUpdated = siblings.length;
+  }
+
+  // If this payer does have a Stripe customer, remember it on the account so
+  // future syncs attribute automatically.
+  if (targetCompanyId && existing.stripeCustomerId) {
+    await db
+      .update(companies)
+      .set({ stripeCustomerId: existing.stripeCustomerId })
+      .where(eq(companies.id, targetCompanyId));
+    await db
+      .update(stripeSubscriptions)
+      .set({ companyId: targetCompanyId })
+      .where(eq(stripeSubscriptions.stripeCustomerId, existing.stripeCustomerId));
+  }
+
+  revalidatePath("/payments");
+  revalidatePath("/");
+  if (targetCompanyId) {
+    revalidatePath(`/accounts/${targetCompanyId}`);
+  }
+  if (existing.companyId) {
+    revalidatePath(`/accounts/${existing.companyId}`);
+  }
+  if (parsed.returnPath?.startsWith("/")) {
+    revalidatePath(parsed.returnPath);
+  }
+
+  await setFlashToast(
+    targetCompanyId
+      ? alsoUpdated > 0
+        ? `Payment assigned (+${alsoUpdated} more from the same payer)`
+        : "Payment assigned"
+      : "Payment unassigned",
+  );
 }
 
 // ── Proposals ────────────────────────────────────────────────────────────────
