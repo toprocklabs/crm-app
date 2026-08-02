@@ -1,4 +1,6 @@
-function Pulse({ className, style }: { className?: string; style?: React.CSSProperties }) {
+// Exported so route-level loading.tsx files can compose page-specific shapes
+// without re-inlining the animation style on every block.
+export function Pulse({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
     <div
       className={className}
