@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useAutoSaveSelect } from "@/components/auto-save-hooks";
 
 // Inline "which opportunity is this SOW tied to" dropdown. Auto-saves on
 // change, same interaction as the other autosave selects.
@@ -18,11 +17,7 @@ export function AutoSaveProposalDealField({
   action: (formData: FormData) => void | Promise<void>;
   returnPath?: string;
 }) {
-  const formRef = useRef<HTMLFormElement>(null);
-  const lastSubmittedValueRef = useRef(defaultValue);
-  const router = useRouter();
-  const [selectedValue, setSelectedValue] = useState(defaultValue);
-  const [, startTransition] = useTransition();
+  const { formRef, selectedValue, onSelectChange } = useAutoSaveSelect(defaultValue, action);
 
   return (
     <form ref={formRef} action={action} className="inline-block">
@@ -32,20 +27,7 @@ export function AutoSaveProposalDealField({
         name="dealId"
         value={selectedValue}
         title="Tie this Statement of Work to an opportunity"
-        onChange={(event) => {
-          const current = event.currentTarget.value;
-          setSelectedValue(current);
-          if (current === lastSubmittedValueRef.current) {
-            return;
-          }
-          lastSubmittedValueRef.current = current;
-          startTransition(() => {
-            const formData = new FormData(formRef.current ?? undefined);
-            void Promise.resolve(action(formData)).then(() => {
-              router.refresh();
-            });
-          });
-        }}
+        onChange={onSelectChange}
         className="max-w-[220px] rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700"
       >
         <option value="">Not tied to an opportunity</option>

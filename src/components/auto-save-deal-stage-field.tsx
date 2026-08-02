@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useAutoSaveSelect } from "@/components/auto-save-hooks";
 
 const STAGE_OPTIONS = [
   { value: "lead", label: "Lead" },
@@ -21,21 +20,11 @@ export function AutoSaveDealStageField({
   defaultStage: string;
   action: (formData: FormData) => void | Promise<void>;
 }) {
-  const formRef = useRef<HTMLFormElement>(null);
-  const lastSubmittedValueRef = useRef(defaultStage);
-  const router = useRouter();
-  const [selectedStage, setSelectedStage] = useState(defaultStage);
-  const [, startTransition] = useTransition();
-
-  function submitStage() {
-    startTransition(() => {
-      const formData = new FormData(formRef.current ?? undefined);
-
-      void Promise.resolve(action(formData)).then(() => {
-        router.refresh();
-      });
-    });
-  }
+  const {
+    formRef,
+    selectedValue: selectedStage,
+    onSelectChange,
+  } = useAutoSaveSelect(defaultStage, action);
 
   return (
     <form ref={formRef} action={action} className="mt-4 space-y-3">
@@ -45,17 +34,7 @@ export function AutoSaveDealStageField({
         <select
           name="stage"
           value={selectedStage}
-          onChange={(event) => {
-            const current = event.currentTarget.value;
-            setSelectedStage(current);
-
-            if (current === lastSubmittedValueRef.current) {
-              return;
-            }
-
-            lastSubmittedValueRef.current = current;
-            submitStage();
-          }}
+          onChange={onSelectChange}
           className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
         >
           {STAGE_OPTIONS.map((option) => (
