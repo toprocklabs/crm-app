@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { notifyProposalSigned } from "@/lib/proposal/notify";
 import { hasProposalAccess } from "@/lib/proposal/pin";
-import { activities, proposals } from "@/lib/schema";
+import { activities, proposalDocuments, proposals } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -68,11 +68,32 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 
   const signedAt = new Date();
 
+  // Store the document BEFORE flipping status. There are no transactions on the
+  // neon-http driver (see planning/004-architecture-hardening, F01), so ordering
+  // is the only atomicity we have. This way a failure leaves an unreferenced
+  // document row and an unsigned proposal the client can retry — rather than a
+  // proposal marked "signed" with no PDF behind it, which is unrecoverable.
+  // onConflictDoUpdate makes that retry idempotent against the unique index.
+  await db
+    .insert(proposalDocuments)
+    .values({
+      proposalId: proposal.id,
+      pdfBase64: parsed.pdfBase64,
+      byteLength: Buffer.byteLength(parsed.pdfBase64, "utf8"),
+    })
+    .onConflictDoUpdate({
+      target: proposalDocuments.proposalId,
+      set: {
+        pdfBase64: parsed.pdfBase64,
+        byteLength: Buffer.byteLength(parsed.pdfBase64, "utf8"),
+        createdAt: signedAt,
+      },
+    });
+
   await db
     .update(proposals)
     .set({
       status: "signed",
-      signedPdfBase64: parsed.pdfBase64,
       signerName: parsed.name,
       signerEmail: parsed.email,
       signedAt,

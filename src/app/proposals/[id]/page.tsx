@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { desc, eq, isNotNull } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { updateProposal } from "@/app/actions";
 import { CrmShell } from "@/components/crm-shell";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { hasSignedPdfExpr } from "@/lib/proposal/has-signed-pdf";
 import { proposalStatusLabels, proposalStatusOptions, proposalStatusPillClasses } from "@/lib/proposal/status-ui";
 import { companies, contacts, deals, proposals } from "@/lib/schema";
 
@@ -44,7 +45,7 @@ export default async function ProposalDetailPage({ params }: { params: Promise<{
       signedAt: proposals.signedAt,
       sentAt: proposals.sentAt,
       firstViewedAt: proposals.firstViewedAt,
-      hasSignedPdf: isNotNull(proposals.signedPdfBase64),
+      hasSignedPdf: hasSignedPdfExpr,
     })
     .from(proposals)
     .where(eq(proposals.id, proposalId))

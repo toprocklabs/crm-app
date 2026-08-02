@@ -35,9 +35,12 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `src/lib/schema.ts` Drizzle schema and enums
 - `src/lib/db.ts` shared Neon Drizzle client
 - `src/lib/auth.ts` session create/verify helpers
+- `src/lib/normalize.ts` pure input normalizers (text/url/phone/date) used by actions
 - `src/components/` shared UI helpers (`crm-shell`, autosave fields, call link, collapsible form section)
 - `drizzle/` generated migrations
+- `tests/` `node:test` suites for pure logic — run with `npm test`
 - `scripts/create-user.mjs` CLI user upsert helper
+- `scripts/run-tests.mjs` test discovery shim (Node 20's runner doesn't glob `.ts`)
 
 ## Current Routes
 - `/` dashboard
@@ -46,10 +49,14 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `/contacts`, `/contacts/[id]`
 - `/opportunities`, `/opportunities/[id]`
 - `/proposals`, `/proposals/[id]` (internal proposal management + signed-PDF download at `/proposals/[id]/pdf`)
+- `/payments` Stripe payment mirror (ledger + unassigned-payment matching)
 - `/tasks`
 - `/activities`
+- `/inbox` human-in-the-loop queue for agent-proposed writes (`suggestions`)
+- `/map` geocoded account map + proximity sourcing
 - **Public, PIN-gated (no login):** `/p/[slug]` client-facing Statement of Work + signing, `/p/[slug]/terms` Terms of Service, `POST /p/[slug]/sign` signing endpoint
 - compatibility redirects: `/customers` and `/customers/[id]`
+- Every authenticated route has a `loading.tsx` skeleton; keep that true when adding routes.
 
 ## Data Model (Drizzle)
 - `users` (local auth users)
@@ -58,7 +65,8 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `deals`
 - `sales_tasks`
 - `activities`
-- `proposals` (client-facing statements of work; markdown content, PIN, status lifecycle, signed PDF stored base64)
+- `proposals` (client-facing statements of work; markdown content, PIN, status lifecycle)
+- `proposal_documents` (the signed PDF base64, one row per proposal — kept off the hot proposals row)
 - Enums:
   - `account_stage`: new_lead, attempting_to_engage, engaged, in_pipeline, customer
   - `deal_stage`: lead, qualified, proposal, negotiation, won, lost
@@ -69,7 +77,8 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 ## Coding Conventions (Repo-Specific)
 - Prefer server components for pages and data reads.
 - Keep mutations in server actions (`"use server"`) and validate inputs with Zod.
-- Gate write actions with `requireUser()`.
+- Define every action in `src/app/actions.ts` with `defineAction({ schema, input, handler })` from `src/lib/define-action.ts`. It runs `requireUser()` and resolves the db before your handler, so authorization can't be forgotten. Keep the `input` mapper explicit — `id: raw ? Number(raw) : undefined` is what keeps a blank `<select>` out of a `z.coerce.number().positive()` field.
+- Autosave field components share their machinery via `src/components/auto-save-hooks.ts` (`useAutoSaveInput`, `useAutoSaveEditable`, `useAutoSaveSelect`). Three interaction families exist on purpose — click-to-edit, blur-to-save, and select-on-change — so add to the right hook rather than merging them.
 - Keep contact/account terminology consistent in UI:
   - UI label: Account
   - DB table: `companies`
@@ -108,7 +117,8 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - Client flow: `/p/[slug]` is public but PIN-gated server-side (per-proposal `pin`, internal master PIN via `PROPOSAL_INTERNAL_PIN`, default 3067). PIN entry sets a slug-scoped cookie and flips `sent → viewed`. Signing (draw or type) builds the PDF client-side (JPEG-based, ~200KB) and POSTs to `/p/[slug]/sign`, which stores the PDF on the row, flips status to `signed`, logs an account activity, and notifies.
 - Notifications on signing (`src/lib/proposal/notify.ts`): `RESEND_API_KEY` → Resend emails (internal + client); else `PROPOSAL_SIGNED_WEBHOOK_URL` → legacy Apps Script payload; else skip (PDF is stored regardless). Optional: `PROPOSAL_NOTIFY_EMAIL`, `PROPOSAL_FROM_EMAIL`.
 - Legacy backfill: `node scripts/import-proposals.mjs [--dry-run] [--source <proposal_creator path>] [--pdf-dir <dir of <slug>.pdf signed files>]`. Idempotent (upsert by slug); never downgrades a `signed` status.
-- Never `select()` all proposal columns in list/detail views — always use explicit column lists so the multi-MB `signed_pdf_base64` stays out of page queries (only `/proposals/[id]/pdf` reads it).
+- The signed PDF lives in its own table, `proposal_documents` (one row per proposal), so a stray `select()` can no longer drag multiple megabytes of base64 into a list query. Only `/proposals/[id]/pdf` and the signing route touch it. To ask *whether* a PDF exists without fetching bytes, use `hasSignedPdfExpr` from `src/lib/proposal/has-signed-pdf.ts`.
+- `proposals.signed_pdf_base64` still exists and is read as a fallback, but nothing writes to it. It is dropped in a follow-up; until then, keep using explicit column lists on proposal queries.
 - The client page must stay visually identical to the legacy hosted proposals (CSS ported verbatim in `src/app/p/proposal-public.css`).
 
 ## When Editing Existing Features
@@ -129,6 +139,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 
 ## Validation Checklist Before Hand-off
 - `npm run lint`
+- `npm test`
 - `npm run build`
 - If auth touched: verify `/login` flow and guarded pages redirect as expected
 - If schema touched: verify migration generated and applied
