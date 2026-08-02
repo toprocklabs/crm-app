@@ -111,24 +111,36 @@ export const users = pgTable(
   ],
 );
 
-export const companies = pgTable("companies", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  stage: accountStage("stage").default("new_lead").notNull(),
-  website: text("website"),
-  customerProjectUrl: text("customer_project_url"),
-  industry: text("industry"),
-  nextStep: text("next_step").notNull().default(""),
-  nextStepDueDate: date("next_step_due_date"),
-  // Address + geocode power the proximity ("plaza neighbors") play.
-  address: text("address"),
-  lat: doublePrecision("lat"),
-  lng: doublePrecision("lng"),
-  plazaKey: text("plaza_key"),
-  // Links this account to its Stripe customer. Nullable until matched.
-  stripeCustomerId: text("stripe_customer_id"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+export const companies = pgTable(
+  "companies",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    stage: accountStage("stage").default("new_lead").notNull(),
+    website: text("website"),
+    customerProjectUrl: text("customer_project_url"),
+    industry: text("industry"),
+    nextStep: text("next_step").notNull().default(""),
+    nextStepDueDate: date("next_step_due_date"),
+    // Address + geocode power the proximity ("plaza neighbors") play.
+    address: text("address"),
+    lat: doublePrecision("lat"),
+    lng: doublePrecision("lng"),
+    plazaKey: text("plaza_key"),
+    // Links this account to its Stripe customer. Nullable until matched.
+    stripeCustomerId: text("stripe_customer_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    // `stage` is the default filter on /accounts; `created_at` is the default sort.
+    index("companies_stage_idx").on(table.stage),
+    index("companies_created_at_idx").on(table.createdAt),
+    // Lookup key when matching Stripe customers back to accounts.
+    index("companies_stripe_customer_idx").on(table.stripeCustomerId),
+    // Proximity ("plaza neighbors") grouping.
+    index("companies_plaza_idx").on(table.plazaKey),
+  ],
+);
 
 export const contacts = pgTable(
   "contacts",
@@ -150,60 +162,87 @@ export const contacts = pgTable(
   ],
 );
 
-export const deals = pgTable("deals", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  stage: dealStage("stage").default("lead").notNull(),
-  valueCents: integer("value_cents").default(0).notNull(),
-  implementationCostCents: integer("implementation_cost_cents").default(0).notNull(),
-  ownerName: text("owner_name"),
-  nextStep: text("next_step").notNull().default(""),
-  nextStepDueDate: date("next_step_due_date"),
-  companyId: integer("company_id").references(() => companies.id, {
-    onDelete: "set null",
-  }),
-  primaryContactId: integer("primary_contact_id").references(() => contacts.id, {
-    onDelete: "set null",
-  }),
-  expectedCloseDate: date("expected_close_date"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+export const deals = pgTable(
+  "deals",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    stage: dealStage("stage").default("lead").notNull(),
+    valueCents: integer("value_cents").default(0).notNull(),
+    implementationCostCents: integer("implementation_cost_cents").default(0).notNull(),
+    ownerName: text("owner_name"),
+    nextStep: text("next_step").notNull().default(""),
+    nextStepDueDate: date("next_step_due_date"),
+    companyId: integer("company_id").references(() => companies.id, {
+      onDelete: "set null",
+    }),
+    primaryContactId: integer("primary_contact_id").references(() => contacts.id, {
+      onDelete: "set null",
+    }),
+    expectedCloseDate: date("expected_close_date"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    // Every account page and the accounts list roll opportunities up by company.
+    index("deals_company_idx").on(table.companyId),
+    index("deals_stage_idx").on(table.stage),
+  ],
+);
 
-export const activities = pgTable("activities", {
-  id: serial("id").primaryKey(),
-  type: activityType("type").default("note").notNull(),
-  notes: text("notes").notNull(),
-  loggedByUserId: integer("logged_by_user_id").references(() => users.id, {
-    onDelete: "set null",
-  }),
-  companyId: integer("company_id").references(() => companies.id, {
-    onDelete: "set null",
-  }),
-  contactId: integer("contact_id").references(() => contacts.id, {
-    onDelete: "set null",
-  }),
-  dealId: integer("deal_id").references(() => deals.id, {
-    onDelete: "set null",
-  }),
-  // Distinguishes human-logged activity from agent-logged activity.
-  source: dataSource("source").default("manual").notNull(),
-  occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
-});
+export const activities = pgTable(
+  "activities",
+  {
+    id: serial("id").primaryKey(),
+    type: activityType("type").default("note").notNull(),
+    notes: text("notes").notNull(),
+    loggedByUserId: integer("logged_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    companyId: integer("company_id").references(() => companies.id, {
+      onDelete: "set null",
+    }),
+    contactId: integer("contact_id").references(() => contacts.id, {
+      onDelete: "set null",
+    }),
+    dealId: integer("deal_id").references(() => deals.id, {
+      onDelete: "set null",
+    }),
+    // Distinguishes human-logged activity from agent-logged activity.
+    source: dataSource("source").default("manual").notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    // Timelines filter by one of these three keys and always sort by occurred_at.
+    index("activities_company_idx").on(table.companyId),
+    index("activities_contact_idx").on(table.contactId),
+    index("activities_deal_idx").on(table.dealId),
+    index("activities_occurred_at_idx").on(table.occurredAt),
+  ],
+);
 
-export const salesTasks = pgTable("sales_tasks", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  status: taskStatus("status").default("open").notNull(),
-  dueDate: date("due_date").notNull(),
-  assignedTo: text("assigned_to"),
-  dealId: integer("deal_id").references(() => deals.id, {
-    onDelete: "set null",
-  }),
-  companyId: integer("company_id").references(() => companies.id, {
-    onDelete: "set null",
-  }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-});
+export const salesTasks = pgTable(
+  "sales_tasks",
+  {
+    id: serial("id").primaryKey(),
+    title: text("title").notNull(),
+    status: taskStatus("status").default("open").notNull(),
+    dueDate: date("due_date").notNull(),
+    assignedTo: text("assigned_to"),
+    dealId: integer("deal_id").references(() => deals.id, {
+      onDelete: "set null",
+    }),
+    companyId: integer("company_id").references(() => companies.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("sales_tasks_company_idx").on(table.companyId),
+    index("sales_tasks_deal_idx").on(table.dealId),
+    // /tasks filters open vs. done and sorts by due date.
+    index("sales_tasks_status_due_idx").on(table.status, table.dueDate),
+  ],
+);
 
 // The graph. One polymorphic edge table: any node -> any node, typed + weighted.
 // strength (0-100) decays over time without contact; evidence cites the source.
@@ -314,6 +353,31 @@ export const proposals = pgTable(
     index("proposals_company_idx").on(table.companyId),
     index("proposals_status_idx").on(table.status),
   ],
+);
+
+// The signed PDF, kept OFF the proposals row.
+//
+// It used to live in `proposals.signed_pdf_base64`, guarded only by a rule in
+// AGENTS.md ("never select() all proposal columns"). One forgetful `select()`
+// in a list view would have pulled multiple megabytes of base64 per row. Moving
+// it to a side table turns that convention into a structural guarantee: you
+// have to join to get the bytes, so you cannot fetch them by accident.
+// See planning/004-architecture-hardening (F04).
+//
+// One row per proposal. `proposals.signed_pdf_base64` is retained for now and
+// read as a fallback; it is dropped in a follow-up once this has run a while.
+export const proposalDocuments = pgTable(
+  "proposal_documents",
+  {
+    id: serial("id").primaryKey(),
+    proposalId: integer("proposal_id")
+      .references(() => proposals.id, { onDelete: "cascade" })
+      .notNull(),
+    pdfBase64: text("pdf_base64").notNull(),
+    byteLength: integer("byte_length").default(0).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("proposal_documents_proposal_unique").on(table.proposalId)],
 );
 
 // Read-only mirror of Stripe charges — the ledger of every dollar collected.
