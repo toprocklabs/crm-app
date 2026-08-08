@@ -13,9 +13,12 @@ import { requireUser } from "@/lib/auth";
 import { companyIndustries } from "@/lib/company-industries";
 import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { getDb } from "@/lib/db";
-import { companies, deals } from "@/lib/schema";
+import { companies, deals, type AccountStage } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
+
+const defaultAccountStageFilter = "customer";
+const allStagesFilterValue = "all";
 
 type SortKey = "account" | "stage" | "industry" | "opportunities" | "mrr" | "nextStep" | "nextStepDue" | "created";
 type SortDirection = "asc" | "desc";
@@ -138,7 +141,9 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
   const sort = getSortKey(params.sort);
   const dir = getSortDirection(params.dir);
   const search = (params.q ?? "").trim().toLowerCase();
-  const stageFilter = params.stage ?? "";
+  // Accounts default to the Customer stage; `stage=all` is the explicit opt-out.
+  const stageParam = params.stage ?? defaultAccountStageFilter;
+  const stageFilter = stageParam === allStagesFilterValue ? "" : stageParam;
   const today = new Date().toISOString().slice(0, 10);
   const accountStageSelectOptions = accountStageOptions.map((stage) => ({
     value: stage,
@@ -194,18 +199,18 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
     }
   });
 
-  const filtered = rows.filter((row) => {
+  const searched = rows.filter((row) => {
     if (search && !row.name.toLowerCase().includes(search) && !(row.industry ?? "").toLowerCase().includes(search)) {
-      return false;
-    }
-    if (stageFilter && row.stage !== stageFilter) {
       return false;
     }
     return true;
   });
 
+  const filtered = stageFilter ? searched.filter((row) => row.stage === stageFilter) : searched;
+
   const activeRows = filtered.filter((row) => row.stage !== "closed_lost");
-  const closedLostRows = filtered.filter((row) => row.stage === "closed_lost");
+  // The archive is its own view, so it ignores the stage filter (otherwise it always reads 0).
+  const closedLostRows = searched.filter((row) => row.stage === "closed_lost");
 
   function sortHref(key: SortKey) {
     const nextDir: SortDirection = sort === key && dir === "asc" ? "desc" : "asc";
@@ -213,7 +218,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
     p.set("sort", key);
     p.set("dir", nextDir);
     if (search) p.set("q", search);
-    if (stageFilter) p.set("stage", stageFilter);
+    if (stageParam) p.set("stage", stageParam);
     return `/accounts?${p.toString()}`;
   }
 
@@ -407,11 +412,19 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Account Table</p>
-            <h2 className="mt-2 text-lg font-semibold text-slate-950">Active account coverage</h2>
+            <h2 className="mt-2 text-lg font-semibold text-slate-950">
+              {stageFilter
+                ? `${getAccountStageLabel(stageFilter as AccountStage)} accounts`
+                : "Active account coverage"}
+            </h2>
           </div>
           <div className="flex items-center gap-3">
             <SearchInput placeholder="Search accounts..." />
-            <StageFilter options={accountStageSelectOptions} />
+            <StageFilter
+              options={accountStageSelectOptions}
+              defaultValue={defaultAccountStageFilter}
+              allValue={allStagesFilterValue}
+            />
           </div>
         </div>
         {renderAccountsTable(activeRows, "No active accounts yet.")}

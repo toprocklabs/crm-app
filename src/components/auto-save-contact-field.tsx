@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useRef } from "react";
+import { blurOnEnter, useAutoSaveInput } from "@/components/auto-save-hooks";
 
 export function AutoSaveContactField({
   contactId,
@@ -19,20 +19,7 @@ export function AutoSaveContactField({
   returnPath?: string;
   action: (formData: FormData) => void | Promise<void>;
 }) {
-  const formRef = useRef<HTMLFormElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const lastSubmittedValueRef = useRef(defaultValue);
-
-  function submitIfChanged() {
-    const current = inputRef.current?.value ?? "";
-
-    if (current === lastSubmittedValueRef.current) {
-      return;
-    }
-
-    lastSubmittedValueRef.current = current;
-    formRef.current?.requestSubmit();
-  }
+  const { formRef, inputRef, submitIfChanged } = useAutoSaveInput(defaultValue);
 
   return (
     <form ref={formRef} action={action} className="space-y-1">
@@ -47,12 +34,7 @@ export function AutoSaveContactField({
         defaultValue={defaultValue}
         placeholder={field === "linkedinProfileUrl" ? "No LinkedIn URL" : `No ${field}`}
         onBlur={submitIfChanged}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            (event.currentTarget as HTMLInputElement).blur();
-          }
-        }}
+        onKeyDown={blurOnEnter}
         className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
       />
       <p className="text-[11px] text-slate-500">Auto-saves when you leave the field.</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useAutoSaveEditable } from "@/components/auto-save-hooks";
 
 export function AutoSaveCompanyField({
   companyId,
@@ -25,37 +25,17 @@ export function AutoSaveCompanyField({
   labelClassName?: string;
   className?: string;
 }) {
-  const formRef = useRef<HTMLFormElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const lastSubmittedValueRef = useRef(defaultValue);
-  const [displayValue, setDisplayValue] = useState(defaultValue);
-  const [isEditing, setIsEditing] = useState(false);
-  const [draftValue, setDraftValue] = useState(defaultValue);
-
-  useEffect(() => {
-    if (isEditing) {
-      inputRef.current?.focus();
-      inputRef.current?.select();
-    }
-  }, [isEditing]);
-
-  function submitIfChanged() {
-    const current = inputRef.current?.value ?? "";
-    setIsEditing(false);
-
-    if (current === lastSubmittedValueRef.current) {
-      return;
-    }
-
-    lastSubmittedValueRef.current = current;
-    setDisplayValue(current);
-    formRef.current?.requestSubmit();
-  }
-
-  function beginEditing() {
-    setDraftValue(lastSubmittedValueRef.current);
-    setIsEditing(true);
-  }
+  const {
+    formRef,
+    inputRef,
+    displayValue,
+    draftValue,
+    setDraftValue,
+    isEditing,
+    beginEditing,
+    submitIfChanged,
+    onEditKeyDown,
+  } = useAutoSaveEditable(defaultValue);
 
   const isUrlField = field === "website" || field === "customerProjectUrl";
   const normalizedUrl =
@@ -94,18 +74,7 @@ export function AutoSaveCompanyField({
           placeholder={fallbackText}
           onChange={(event) => setDraftValue(event.currentTarget.value)}
           onBlur={submitIfChanged}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              (event.currentTarget as HTMLInputElement).blur();
-            }
-
-            if (event.key === "Escape") {
-              event.preventDefault();
-              setDraftValue(lastSubmittedValueRef.current);
-              setIsEditing(false);
-            }
-          }}
+          onKeyDown={onEditKeyDown}
           className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900"
         />
       ) : (

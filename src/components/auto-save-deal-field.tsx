@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { blurOnEnter, useAutoSaveInput } from "@/components/auto-save-hooks";
 
 export function AutoSaveDealField({
   dealId,
@@ -30,20 +30,7 @@ export function AutoSaveDealField({
   action: (formData: FormData) => void | Promise<void>;
   helperText?: string | null;
 }) {
-  const formRef = useRef<HTMLFormElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const lastSubmittedValueRef = useRef(defaultValue);
-
-  function submitIfChanged() {
-    const current = inputRef.current?.value ?? "";
-
-    if (current === lastSubmittedValueRef.current) {
-      return;
-    }
-
-    lastSubmittedValueRef.current = current;
-    formRef.current?.requestSubmit();
-  }
+  const { formRef, inputRef, submitIfChanged } = useAutoSaveInput(defaultValue);
 
   return (
     <form ref={formRef} action={action} className="flex flex-col gap-1 text-sm text-slate-700">
@@ -58,12 +45,7 @@ export function AutoSaveDealField({
         required={required}
         defaultValue={defaultValue}
         onBlur={submitIfChanged}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            (event.currentTarget as HTMLInputElement).blur();
-          }
-        }}
+        onKeyDown={blurOnEnter}
         className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
       />
       {helperText ? <p className="text-[11px] text-slate-500">{helperText}</p> : null}

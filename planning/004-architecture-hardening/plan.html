@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<!--
+  planning/004-architecture-hardening/plan.html — the HOW.
+  An architect's review of the CRM across five passes, sequenced by risk.
+  Keep section order stable for clean diffs.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan · Architecture hardening</title>
+<style>
+  :root{--bg:#fbfaf8;--ink:#1c1b1a;--muted:#6b6660;--line:#e6e2db;--accent:#3a5a78;--soft:#eef2f6;--codebg:#f3f1ec;
+    --proposed:#9a7b2f;--proposed-bg:#f6efdd;--accepted:#3f6b4a;--accepted-bg:#e9f1ea;
+    --t0:#3f6b4a;--t0-bg:#e9f1ea;--t1:#3a5a78;--t1-bg:#e8eef4;--t2:#9a7b2f;--t2-bg:#f6efdd;--t3:#9a4b3f;--t3-bg:#f5e8e5;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  main{max-width:820px;margin:0 auto;padding:44px 28px 80px}
+  .top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+  .top a{color:var(--accent);text-decoration:none}
+  .status{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;padding:3px 11px;border-radius:20px;text-transform:capitalize}
+  .s-proposed{color:var(--proposed);background:var(--proposed-bg)}
+  .kicker{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-top:18px}
+  h1{font-size:30px;margin:6px 0 6px;letter-spacing:-.01em}
+  .lede{color:var(--muted);font-size:17px;margin:0 0 8px}
+  h2{font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);
+    border-top:1px solid var(--line);padding-top:22px;margin:32px 0 10px}
+  h3{font-size:15.5px;margin:18px 0 6px}
+  p{margin:8px 0}ul,ol{margin:8px 0;padding-left:22px}li{margin:5px 0}
+  code{background:var(--codebg);padding:1.5px 5px;border-radius:4px;font-size:13.5px;font-family:"SF Mono",Consolas,Menlo,monospace}
+  pre{background:var(--codebg);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:13px;line-height:1.5}
+  pre code{background:none;padding:0}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+  th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;color:var(--muted);background:var(--soft)}
+  .callout{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:12px 16px;margin:14px 0}
+  .callout.warn{border-left-color:var(--t3)}
+  .phase{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:14px 0}
+  .phase h3{margin:0 0 6px;color:var(--accent)}
+  .phase .tag{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .tier{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:20px;text-transform:uppercase;white-space:nowrap}
+  .tier-0{color:var(--t0);background:var(--t0-bg)}
+  .tier-1{color:var(--t1);background:var(--t1-bg)}
+  .tier-2{color:var(--t2);background:var(--t2-bg)}
+  .tier-3{color:var(--t3);background:var(--t3-bg)}
+  .pass{font-size:12px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;font-weight:600}
+  .finding{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:12px 0}
+  .finding h3{margin:0 0 4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .ev{font-size:13px;color:var(--muted);margin:6px 0 0}
+  .ev code{font-size:12.5px}
+  footer{margin-top:36px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a href="../index.html">← Planning index</a>
+    <span class="status s-accepted">Accepted</span>
+  </div>
+
+  <div class="kicker">Plan · Feature 004</div>
+  <h1>Architecture hardening — an architect's review</h1>
+  <p class="lede">Fourteen findings from five review passes over the existing codebase, sequenced strictly by blast radius. Nothing in Tier&nbsp;0 or Tier&nbsp;1 can change observable behaviour; the riskier work is quarantined at the end where it can be deferred indefinitely without stranding anything before it.</p>
+
+  <h2>Implementation status</h2>
+  <p><strong>Phases 1–3 are shipped.</strong> Phase 4 remains open by design — it is the menu of items that need a product decision rather than an engineering one.</p>
+  <table>
+    <thead><tr><th>Finding</th><th>Status</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>F02 indexes</td><td>Done</td><td>13 indexes applied via <code>db:push</code>; zero drops.</td></tr>
+      <tr><td>F09 skeletons</td><td>Done</td><td>All five routes; <code>Pulse</code> exported from <code>skeleton.tsx</code>.</td></tr>
+      <tr><td>F13 tests</td><td>Done</td><td>59 tests on <code>node:test</code>, no new dependency.</td></tr>
+      <tr><td>F11 boundaries</td><td>Done</td><td>Verified live against a deliberately-thrown error.</td></tr>
+      <tr><td>F08 auto-save</td><td>Done <em>(revised)</em></td><td>See deviation 1.</td></tr>
+      <tr><td>F05 defineAction</td><td>Done <em>(revised)</em></td><td>All 23 actions; see deviation 2.</td></tr>
+      <tr><td>F04 PDF split</td><td>Done</td><td><code>proposal_documents</code> shipped; legacy column retained as fallback.</td></tr>
+      <tr><td>F06 tag revalidation</td><td>Not started</td><td>The one Phase 3 item still outstanding.</td></tr>
+      <tr><td>F01, F03, F07, F10, F12, F14</td><td>Open</td><td>Phase 4, as planned.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <p style="margin:0 0 8px"><strong>Deviation 1 — F08 was wrong about the cause.</strong> The plan asserted the ten auto-save components were one pattern that had drifted, and proposed converging them on the optimistic click-to-edit behaviour. Reading all ten showed <em>three</em> deliberate interaction families: click-to-edit (company field, proposal PIN), always-visible input saving on blur (contact, deal, activity date), and select saving on change (the five dropdowns). Converging them would have redesigned four pages — a violation of this plan's own safety contract. What shipped instead extracts the shared <em>machinery</em> into <code>auto-save-hooks.ts</code> and leaves every component's markup untouched, so the refactor is genuinely invisible.</p>
+    <p style="margin:0"><strong>Deviation 2 — F05's wrapper is not generic over FormData.</strong> A generic marshaller would turn <code>id: raw ? Number(raw) : undefined</code> into <code>z.coerce.number()</code> applied to <code>""</code>, which coerces to <code>0</code> and fails <code>.positive()</code> — a silent regression on every blank optional dropdown. Each action keeps its explicit <code>input</code> mapper; the wrapper's job is making <code>requireUser()</code> structural, which it does: <code>requireUser</code> no longer appears in <code>actions.ts</code> at all.</p>
+  </div>
+
+  <div class="callout">
+    <p style="margin:0 0 8px"><strong>Correction to F11.</strong> The finding claimed <code>/accounts/99999</code> was "a crash, not a 404". All four <code>[id]</code> routes already called <code>notFound()</code> — the real gap was that no <code>not-found.tsx</code> existed to style it, so it rendered Next's default. The error-boundary half of the finding stood as written and was the higher-value fix.</p>
+    <p style="margin:0"><strong>F04 was cheaper than budgeted.</strong> The risk table planned a checksummed copy of every signed PDF. The database holds seven proposals and <em>zero</em> stored PDFs (the plan-002 backfill still needs a manual Drive download), so there was nothing to migrate — only the read and write paths changed.</p>
+  </div>
+
+  <div class="callout warn">
+    <p style="margin:0"><strong>One real bug caught during verification.</strong> The <code>hasSignedPdfExpr</code> predicate first interpolated Drizzle column objects into a <code>sql</code> template. Drizzle emits those <em>unqualified</em>, so <code>${'{'}proposalDocuments.proposalId{'}'} = ${'{'}proposals.id{'}'}</code> rendered as <code>"proposal_id" = "id"</code> — and inside <code>SELECT 1 FROM "proposal_documents"</code> both resolve to that table. The correlation silently evaporated and the predicate was always false, which would have meant the download link never appearing for a newly signed proposal. Typecheck and build were both clean; only executing it against the database exposed it. Identifiers are now written out and qualified by hand.</p>
+  </div>
+
+  <h2>How this was scoped</h2>
+  <p>Five passes, each a distinct lens over the real code rather than a re-reading of the docs. Every finding below cites the file that produced it.</p>
+  <table>
+    <thead><tr><th>Pass</th><th>Lens</th><th>What it surfaced</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Data &amp; persistence integrity</td><td>Atomicity, indexing, column placement, constraint fit</td></tr>
+      <tr><td>2</td><td>Server-action architecture</td><td>Boilerplate, cache invalidation, failure modes</td></tr>
+      <tr><td>3</td><td>Design system &amp; component layer</td><td>Duplication, behavioural drift, convention coverage</td></tr>
+      <tr><td>4</td><td>Reliability, safety, observability</td><td>Error boundaries, public-surface hardening, tests</td></tr>
+      <tr><td>5</td><td>Sequencing &amp; risk</td><td>Ordering the above so early work can't strand later work</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The safety contract</h2>
+  <p>The explicit constraint on this plan was <em>don't mess anything up</em>. That is a design input, not a disclaimer, so it gets encoded as rules the work must satisfy rather than care that must be taken:</p>
+  <ol>
+    <li><strong>Additive before subtractive.</strong> New indexes, new files, new wrappers land first. Nothing is deleted until its replacement has shipped and been exercised.</li>
+    <li><strong>Preserve the public export surface.</strong> Where a component or action is consolidated, the original named export stays and becomes a thin pass-through. Call sites do not change, so a mistake in the new primitive shows up as a localized bug rather than a compile break across twenty files.</li>
+    <li><strong>One tier per PR.</strong> Tiers are independently revertable. A bad Tier&nbsp;2 revert must never take Tier&nbsp;0 or Tier&nbsp;1 with it.</li>
+    <li><strong>Behaviour changes are opt-in and separately flagged.</strong> The two findings that <em>do</em> alter what a user sees (F11 error boundaries, F03 contact-email constraint) are called out explicitly rather than smuggled in beside a refactor.</li>
+  </ol>
+  <div class="callout">
+    <p style="margin:0"><strong>Current baseline.</strong> <code>npx tsc --noEmit</code> is clean. <code>npm run lint</code> reports one pre-existing warning (custom font in <code>src/app/p/[slug]/proposal-view.tsx</code>), unrelated to anything here. Both should stay exactly that clean after every tier.</p>
+  </div>
+
+  <h2>Tier legend</h2>
+  <table>
+    <thead><tr><th>Tier</th><th>Definition</th><th>Revert cost</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tier tier-0">Tier 0</span></td><td>Pure addition. No existing code path is touched.</td><td>Drop the new object.</td></tr>
+      <tr><td><span class="tier tier-1">Tier 1</span></td><td>Internal refactor behind an unchanged export surface.</td><td>Revert one file.</td></tr>
+      <tr><td><span class="tier tier-2">Tier 2</span></td><td>Deliberate, visible behaviour change.</td><td>Revert one PR.</td></tr>
+      <tr><td><span class="tier tier-3">Tier 3</span></td><td>Infrastructure swap with a real failure mode.</td><td>Needs a rollback plan.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ============================ PASS 1 ============================ -->
+  <h2>Pass 1 · Data &amp; persistence integrity</h2>
+
+  <div class="finding">
+    <h3>F01 — Multi-step writes are not atomic <span class="tier tier-3">Tier 3</span></h3>
+    <p><code>createProposal</code> performs up to three dependent inserts in sequence: create the account, create the opportunity from the parsed pricing table, then insert the proposal. There is no transaction around them. If the third insert fails — a slug race, a constraint violation — you are left with an orphaned account and an orphaned opportunity, and the user sees a crash rather than a rollback.</p>
+    <p class="ev">Evidence: <code>src/app/actions.ts:1396</code>, <code>:1436</code>, <code>:1452</code> — three sequential <code>db.insert</code> calls, no wrapper. <code>grep</code> for <code>.transaction(</code> across <code>src/</code> and <code>scripts/</code> returns nothing; the codebase has never used one.</p>
+    <p><strong>Root cause, and why this is Tier 3:</strong> <code>src/lib/db.ts</code> builds the client from <code>drizzle-orm/neon-http</code>, and the HTTP driver cannot do interactive transactions at all. This isn't an oversight in the action — it's unavailable at the driver layer. <code>db.batch()</code> doesn't rescue it either, because each insert needs the <code>id</code> returned by the previous one.</p>
+    <p><strong>Approach:</strong> <code>@neondatabase/serverless</code> is <em>already</em> a dependency at <code>^1.0.2</code>, so the WebSocket path costs no new package. Add a second, lazily-constructed client — <code>getTxDb()</code> on <code>drizzle-orm/neon-serverless</code> — used only by the handful of actions that need atomicity. Every existing read keeps the current HTTP client and its connection characteristics unchanged. Migrate <code>createProposal</code> first, alone, and leave the rest until it has run in production for a while.</p>
+  </div>
+
+  <div class="finding">
+    <h3>F02 — Core tables have no indexes on their filter and join keys <span class="tier tier-0">Tier 0</span></h3>
+    <p><code>companies</code>, <code>deals</code>, <code>activities</code> and <code>sales_tasks</code> are all declared without an index argument, so they carry nothing but their primary key. Meanwhile <code>relationships</code>, <code>proposals</code>, <code>payments</code> and <code>stripe_subscriptions</code> — the newer tables — are all carefully indexed. The discipline is real; it just never got applied backwards.</p>
+    <p class="ev">Evidence: <code>src/lib/schema.ts:114</code> (companies), <code>:153</code> (deals), <code>:172</code> (activities), <code>:193</code> (sales_tasks) — no third argument. Compare <code>:227</code>, <code>:312</code>, <code>:356</code>.</p>
+    <p>This just got more relevant: the accounts list now filters on <code>companies.stage</code> by default and sorts on <code>created_at</code>, neither of which is indexed. Worth adding: <code>companies(stage)</code>, <code>companies(created_at)</code>, <code>companies(stripe_customer_id)</code>, <code>companies(plaza_key)</code>, <code>deals(company_id)</code>, <code>activities(company_id)</code>, <code>activities(contact_id)</code>, <code>activities(deal_id)</code>, <code>activities(occurred_at)</code>, <code>sales_tasks(company_id)</code>, <code>sales_tasks(deal_id)</code>.</p>
+    <p><strong>Why it's genuinely Tier 0:</strong> indexes change plan selection, never results. At today's row counts you will not feel the difference — the reason to do it now is that it is free and silent now, and becomes a production incident later.</p>
+  </div>
+
+  <div class="finding">
+    <h3>F03 — <code>contacts.email</code> is uniquely indexed, which the business model contradicts <span class="tier tier-2">Tier 2</span></h3>
+    <p>A unique index on a nullable column is fine in Postgres — many NULLs coexist. The problem is the business rule it encodes: no two contacts may ever share an email address. This CRM sells to small local businesses, where a shared <code>info@</code> or <code>frontdesk@</code> mailbox covering an owner <em>and</em> a manager is completely ordinary.</p>
+    <p class="ev">Evidence: <code>src/lib/schema.ts:149</code>.</p>
+    <p>Today that insert throws a raw Postgres error which, given F11, renders as an unstyled crash page rather than "that email is already on file." Options, in increasing order of change: keep the constraint and catch the violation into a real form error; scope it to <code>(company_id, email)</code>; or drop it to a plain non-unique index. Tier 2 because it is a deliberate change to what the system permits — it needs your call, not mine.</p>
+  </div>
+
+  <div class="finding">
+    <h3>F04 — The signed-PDF blob sits on the hot proposals row <span class="tier tier-1">Tier 1</span></h3>
+    <p><code>proposals.signed_pdf_base64</code> holds multi-megabyte base64 on the same row every list and detail view reads. The protection is a rule in <code>AGENTS.md</code>: never <code>select()</code> all proposal columns. That rule is currently being honoured everywhere — I checked — but it is enforced by memory, and it is the kind of rule that survives exactly until someone adds a page in a hurry.</p>
+    <p class="ev">Evidence: <code>src/lib/schema.ts:303</code>. The six full-row <code>select()</code> calls in the codebase (<code>src/app/accounts/page.tsx:158</code>, <code>src/app/accounts/[id]/page.tsx:120-122</code>, <code>src/app/map/page.tsx:49</code>, <code>src/lib/graph.ts:53</code>) all currently avoid <code>proposals</code>.</p>
+    <p><strong>Approach:</strong> move the column to a <code>proposal_documents</code> side table keyed by <code>proposal_id</code>. Only <code>/proposals/[id]/pdf</code> and the signing route join to it. The footgun stops being a rule and becomes structurally impossible — which is the whole point.</p>
+  </div>
+
+  <!-- ============================ PASS 2 ============================ -->
+  <h2>Pass 2 · Server-action architecture</h2>
+
+  <div class="finding">
+    <h3>F05 — Roughly 230 lines of identical preamble across 23 actions <span class="tier tier-1">Tier 1</span></h3>
+    <p>Every action in <code>src/app/actions.ts</code> opens with the same four moves: <code>await requireUser()</code>, <code>getDb()</code>, a null check that throws, then a hand-written <code>formData.get()</code> object passed to <code>schema.parse()</code>. Twenty-three times, in a 1,661-line file.</p>
+    <p class="ev">Evidence: <code>src/app/actions.ts</code> — 23 exported actions, 24 <code>requireUser</code> call sites, 22 <code>z.object</code> schemas. See <code>:216</code>, <code>:249</code>, <code>:284</code>, <code>:331</code> for four consecutive instances of the identical block.</p>
+    <p>The cost isn't the line count, it's that <em>authorization is copy-paste</em>. Twenty-three chances to forget <code>requireUser()</code>, and the twenty-fourth action is written by whoever is in a hurry. A <code>defineAction({ schema, handler })</code> wrapper makes the auth check structural — you cannot define an action without it — and collapses the FormData-to-Zod marshalling into one place.</p>
+    <p><strong>Non-breaking because:</strong> each action keeps its exported name and its <code>(formData: FormData)</code> signature. Every <code>&lt;form action={...}&gt;</code> in the app is untouched.</p>
+  </div>
+
+  <div class="finding">
+    <h3>F06 — 69 hand-maintained <code>revalidatePath</code> calls <span class="tier tier-1">Tier 1</span></h3>
+    <p>Roughly three per action, each one a manual assertion about which pages display which entity. This is a coupling that runs the wrong direction: adding a <em>new page</em> that reads accounts requires editing every <em>action</em> that writes accounts. Nothing enforces it, and the failure is silent — a stale panel, not an error.</p>
+    <p class="ev">Evidence: 69 occurrences in <code>src/app/actions.ts</code>. <code>createProposal</code> alone lists four paths plus a conditional <code>returnPath</code> (<code>:1465-1471</code>).</p>
+    <p><strong>Approach:</strong> entity tags — <code>revalidateTag('account:42')</code>, <code>revalidateTag('accounts')</code> — so pages declare what they read and actions declare what they wrote. Migrate one entity at a time, leaving the existing <code>revalidatePath</code> calls in place until the tag path is proven. Redundant invalidation is harmless; missing invalidation is the bug.</p>
+  </div>
+
+  <div class="finding">
+    <h3>F07 — Validation failure is an exception, not a form state <span class="tier tier-2">Tier 2</span></h3>
+    <p><code>schema.parse()</code> throws. No action catches it. This is already recorded in <code>AGENTS.md</code> under known tech debt, and it is the direct cause of the worst user-facing behaviour in the app — see F11, which is the other half of the same problem.</p>
+    <p>The React 19 fix is <code>useActionState</code> with actions returning <code>{ ok: false, errors }</code> instead of throwing. That is a genuine signature change, so it is Tier 2 and it should be done <em>per form</em>, starting with the highest-traffic one (account create), not as a sweep. F05's wrapper is what makes this cheap: change the wrapper's contract once and adopt it form by form.</p>
+  </div>
+
+  <!-- ============================ PASS 3 ============================ -->
+  <h2>Pass 3 · Design system &amp; component layer</h2>
+
+  <div class="finding">
+    <h3>F08 — Ten near-identical auto-save components, and they have drifted <span class="tier tier-1">Tier 1</span></h3>
+    <p>797 lines across ten files that differ only in the name of the id prop and the union of allowed field names:</p>
+    <pre><code>auto-save-activity-date-field.tsx    43
+auto-save-company-field.tsx         140
+auto-save-company-select-field.tsx  119
+auto-save-contact-field.tsx          61
+auto-save-deal-field.tsx             72
+auto-save-deal-select-field.tsx      72
+auto-save-deal-stage-field.tsx       80
+auto-save-payment-account-field.tsx  61
+auto-save-proposal-deal-field.tsx    60
+auto-save-proposal-pin-field.tsx     89</code></pre>
+    <p><strong>The duplication is not the finding. The drift is.</strong> <code>AutoSaveCompanyField</code> carries <code>useState</code> + <code>useEffect</code> and renders an optimistic <code>displayValue</code>; <code>AutoSaveContactField</code> imports only <code>useRef</code> and has no optimistic state at all. Two fields that look identical on screen behave differently under the user's hands — the contact field simply doesn't acknowledge the edit the way the account field does. Nobody decided that. It is an artifact of the ninth copy being made from a different ancestor than the fourth.</p>
+    <p class="ev">Evidence: <code>diff src/components/auto-save-company-field.tsx src/components/auto-save-contact-field.tsx</code> — the import line and the entire <code>displayValue</code> state block.</p>
+    <p><strong>Approach:</strong> two primitives — <code>AutoSaveField</code> and <code>AutoSaveSelect</code> — parameterized by <code>(entity, id, field)</code>. Then rewrite each of the ten existing files as a four-line wrapper preserving its exact export name and props. No page changes. The behaviour converges on the <em>better</em> of the two (optimistic), which is a visible improvement to contact, deal, payment and proposal fields — worth calling out on the PR so it is reviewed as an intentional change rather than discovered.</p>
+  </div>
+
+  <div class="finding">
+    <h3>F09 — Loading skeletons stop at the older half of the app <span class="tier tier-0">Tier 0</span></h3>
+    <p>Nine <code>loading.tsx</code> files exist, covering dashboard, accounts, contacts, opportunities, tasks and activities. The routes added since — <code>/proposals</code>, <code>/proposals/[id]</code>, <code>/payments</code>, <code>/inbox</code>, <code>/map</code> — have none. Every page is <code>force-dynamic</code>, so those five navigate with no feedback at all while the query runs.</p>
+    <p class="ev">Evidence: <code>find src/app -name loading.tsx</code> returns 9 paths; none under <code>proposals/</code>, <code>payments/</code>, <code>inbox/</code> or <code>map/</code>. <code>src/components/skeleton.tsx</code> (214 lines) already has the primitives.</p>
+    <p>This is the cheapest item in the plan and the most visible. It is also diagnostic: the same drift explains F08 and the stale route list in <code>AGENTS.md</code> (which still omits <code>/inbox</code>, <code>/map</code> and <code>/payments</code>). New features are not inheriting established conventions, because the conventions live in prose rather than in a scaffold.</p>
+  </div>
+
+  <div class="finding">
+    <h3>F10 — The design system is seven CSS variables and a lot of literals <span class="tier tier-2">Tier 2</span></h3>
+    <p><code>globals.css</code> defines <code>--background</code>, <code>--foreground</code>, two font stacks, <code>--border-soft</code>, <code>--app-bg</code>, <code>--sidebar-bg</code>, and three <code>.gong-*</code> classes. Everything else is inline Tailwind literals, and semantic colour is returned from TypeScript as class-name strings (<code>getAccountStageTone</code> hands back <code>"bg-emerald-100 text-emerald-800"</code>).</p>
+    <p class="ev">Evidence: <code>src/app/globals.css:24-37</code>; <code>src/lib/account-stage.ts:31-48</code>.</p>
+    <p>It works, and the Gong-inspired direction in <code>AGENTS.md</code> is being held. But stage colour is now a cross-cutting concern — it appears on accounts, opportunities, proposals, payments and the map — and it is defined in four separate <code>get*Tone</code> functions. Promoting stage/status colour to real tokens is the enabling step for anything later: dark mode, print styles, a client-facing theme. Tier 2 because it touches rendered output; low urgency, high leverage.</p>
+  </div>
+
+  <!-- ============================ PASS 4 ============================ -->
+  <h2>Pass 4 · Reliability, safety, observability</h2>
+
+  <div class="finding">
+    <h3>F11 — The application has no error boundaries whatsoever <span class="tier tier-2">Tier 2</span></h3>
+    <p>No <code>error.tsx</code>. No <code>global-error.tsx</code>. No <code>not-found.tsx</code>. Anywhere.</p>
+    <p class="ev">Evidence: <code>find src/app -name "error.tsx" -o -name "global-error.tsx" -o -name "not-found.tsx"</code> returns empty.</p>
+    <p>Combined with F07, this is the single worst user-facing gap in the system. Every validation failure in every form is an uncaught throw with nothing to catch it, so in production it renders as Next's bare "Application error: a client-side exception has occurred." Visiting <code>/accounts/99999</code> is a crash rather than a 404. A Neon cold-start timeout is a crash. Entering a duplicate contact email (F03) is a crash.</p>
+    <div class="callout warn">
+      <p style="margin:0"><strong>This is the highest-value item in the plan.</strong> It is three small files, it strictly reduces the set of states in which the user sees a broken page, and unlike everything else here it is felt immediately. It is Tier 2 only because it changes what renders on failure — which is the entire intent.</p>
+    </div>
+  </div>
+
+  <div class="finding">
+    <h3>F12 — The public PIN gate has no rate limit <span class="tier tier-2">Tier 2</span></h3>
+    <p><code>/p/[slug]</code> is publicly reachable and gated by a four-digit PIN compared with <code>===</code>. There is no attempt counter, no backoff, no lockout. Four digits with unlimited attempts is ten thousand requests, which is minutes of scripted traffic. The internal master PIN defaults to <code>3067</code> when <code>PROPOSAL_INTERNAL_PIN</code> is unset, and that default is in the repository.</p>
+    <p class="ev">Evidence: <code>src/app/p/actions.ts:47</code> — <code>parsed.pin === proposal.pin</code>; <code>src/lib/proposal/pin.ts:20</code> — <code>process.env.PROPOSAL_INTERNAL_PIN ?? "3067"</code>.</p>
+    <p>What is actually at risk is a client's statement of work and its pricing — reputational rather than catastrophic, which is why this is Tier 2 rather than an emergency. Worth noting the signing route itself is well built: it requires the PIN cookie, caps the payload at 20&nbsp;MB, returns 409 on an already-signed proposal, and selects explicit columns (<code>src/app/p/[slug]/sign/route.ts</code>). The gate is the weak link, not the endpoint behind it.</p>
+    <p><strong>Approach:</strong> a per-slug attempt counter with exponential backoff after five failures, plus a constant-time comparison. Set <code>PROPOSAL_INTERNAL_PIN</code> in the deployment environment so the committed default stops being live.</p>
+  </div>
+
+  <div class="finding">
+    <h3>F13 — No tests, but the highest-value targets are pure functions <span class="tier tier-0">Tier 0</span></h3>
+    <p><code>AGENTS.md</code> records this honestly. The useful observation is that the riskiest logic in the codebase is already isolated and side-effect free, so this does not require a testing strategy — just a runner and a morning.</p>
+    <ul>
+      <li><code>parsePricingTotals</code> / <code>parseSections</code> / <code>parsePricingTable</code> — <code>src/lib/proposal/markdown.ts</code>. Wrong output here silently mis-prices an auto-created opportunity.</li>
+      <li><code>src/lib/stripe/normalize.ts</code> (208 lines) — the annual÷12 / quarterly÷3 MRR normalization that the entire revenue reconciliation rests on.</li>
+      <li><code>normalizeUsPhone</code>, <code>normalizeUrl</code>, <code>cleanOptionalText</code> — <code>src/app/actions.ts</code>.</li>
+      <li><code>src/lib/referral-score.ts</code> (151 lines).</li>
+    </ul>
+    <p>Tier 0 by definition: adding tests cannot change production behaviour. It is also the thing that makes Tier 1 and Tier 3 safe to attempt.</p>
+  </div>
+
+  <div class="finding">
+    <h3>F14 — Sessions cannot be revoked <span class="tier tier-3">Tier 3</span></h3>
+    <p>Sessions are stateless HS256 JWTs with a 14-day expiry. Deleting a user or changing a password does not invalidate their outstanding token; it stays valid for up to two weeks.</p>
+    <p class="ev">Evidence: <code>src/lib/auth.ts</code> — <code>getSession()</code> verifies the signature and reads the payload; there is no database lookup.</p>
+    <p>For a two-person team this is a theoretical concern, and it is listed last deliberately. It becomes real the moment there is a third seat or a contractor. The cheap mitigation when that day comes: a <code>token_version</code> integer on <code>users</code>, included in the JWT and compared on verify — one indexed read per request, and revocation becomes an increment.</p>
+  </div>
+
+  <!-- ============================ PASS 5 ============================ -->
+  <h2>Pass 5 · Sequencing</h2>
+  <p>Ordered so that each phase makes the next one safer, and so that stopping after any phase leaves the system in a coherent state.</p>
+
+  <div class="phase">
+    <div class="tag">Phase 1 · Tier 0 — cannot break anything</div>
+    <h3>Indexes, skeletons, tests</h3>
+    <ul>
+      <li><strong>F02</strong> — add the eleven missing indexes to <code>src/lib/schema.ts</code>, then <code>db:generate</code> → review SQL → <code>db:push</code>.</li>
+      <li><strong>F09</strong> — five <code>loading.tsx</code> files using the existing <code>skeleton.tsx</code> primitives.</li>
+      <li><strong>F13</strong> — add a test runner; cover the markdown, Stripe-normalize and format helpers.</li>
+      <li>Refresh the stale route list in <code>AGENTS.md</code> (<code>/inbox</code>, <code>/map</code>, <code>/payments</code>).</li>
+    </ul>
+    <p style="margin-bottom:0"><strong>Exit:</strong> lint and typecheck unchanged; every route shows a skeleton; tests green.</p>
+  </div>
+
+  <div class="phase">
+    <div class="tag">Phase 2 · Tier 2 — the visible win</div>
+    <h3>Error boundaries</h3>
+    <ul>
+      <li><strong>F11</strong> — <code>global-error.tsx</code>, a root <code>error.tsx</code>, and <code>not-found.tsx</code>; add <code>notFound()</code> calls to the <code>[id]</code> routes where a missing row currently falls through.</li>
+    </ul>
+    <p style="margin-bottom:0"><strong>Exit:</strong> <code>/accounts/99999</code> renders a real 404. A deliberately thrown action error renders a styled recovery page, not a white screen. <em>Ships alone — it is the one item worth landing today.</em></p>
+  </div>
+
+  <div class="phase">
+    <div class="tag">Phase 3 · Tier 1 — invisible refactors, one PR each</div>
+    <h3>Collapse the duplication</h3>
+    <ul>
+      <li><strong>F08</strong> — two primitives; rewrite the ten auto-save files as pass-through wrappers. Call the optimistic-state convergence out explicitly in the PR.</li>
+      <li><strong>F05</strong> — <code>defineAction</code> wrapper; migrate actions in small batches.</li>
+      <li><strong>F04</strong> — move <code>signed_pdf_base64</code> to <code>proposal_documents</code>.</li>
+      <li><strong>F06</strong> — tag-based revalidation, one entity at a time, leaving the path calls in place until proven.</li>
+    </ul>
+    <p style="margin-bottom:0"><strong>Exit:</strong> no page file changed except by import path. Manual pass over account, contact, opportunity and proposal detail confirms autosave still saves.</p>
+  </div>
+
+  <div class="phase">
+    <div class="tag">Phase 4 · Tier 2/3 — decisions, not just work</div>
+    <h3>Deferred by design</h3>
+    <ul>
+      <li><strong>F12</strong> — PIN rate limiting; set <code>PROPOSAL_INTERNAL_PIN</code> in the environment.</li>
+      <li><strong>F07</strong> — <code>useActionState</code>, per form, highest-traffic first.</li>
+      <li><strong>F03</strong> — decide the contact-email rule. Needs your input.</li>
+      <li><strong>F01</strong> — transactional client for <code>createProposal</code> only.</li>
+      <li><strong>F10</strong> — promote stage/status colour to tokens.</li>
+      <li><strong>F14</strong> — <code>token_version</code>, whenever a third seat appears.</li>
+    </ul>
+    <p style="margin-bottom:0"><strong>Exit:</strong> none required. This phase is a menu, and everything above it stands without it.</p>
+  </div>
+
+  <h2>Risks &amp; mitigations</h2>
+  <table>
+    <thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>The neon-serverless client (F01) behaves differently under load or cold start than the HTTP client.</td><td>Add it as a <em>second</em> client used by one action. Reads never touch it. Rollback is deleting one import.</td></tr>
+      <tr><td>The F08 rewrite silently breaks an autosave field that has no test coverage.</td><td>Phase 1 lands tests first. Wrappers keep exact prop shapes, so a break is a runtime bug in one field rather than a compile error everywhere — walk the four detail pages before merging.</td></tr>
+      <tr><td>Tag migration (F06) drops an invalidation and a panel goes stale.</td><td>Additive: keep every existing <code>revalidatePath</code> until its tag equivalent is verified. Over-invalidation costs nothing.</td></tr>
+      <tr><td><code>db:push</code> drift — <code>drizzle/</code> generated SQL is known to be polluted relative to the live schema.</td><td>Review generated SQL before pushing, as the existing workflow already requires. Index-only DDL is the safest possible thing to push first.</td></tr>
+      <tr><td>Moving the PDF column (F04) loses signed documents.</td><td>Copy into the new table, verify counts and a byte-length checksum on every row, ship the read path, and drop the old column in a <em>later</em> PR — never the same one.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Out of scope</h2>
+  <ul>
+    <li><strong>Multi-tenancy.</strong> Every authenticated user still sees all data. That is a product decision, not hardening, and retrofitting an <code>org_id</code> touches every query in the app.</li>
+    <li><strong>Pagination.</strong> <code>/accounts</code> loads all companies and all deals and sorts in memory (<code>src/app/accounts/page.tsx:158</code>). Correct at current scale; worth revisiting somewhere in the low thousands of accounts. Noted, not scheduled.</li>
+    <li><strong>The Gong-inspired visual direction.</strong> Explicitly preserved. F10 changes how colour is <em>defined</em>, never what it looks like.</li>
+    <li><strong>Anything in <code>planning/001</code>–<code>003</code>.</strong> This plan hardens what exists; it does not revisit accepted decisions.</li>
+  </ul>
+
+  <h2>Verification</h2>
+  <p>Per the repo checklist, after every phase:</p>
+  <pre><code>npm run lint          # expect: 1 pre-existing warning, no errors
+npx tsc --noEmit      # expect: clean
+npm run build</code></pre>
+  <p>Plus, per tier: Phase 1 — every route shows a skeleton on navigation. Phase 2 — <code>/accounts/99999</code> is a 404 and a thrown action is a styled page. Phase 3 — autosave verified by hand on account, contact, opportunity and proposal detail. Phase 4 — a signature end-to-end against a throwaway proposal row, as the proposals checklist requires.</p>
+
+  <footer>
+    Plan 004 · Architecture hardening · Status: Proposed · Supersedes nothing.<br>
+    Findings are grounded in the codebase as of this branch; file references are line-accurate at time of writing and will drift.
+  </footer>
+</main>
+</body>
+</html>

@@ -4,10 +4,9 @@ import { and, eq, ilike, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { setFlashToast } from "@/lib/flash";
-import { requireUser } from "@/lib/auth";
+import { defineAction, type Db } from "@/lib/define-action";
 import { accountStageOptions } from "@/lib/account-stage";
 import { edgeTypeOptions } from "@/lib/edge-type";
-import { getDb } from "@/lib/db";
 import { companyIndustries } from "@/lib/company-industries";
 import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { scrapeCompanyWebsite } from "@/lib/enrich";
@@ -15,7 +14,8 @@ import { geocodeAddress } from "@/lib/geocode";
 import { sourceNearbyBusinesses } from "@/lib/source-nearby";
 import { activities, agentRuns, companies, contacts, deals, payments, placeEnrichment, proposals, relationships, salesTasks, stripeSubscriptions, suggestions, users } from "@/lib/schema";
 import { generatePin } from "@/lib/proposal/pin";
-import { parsePricingTable, parseSections } from "@/lib/proposal/markdown";
+import { parsePricingTotals } from "@/lib/proposal/markdown";
+import { cleanOptionalText, mergeDateWithTime, normalizeUrl, normalizeUsPhone } from "@/lib/normalize";
 
 const optionalCompanyIndustrySchema = z.enum(companyIndustries).optional().or(z.literal(""));
 const accountStageSchema = z.enum(accountStageOptions);
@@ -148,80 +148,12 @@ const relationshipDeleteSchema = z.object({
   returnPath: z.string().optional(),
 });
 
-function cleanOptionalText(value: string | undefined) {
-  if (!value) {
-    return null;
-  }
+// Normalization helpers now live in @/lib/normalize — see the import above.
+// They were module-private here, which made them impossible to unit test.
 
-  const trimmed = value.trim();
-  return trimmed.length ? trimmed : null;
-}
-
-function normalizeUrl(value: string | null) {
-  if (!value) {
-    return null;
-  }
-
-  if (value.startsWith("http://") || value.startsWith("https://")) {
-    return value;
-  }
-
-  return `https://${value}`;
-}
-
-function normalizeUsPhone(value: string | undefined) {
-  const cleaned = cleanOptionalText(value);
-  if (!cleaned) {
-    return null;
-  }
-
-  const digits = cleaned.replace(/\D/g, "");
-  const tenDigits = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
-
-  if (!/^\d{10}$/.test(tenDigits)) {
-    throw new Error("Phone number must have 10 digits (US format).");
-  }
-
-  return `(${tenDigits.slice(0, 3)}) ${tenDigits.slice(3, 6)}-${tenDigits.slice(6)}`;
-}
-
-function mergeDateWithTime(dateValue: string | undefined, baseDate: Date | null = new Date()) {
-  const cleaned = cleanOptionalText(dateValue);
-
-  if (!cleaned) {
-    return null;
-  }
-
-  const resolvedBaseDate = baseDate ?? new Date();
-
-  const [year, month, day] = cleaned.split("-").map(Number);
-
-  if (!year || !month || !day) {
-    throw new Error("Activity date must be a valid date.");
-  }
-
-  return new Date(
-    Date.UTC(
-      year,
-      month - 1,
-      day,
-      resolvedBaseDate.getUTCHours(),
-      resolvedBaseDate.getUTCMinutes(),
-      resolvedBaseDate.getUTCSeconds(),
-      resolvedBaseDate.getUTCMilliseconds(),
-    ),
-  );
-}
-
-export async function createCompany(formData: FormData) {
-  await requireUser();
-
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const parsed = companySchema.parse({
+export const createCompany = defineAction({
+  schema: companySchema,
+  input: (formData) => ({
     name: formData.get("name"),
     stage: formData.get("stage"),
     website: formData.get("website"),
@@ -229,8 +161,8 @@ export async function createCompany(formData: FormData) {
     industry: formData.get("industry"),
     nextStep: formData.get("nextStep"),
     nextStepDueDate: formData.get("nextStepDueDate"),
-  });
-
+  }),
+  handler: async ({ input: parsed, db }) => {
   await db.insert(companies).values({
     name: parsed.name,
     stage: parsed.stage,
@@ -244,28 +176,25 @@ export async function createCompany(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/accounts");
   await setFlashToast("Account created");
-}
+  },
+});
 
-export async function createContact(formData: FormData) {
-  await requireUser();
+export const createContact = defineAction({
+  schema: contactSchema,
+  input: (formData) => {
+    const rawCompanyId = formData.get("companyId")?.toString();
 
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const rawCompanyId = formData.get("companyId")?.toString();
-
-  const parsed = contactSchema.parse({
-    firstName: formData.get("firstName"),
-    lastName: formData.get("lastName"),
-    email: formData.get("email"),
-    phone: formData.get("phone"),
-    linkedinProfileUrl: formData.get("linkedinProfileUrl"),
-    title: formData.get("title"),
-    companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
-  });
-
+    return {
+      firstName: formData.get("firstName"),
+      lastName: formData.get("lastName"),
+      email: formData.get("email"),
+      phone: formData.get("phone"),
+      linkedinProfileUrl: formData.get("linkedinProfileUrl"),
+      title: formData.get("title"),
+      companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+    };
+  },
+  handler: async ({ input: parsed, db }) => {
   await db.insert(contacts).values({
     firstName: parsed.firstName,
     lastName: parsed.lastName,
@@ -279,23 +208,18 @@ export async function createContact(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/contacts");
   await setFlashToast("Contact created");
-}
+  },
+});
 
-export async function updateContactField(formData: FormData) {
-  await requireUser();
-
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const parsed = contactFieldUpdateSchema.parse({
+export const updateContactField = defineAction({
+  schema: contactFieldUpdateSchema,
+  input: (formData) => ({
     contactId: formData.get("contactId"),
     field: formData.get("field"),
     value: formData.get("value"),
     returnPath: formData.get("returnPath"),
-  });
-
+  }),
+  handler: async ({ input: parsed, db }) => {
   const cleaned = cleanOptionalText(parsed.value);
 
   if (parsed.field === "email" && cleaned) {
@@ -326,22 +250,17 @@ export async function updateContactField(formData: FormData) {
   if (parsed.returnPath?.startsWith("/")) {
     revalidatePath(parsed.returnPath);
   }
-}
+  },
+});
 
-export async function updateCompanyField(formData: FormData) {
-  await requireUser();
-
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const parsed = companyFieldUpdateSchema.parse({
+export const updateCompanyField = defineAction({
+  schema: companyFieldUpdateSchema,
+  input: (formData) => ({
     companyId: formData.get("companyId"),
     field: formData.get("field"),
     value: formData.get("value"),
-  });
-
+  }),
+  handler: async ({ input: parsed, db }) => {
   const cleaned = cleanOptionalText(parsed.value);
 
   const normalizedUrl = normalizeUrl(cleaned);
@@ -378,30 +297,27 @@ export async function updateCompanyField(formData: FormData) {
 
   revalidatePath(`/accounts/${parsed.companyId}`);
   revalidatePath("/accounts");
-}
+  },
+});
 
-export async function createDeal(formData: FormData) {
-  await requireUser();
+export const createDeal = defineAction({
+  schema: dealSchema,
+  input: (formData) => {
+    const rawCompanyId = formData.get("companyId")?.toString();
 
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const rawCompanyId = formData.get("companyId")?.toString();
-
-  const parsed = dealSchema.parse({
-    name: formData.get("name"),
-    stage: formData.get("stage"),
-    mrrUsd: formData.get("mrrUsd"),
-    implementationCostUsd: formData.get("implementationCostUsd"),
-    ownerName: formData.get("ownerName"),
-    nextStep: formData.get("nextStep"),
-    nextStepDueDate: formData.get("nextStepDueDate"),
-    companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
-    expectedCloseDate: formData.get("expectedCloseDate"),
-  });
-
+    return {
+      name: formData.get("name"),
+      stage: formData.get("stage"),
+      mrrUsd: formData.get("mrrUsd"),
+      implementationCostUsd: formData.get("implementationCostUsd"),
+      ownerName: formData.get("ownerName"),
+      nextStep: formData.get("nextStep"),
+      nextStepDueDate: formData.get("nextStepDueDate"),
+      companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+      expectedCloseDate: formData.get("expectedCloseDate"),
+    };
+  },
+  handler: async ({ input: parsed, db }) => {
   await db.insert(deals).values({
     name: parsed.name,
     stage: parsed.stage,
@@ -417,32 +333,29 @@ export async function createDeal(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/opportunities");
   await setFlashToast("Opportunity created");
-}
+  },
+});
 
-export async function updateDeal(formData: FormData) {
-  await requireUser();
+export const updateDeal = defineAction({
+  schema: dealUpdateSchema,
+  input: (formData) => {
+    const rawCompanyId = formData.get("companyId")?.toString();
+    const rawPrimaryContactId = formData.get("primaryContactId")?.toString();
 
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const rawCompanyId = formData.get("companyId")?.toString();
-  const rawPrimaryContactId = formData.get("primaryContactId")?.toString();
-
-  const parsed = dealUpdateSchema.parse({
-    dealId: formData.get("dealId"),
-    name: formData.get("name"),
-    mrrUsd: formData.get("mrrUsd"),
-    implementationCostUsd: formData.get("implementationCostUsd"),
-    ownerName: formData.get("ownerName"),
-    nextStep: formData.get("nextStep"),
-    nextStepDueDate: formData.get("nextStepDueDate"),
-    expectedCloseDate: formData.get("expectedCloseDate"),
-    companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
-    primaryContactId: rawPrimaryContactId ? Number(rawPrimaryContactId) : undefined,
-  });
-
+    return {
+      dealId: formData.get("dealId"),
+      name: formData.get("name"),
+      mrrUsd: formData.get("mrrUsd"),
+      implementationCostUsd: formData.get("implementationCostUsd"),
+      ownerName: formData.get("ownerName"),
+      nextStep: formData.get("nextStep"),
+      nextStepDueDate: formData.get("nextStepDueDate"),
+      expectedCloseDate: formData.get("expectedCloseDate"),
+      companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+      primaryContactId: rawPrimaryContactId ? Number(rawPrimaryContactId) : undefined,
+    };
+  },
+  handler: async ({ input: parsed, db }) => {
   await db
     .update(deals)
     .set({
@@ -462,22 +375,17 @@ export async function updateDeal(formData: FormData) {
   revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${parsed.dealId}`);
   await setFlashToast("Opportunity updated");
-}
+  },
+});
 
-export async function updateDealField(formData: FormData) {
-  await requireUser();
-
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const parsed = dealFieldUpdateSchema.parse({
+export const updateDealField = defineAction({
+  schema: dealFieldUpdateSchema,
+  input: (formData) => ({
     dealId: formData.get("dealId"),
     field: formData.get("field"),
     value: formData.get("value"),
-  });
-
+  }),
+  handler: async ({ input: parsed, db }) => {
   const cleaned = cleanOptionalText(parsed.value);
 
   if (parsed.field === "name" || parsed.field === "nextStep") {
@@ -522,22 +430,17 @@ export async function updateDealField(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${parsed.dealId}`);
-}
+  },
+});
 
-export async function updateDealStage(formData: FormData) {
-  await requireUser();
-
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const parsed = dealStageUpdateSchema.parse({
+export const updateDealStage = defineAction({
+  schema: dealStageUpdateSchema,
+  input: (formData) => ({
     dealId: formData.get("dealId"),
     stage: formData.get("stage"),
     reason: formData.get("reason"),
-  });
-
+  }),
+  handler: async ({ input: parsed, db }) => {
   const existing = await db.query.deals.findFirst({
     where: eq(deals.id, parsed.dealId),
   });
@@ -571,28 +474,25 @@ export async function updateDealStage(formData: FormData) {
   revalidatePath("/opportunities");
   revalidatePath(`/opportunities/${parsed.dealId}`);
   await setFlashToast(`Opportunity marked ${parsed.stage}`);
-}
+  },
+});
 
-export async function createTask(formData: FormData) {
-  await requireUser();
+export const createTask = defineAction({
+  schema: taskSchema,
+  input: (formData) => {
+    const rawDealId = formData.get("dealId")?.toString();
+    const rawCompanyId = formData.get("companyId")?.toString();
 
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const rawDealId = formData.get("dealId")?.toString();
-  const rawCompanyId = formData.get("companyId")?.toString();
-
-  const parsed = taskSchema.parse({
-    title: formData.get("title"),
-    dueDate: formData.get("dueDate"),
-    assignedTo: formData.get("assignedTo"),
-    dealId: rawDealId ? Number(rawDealId) : undefined,
-    companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
-    returnPath: formData.get("returnPath"),
-  });
-
+    return {
+      title: formData.get("title"),
+      dueDate: formData.get("dueDate"),
+      assignedTo: formData.get("assignedTo"),
+      dealId: rawDealId ? Number(rawDealId) : undefined,
+      companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+      returnPath: formData.get("returnPath"),
+    };
+  },
+  handler: async ({ input: parsed, db }) => {
   let cleanedAssignedTo = cleanOptionalText(parsed.assignedTo);
 
   if (cleanedAssignedTo) {
@@ -618,21 +518,16 @@ export async function createTask(formData: FormData) {
     revalidatePath(parsed.returnPath);
   }
   await setFlashToast("Task created");
-}
+  },
+});
 
-export async function completeTask(formData: FormData) {
-  await requireUser();
-
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const parsed = completeTaskSchema.parse({
+export const completeTask = defineAction({
+  schema: completeTaskSchema,
+  input: (formData) => ({
     taskId: formData.get("taskId"),
     returnPath: formData.get("returnPath"),
-  });
-
+  }),
+  handler: async ({ input: parsed, db }) => {
   await db.update(salesTasks).set({ status: "done" }).where(eq(salesTasks.id, parsed.taskId));
 
   revalidatePath("/");
@@ -641,22 +536,17 @@ export async function completeTask(formData: FormData) {
     revalidatePath(parsed.returnPath);
   }
   await setFlashToast("Task completed");
-}
+  },
+});
 
-export async function updateActivityDate(formData: FormData) {
-  await requireUser();
-
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const parsed = activityDateUpdateSchema.parse({
+export const updateActivityDate = defineAction({
+  schema: activityDateUpdateSchema,
+  input: (formData) => ({
     activityId: formData.get("activityId"),
     occurredOn: formData.get("occurredOn"),
     returnPath: formData.get("returnPath"),
-  });
-
+  }),
+  handler: async ({ input: parsed, db }) => {
   const existing = await db.query.activities.findFirst({
     where: eq(activities.id, parsed.activityId),
   });
@@ -681,30 +571,27 @@ export async function updateActivityDate(formData: FormData) {
   if (parsed.returnPath?.startsWith("/")) {
     revalidatePath(parsed.returnPath);
   }
-}
+  },
+});
 
-export async function logActivity(formData: FormData) {
-  const session = await requireUser();
+export const logActivity = defineAction({
+  schema: activitySchema,
+  input: (formData) => {
+    const rawDealId = formData.get("dealId")?.toString();
+    const rawContactId = formData.get("contactId")?.toString();
+    const rawCompanyId = formData.get("companyId")?.toString();
 
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const rawDealId = formData.get("dealId")?.toString();
-  const rawContactId = formData.get("contactId")?.toString();
-  const rawCompanyId = formData.get("companyId")?.toString();
-
-  const parsed = activitySchema.parse({
-    type: formData.get("type"),
-    notes: formData.get("notes"),
-    dealId: rawDealId ? Number(rawDealId) : undefined,
-    contactId: rawContactId ? Number(rawContactId) : undefined,
-    companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
-    occurredOn: formData.get("occurredOn"),
-    returnPath: formData.get("returnPath"),
-  });
-
+    return {
+      type: formData.get("type"),
+      notes: formData.get("notes"),
+      dealId: rawDealId ? Number(rawDealId) : undefined,
+      contactId: rawContactId ? Number(rawContactId) : undefined,
+      companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+      occurredOn: formData.get("occurredOn"),
+      returnPath: formData.get("returnPath"),
+    };
+  },
+  handler: async ({ input: parsed, db, session }) => {
   await db.insert(activities).values({
     type: parsed.type,
     notes: parsed.notes,
@@ -720,26 +607,21 @@ export async function logActivity(formData: FormData) {
     revalidatePath(parsed.returnPath);
   }
   await setFlashToast("Activity logged");
-}
+  },
+});
 
 const enrichSchema = z.object({
   companyId: z.coerce.number().int().positive(),
   returnPath: z.string().optional(),
 });
 
-export async function enrichCompanyFromWebsite(formData: FormData) {
-  const session = await requireUser();
-
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const parsed = enrichSchema.parse({
+export const enrichCompanyFromWebsite = defineAction({
+  schema: enrichSchema,
+  input: (formData) => ({
     companyId: formData.get("companyId"),
     returnPath: formData.get("returnPath"),
-  });
-
+  }),
+  handler: async ({ input: parsed, db, session }) => {
   const company = await db.query.companies.findFirst({
     where: eq(companies.id, parsed.companyId),
   });
@@ -837,7 +719,8 @@ export async function enrichCompanyFromWebsite(formData: FormData) {
   await setFlashToast(
     `Enriched from website — ${result.emails.length} email(s), ${result.phones.length} phone(s) found`,
   );
-}
+  },
+});
 
 // --- Sourcing suggestion queue (nearby-business leads) ---
 
@@ -858,18 +741,10 @@ type NewCompanySuggestionPayload = {
 // Promote a sourced "nearby business" suggestion into a real new_lead account,
 // and auto-link it to the customer it was found near (so the warm-path graph
 // immediately knows the new lead sits in a proven plaza).
-export async function approveSuggestion(formData: FormData) {
-  await requireUser();
-
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const { suggestionId } = suggestionActionSchema.parse({
-    suggestionId: formData.get("suggestionId"),
-  });
-
+export const approveSuggestion = defineAction({
+  schema: suggestionActionSchema,
+  input: (formData) => ({ suggestionId: formData.get("suggestionId") }),
+  handler: async ({ input: { suggestionId }, db }) => {
   const suggestion = await db.query.suggestions.findFirst({
     where: eq(suggestions.id, suggestionId),
   });
@@ -943,7 +818,8 @@ export async function approveSuggestion(formData: FormData) {
   revalidatePath("/accounts");
   revalidatePath("/");
   await setFlashToast(`Added ${name} as a new lead`);
-}
+  },
+});
 
 // --- Live sourcing: "Find more businesses nearby" from the map ---
 
@@ -960,16 +836,10 @@ const MIN_NEW_TARGET = 6;
 const MAX_NEW_PER_SCAN = 20;
 const normName = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
 
-export async function scanCustomerForReferrals(formData: FormData) {
-  await requireUser();
-
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const { companyId } = scanSchema.parse({ companyId: formData.get("companyId") });
-
+export const scanCustomerForReferrals = defineAction({
+  schema: scanSchema,
+  input: (formData) => ({ companyId: formData.get("companyId") }),
+  handler: async ({ input: { companyId }, db }) => {
   const company = await db.query.companies.findFirst({ where: eq(companies.id, companyId) });
   if (!company) {
     throw new Error("Account not found.");
@@ -1065,20 +935,13 @@ export async function scanCustomerForReferrals(formData: FormData) {
         ? `Every business OpenStreetMap maps near ${company.name} is already in your CRM`
         : `OpenStreetMap has no businesses mapped near ${company.name} yet`;
   await setFlashToast(message);
-}
+  },
+});
 
-export async function dismissSuggestion(formData: FormData) {
-  await requireUser();
-
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const { suggestionId } = suggestionActionSchema.parse({
-    suggestionId: formData.get("suggestionId"),
-  });
-
+export const dismissSuggestion = defineAction({
+  schema: suggestionActionSchema,
+  input: (formData) => ({ suggestionId: formData.get("suggestionId") }),
+  handler: async ({ input: { suggestionId }, db }) => {
   await db
     .update(suggestions)
     .set({ status: "rejected", resolvedAt: new Date() })
@@ -1087,17 +950,12 @@ export async function dismissSuggestion(formData: FormData) {
   revalidatePath("/inbox");
   revalidatePath("/map");
   await setFlashToast("Suggestion dismissed");
-}
+  },
+});
 
-export async function createRelationship(formData: FormData) {
-  await requireUser();
-
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const parsed = relationshipSchema.parse({
+export const createRelationship = defineAction({
+  schema: relationshipSchema,
+  input: (formData) => ({
     fromType: formData.get("fromType"),
     fromId: formData.get("fromId"),
     toType: formData.get("toType"),
@@ -1106,8 +964,8 @@ export async function createRelationship(formData: FormData) {
     strength: formData.get("strength") ?? undefined,
     evidence: formData.get("evidence"),
     returnPath: formData.get("returnPath"),
-  });
-
+  }),
+  handler: async ({ input: parsed, db }) => {
   if (parsed.fromType === parsed.toType && parsed.fromId === parsed.toId) {
     throw new Error("An entity cannot have a relationship to itself.");
   }
@@ -1143,28 +1001,24 @@ export async function createRelationship(formData: FormData) {
     revalidatePath(parsed.returnPath);
   }
   await setFlashToast("Relationship saved");
-}
+  },
+});
 
-export async function deleteRelationship(formData: FormData) {
-  await requireUser();
-
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const parsed = relationshipDeleteSchema.parse({
+export const deleteRelationship = defineAction({
+  schema: relationshipDeleteSchema,
+  input: (formData) => ({
     relationshipId: formData.get("relationshipId"),
     returnPath: formData.get("returnPath"),
-  });
-
+  }),
+  handler: async ({ input: parsed, db }) => {
   await db.delete(relationships).where(eq(relationships.id, parsed.relationshipId));
 
   if (parsed.returnPath?.startsWith("/")) {
     revalidatePath(parsed.returnPath);
   }
   await setFlashToast("Relationship removed");
-}
+  },
+});
 
 // ── Payments ─────────────────────────────────────────────────────────────────
 
@@ -1180,21 +1034,18 @@ const paymentAssignSchema = z.object({
  * assigning one payment from a payer claims the rest of that payer's
  * unattributed payments too.
  */
-export async function assignPaymentAccount(formData: FormData) {
-  await requireUser();
+export const assignPaymentAccount = defineAction({
+  schema: paymentAssignSchema,
+  input: (formData) => {
+    const rawCompanyId = formData.get("companyId")?.toString();
 
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const rawCompanyId = formData.get("companyId")?.toString();
-  const parsed = paymentAssignSchema.parse({
-    paymentId: formData.get("paymentId"),
-    companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
-    returnPath: formData.get("returnPath")?.toString() ?? undefined,
-  });
-
+    return {
+      paymentId: formData.get("paymentId"),
+      companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+      returnPath: formData.get("returnPath")?.toString() ?? undefined,
+    };
+  },
+  handler: async ({ input: parsed, db }) => {
   const existing = await db.query.payments.findFirst({
     columns: { id: true, billingEmail: true, companyId: true, stripeCustomerId: true },
     where: eq(payments.id, parsed.paymentId),
@@ -1253,7 +1104,8 @@ export async function assignPaymentAccount(formData: FormData) {
         : "Payment assigned"
       : "Payment unassigned",
   );
-}
+  },
+});
 
 // ── Proposals ────────────────────────────────────────────────────────────────
 
@@ -1274,45 +1126,6 @@ const proposalCreateSchema = z.object({
   contentMd: z.string().optional(),
   returnPath: z.string().optional(),
 });
-
-// Best-effort revenue extraction from a proposal's pricing markdown:
-// MRR from the MONTHLY section, one-time from the ONE-TIME section
-// (preferring an explicit "Total ..." row over summing line items).
-function parsePricingTotals(contentMd: string) {
-  const rows = parsePricingTable(parseSections(contentMd)["Pricing"] ?? "");
-  const parseCost = (cost: string) => {
-    const m = cost.replace(/,/g, "").match(/\$?\s*(\d+(?:\.\d+)?)/);
-    return m ? Math.round(Number(m[1]) * 100) : 0;
-  };
-
-  let section: "one_time" | "monthly" | null = null;
-  let oneTimeSum = 0;
-  let oneTimeTotal = 0;
-  let monthlySum = 0;
-  let monthlyTotal = 0;
-
-  for (const row of rows) {
-    if (!row.description && !row.cost) {
-      const label = row.item.toLowerCase();
-      section = label.includes("month") ? "monthly" : label.includes("one") ? "one_time" : section;
-      continue;
-    }
-    const isTotal = row.item.toLowerCase().startsWith("total");
-    const cents = parseCost(row.cost);
-    if (section === "monthly" || /\/\s*mo/i.test(row.cost)) {
-      if (isTotal) monthlyTotal = cents;
-      else monthlySum += cents;
-    } else if (section === "one_time" || section === null) {
-      if (isTotal) oneTimeTotal = cents;
-      else oneTimeSum += cents;
-    }
-  }
-
-  return {
-    mrrCents: monthlyTotal || monthlySum,
-    oneTimeCents: oneTimeTotal || oneTimeSum,
-  };
-}
 
 const proposalUpdateSchema = z.object({
   proposalId: z.coerce.number().int().positive(),
@@ -1336,7 +1149,7 @@ function slugifyProposal(value: string) {
     .replace(/^_+|_+$/g, "");
 }
 
-async function uniqueProposalSlug(db: NonNullable<ReturnType<typeof getDb>>, base: string) {
+async function uniqueProposalSlug(db: Db, base: string) {
   const root = slugifyProposal(base) || "proposal";
   let candidate = root;
   for (let i = 2; ; i++) {
@@ -1348,37 +1161,33 @@ async function uniqueProposalSlug(db: NonNullable<ReturnType<typeof getDb>>, bas
   }
 }
 
-export async function createProposal(formData: FormData) {
-  await requireUser();
+export const createProposal = defineAction({
+  schema: proposalCreateSchema,
+  input: (formData) => {
+    const rawDealId = formData.get("dealId")?.toString() ?? "";
+    const rawCompanyId = formData.get("companyId")?.toString();
+    const rawContactId = formData.get("contactId")?.toString();
+    // formData.get() returns null for fields not present in the form; zod
+    // .optional() only accepts undefined.
+    const opt = (name: string) => formData.get(name)?.toString() ?? undefined;
 
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const rawDealId = formData.get("dealId")?.toString() ?? "";
-  const rawCompanyId = formData.get("companyId")?.toString();
-  const rawContactId = formData.get("contactId")?.toString();
-  // formData.get() returns null for fields not present in the form; zod
-  // .optional() only accepts undefined.
-  const opt = (name: string) => formData.get(name)?.toString() ?? undefined;
-
-  const parsed = proposalCreateSchema.parse({
-    companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
-    newAccountName: opt("newAccountName"),
-    dealId: rawDealId && rawDealId !== "auto" ? Number(rawDealId) : undefined,
-    autoCreateDeal: rawDealId === "auto",
-    contactId: rawContactId ? Number(rawContactId) : undefined,
-    title: formData.get("title"),
-    clientName: opt("clientName"),
-    business: opt("business"),
-    proposalDate: opt("proposalDate"),
-    slug: opt("slug"),
-    pin: opt("pin"),
-    contentMd: opt("contentMd"),
-    returnPath: opt("returnPath"),
-  });
-
+    return {
+      companyId: rawCompanyId ? Number(rawCompanyId) : undefined,
+      newAccountName: opt("newAccountName"),
+      dealId: rawDealId && rawDealId !== "auto" ? Number(rawDealId) : undefined,
+      autoCreateDeal: rawDealId === "auto",
+      contactId: rawContactId ? Number(rawContactId) : undefined,
+      title: formData.get("title"),
+      clientName: opt("clientName"),
+      business: opt("business"),
+      proposalDate: opt("proposalDate"),
+      slug: opt("slug"),
+      pin: opt("pin"),
+      contentMd: opt("contentMd"),
+      returnPath: opt("returnPath"),
+    };
+  },
+  handler: async ({ input: parsed, db }) => {
   // Resolve the account: an explicit new-account name wins (created on the
   // spot, matched case-insensitively first so we never duplicate), otherwise
   // the selected existing account.
@@ -1471,7 +1280,8 @@ export async function createProposal(formData: FormData) {
   }
   const extras = [createdAccount ? "account" : null, createdDeal ? "opportunity" : null].filter(Boolean);
   await setFlashToast(extras.length ? `Proposal created (+ new ${extras.join(" & ")})` : "Proposal created");
-}
+  },
+});
 
 const proposalDealUpdateSchema = z.object({
   proposalId: z.coerce.number().int().positive(),
@@ -1481,21 +1291,18 @@ const proposalDealUpdateSchema = z.object({
 
 // Tie (or untie) a Statement of Work to an opportunity. Used by the dropdown
 // in the Agreements panel on account/opportunity pages.
-export async function updateProposalDeal(formData: FormData) {
-  await requireUser();
+export const updateProposalDeal = defineAction({
+  schema: proposalDealUpdateSchema,
+  input: (formData) => {
+    const rawDealId = formData.get("dealId")?.toString();
 
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const rawDealId = formData.get("dealId")?.toString();
-  const parsed = proposalDealUpdateSchema.parse({
-    proposalId: formData.get("proposalId"),
-    dealId: rawDealId ? Number(rawDealId) : undefined,
-    returnPath: formData.get("returnPath")?.toString() ?? undefined,
-  });
-
+    return {
+      proposalId: formData.get("proposalId"),
+      dealId: rawDealId ? Number(rawDealId) : undefined,
+      returnPath: formData.get("returnPath")?.toString() ?? undefined,
+    };
+  },
+  handler: async ({ input: parsed, db }) => {
   const existing = await db.query.proposals.findFirst({
     columns: { id: true, companyId: true, dealId: true },
     where: eq(proposals.id, parsed.proposalId),
@@ -1533,7 +1340,8 @@ export async function updateProposalDeal(formData: FormData) {
     revalidatePath(parsed.returnPath);
   }
   await setFlashToast(parsed.dealId ? "Proposal tied to opportunity" : "Proposal untied from opportunity");
-}
+  },
+});
 
 const proposalPinUpdateSchema = z.object({
   proposalId: z.coerce.number().int().positive(),
@@ -1544,20 +1352,14 @@ const proposalPinUpdateSchema = z.object({
   returnPath: z.string().optional(),
 });
 
-export async function updateProposalPin(formData: FormData) {
-  await requireUser();
-
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const parsed = proposalPinUpdateSchema.parse({
+export const updateProposalPin = defineAction({
+  schema: proposalPinUpdateSchema,
+  input: (formData) => ({
     proposalId: formData.get("proposalId"),
     pin: formData.get("pin"),
     returnPath: formData.get("returnPath")?.toString() ?? undefined,
-  });
-
+  }),
+  handler: async ({ input: parsed, db }) => {
   const existing = await db.query.proposals.findFirst({
     columns: { id: true, slug: true },
     where: eq(proposals.id, parsed.proposalId),
@@ -1578,34 +1380,31 @@ export async function updateProposalPin(formData: FormData) {
     revalidatePath(parsed.returnPath);
   }
   await setFlashToast("PIN updated");
-}
+  },
+});
 
-export async function updateProposal(formData: FormData) {
-  await requireUser();
+export const updateProposal = defineAction({
+  schema: proposalUpdateSchema,
+  input: (formData) => {
+    const rawDealId = formData.get("dealId")?.toString();
+    const rawContactId = formData.get("contactId")?.toString();
+    const opt = (name: string) => formData.get(name)?.toString() ?? undefined;
 
-  const db = getDb();
-  if (!db) {
-    throw new Error("DATABASE_URL is not set.");
-  }
-
-  const rawDealId = formData.get("dealId")?.toString();
-  const rawContactId = formData.get("contactId")?.toString();
-
-  const opt = (name: string) => formData.get(name)?.toString() ?? undefined;
-  const parsed = proposalUpdateSchema.parse({
-    proposalId: formData.get("proposalId"),
-    dealId: rawDealId ? Number(rawDealId) : undefined,
-    contactId: rawContactId ? Number(rawContactId) : undefined,
-    title: formData.get("title"),
-    clientName: opt("clientName"),
-    business: opt("business"),
-    proposalDate: opt("proposalDate"),
-    pin: formData.get("pin"),
-    status: formData.get("status"),
-    contentMd: opt("contentMd"),
-    returnPath: opt("returnPath"),
-  });
-
+    return {
+      proposalId: formData.get("proposalId"),
+      dealId: rawDealId ? Number(rawDealId) : undefined,
+      contactId: rawContactId ? Number(rawContactId) : undefined,
+      title: formData.get("title"),
+      clientName: opt("clientName"),
+      business: opt("business"),
+      proposalDate: opt("proposalDate"),
+      pin: formData.get("pin"),
+      status: formData.get("status"),
+      contentMd: opt("contentMd"),
+      returnPath: opt("returnPath"),
+    };
+  },
+  handler: async ({ input: parsed, db }) => {
   const existing = await db.query.proposals.findFirst({
     columns: { id: true, slug: true, business: true, proposalDate: true, contentMd: true, sentAt: true },
     where: eq(proposals.id, parsed.proposalId),
@@ -1658,4 +1457,5 @@ export async function updateProposal(formData: FormData) {
     revalidatePath(parsed.returnPath);
   }
   await setFlashToast("Proposal saved");
-}
+  },
+});

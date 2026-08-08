@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useAutoSaveInput } from "@/components/auto-save-hooks";
 
 export function AutoSaveActivityDateField({
   activityId,
@@ -13,8 +13,9 @@ export function AutoSaveActivityDateField({
   returnPath?: string;
   action: (formData: FormData) => void | Promise<void>;
 }) {
-  const formRef = useRef<HTMLFormElement>(null);
-  const lastSubmittedValueRef = useRef(defaultValue);
+  // Saves on change rather than blur — it's a date picker, so there is no
+  // meaningful "still typing" state to wait out.
+  const { formRef, submitValueIfChanged } = useAutoSaveInput(defaultValue);
 
   return (
     <form ref={formRef} action={action} className="mt-2 space-y-1">
@@ -25,16 +26,7 @@ export function AutoSaveActivityDateField({
         name="occurredOn"
         type="date"
         defaultValue={defaultValue}
-        onChange={(event) => {
-          const current = event.currentTarget.value;
-
-          if (current === lastSubmittedValueRef.current) {
-            return;
-          }
-
-          lastSubmittedValueRef.current = current;
-          formRef.current?.requestSubmit();
-        }}
+        onChange={(event) => submitValueIfChanged(event.currentTarget.value)}
         className="rounded-md border border-slate-300 px-2.5 py-1.5 text-xs text-slate-900"
       />
       <p className="text-[11px] text-slate-500">Defaults to today on new entries and auto-saves when changed.</p>

@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { desc, eq, isNotNull } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { updateProposalDeal, updateProposalPin } from "@/app/actions";
 import { AutoSaveProposalDealField } from "@/components/auto-save-proposal-deal-field";
 import { AutoSaveProposalPinField } from "@/components/auto-save-proposal-pin-field";
 import { getDb } from "@/lib/db";
+import { hasSignedPdfExpr } from "@/lib/proposal/has-signed-pdf";
 import { proposalStatusLabels, proposalStatusPillClasses } from "@/lib/proposal/status-ui";
 import { deals, proposals } from "@/lib/schema";
 
@@ -35,7 +36,7 @@ export async function ProposalsPanel({
       proposalDate: proposals.proposalDate,
       signerName: proposals.signerName,
       signedAt: proposals.signedAt,
-      hasSignedPdf: isNotNull(proposals.signedPdfBase64),
+      hasSignedPdf: hasSignedPdfExpr,
     })
     .from(proposals)
     .where(companyId ? eq(proposals.companyId, companyId) : eq(proposals.dealId, dealId!))
