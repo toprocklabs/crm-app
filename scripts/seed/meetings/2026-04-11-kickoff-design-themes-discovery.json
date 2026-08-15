@@ -1,0 +1,24 @@
+{
+  "slug": "2026-04-11-kickoff-design-themes-discovery",
+  "title": "Kickoff — Design Themes & Workflow Discovery",
+  "meetingDate": "2026-04-11",
+  "format": "On-site working session — mockup review + live process walkthrough",
+  "statusLabel": "Kickoff / discovery",
+  "tldr": "First working session. Top Rock walked the shop through five website design theme directions (adventure, trusted, dark/bold, clean, plus one more mockup) for the shop to pick from, then spent most of the meeting on a deep discovery of how the business actually runs. The core pain: every online course signup is a slow, error-prone, manual relay between RentItBiz (where customers book), Lightspeed (the source of truth for inventory, revenue, and e-learning codes), Google Calendar (class roster), and Gmail templates (onboarding email with the e-learning code + waivers). Agreed approach: chunk the problems — take over the class/scheduling flow first and replace RentItBiz for courses, keep Lightspeed as the system of record, and automate the customer-create / e-learning-code-assign / onboarding-email steps via APIs. Rentals are deferred but the long-term goal is to retire RentItBiz entirely. The owner separately asked for a new Pacific Scuba Repair website (national advertising; protect their strong SEO/AI discoverability) and flagged that the old site's domain access and a lost contact form are blockers. Rough pricing floated: ~$500 mock website (250 deposit), ~$100–150/mo to replace RentItBiz, add-ons quoted separately in a forthcoming statement of work.",
+  "primaryAccount": "Scuba Dive Utah",
+  "alsoAccounts": ["Pacific Scuba Repair"],
+  "actionItems": [
+    { "owner": "Client", "action": "Review the theme mockups and pick a design direction.", "status": "done" },
+    { "owner": "Client", "action": "Provide the Lightspeed rep contact + API access.", "status": "done" },
+    { "owner": "Client", "action": "Send samples of each class onboarding email / Gmail template.", "status": "done" },
+    { "owner": "Client", "action": "Get the Pacific domain login / access (and old site files if possible) from the California contact.", "status": "todo", "urgent": true },
+    { "owner": "Client", "action": "Be available to confirm sandbox changes via text as Top Rock prototypes in Lightspeed.", "status": "done" },
+    { "owner": "Dev", "action": "Send the theme mockups to the shop.", "status": "done" },
+    { "owner": "Dev", "action": "Email the owner his homework list.", "status": "done" },
+    { "owner": "Dev", "action": "Draft the statement of work (deliverables + monthly pricing for add-ons).", "status": "done" },
+    { "owner": "Dev", "action": "Investigate the Lightspeed API and prototype create-customer / assign-course / pull-and-assign-code in a labeled sandbox.", "status": "done" },
+    { "owner": "Dev", "action": "Create the Test customer, Test e-learning code, and fake course in Lightspeed for safe testing.", "status": "done" },
+    { "owner": "Dev", "action": "Design the checkout-time waiver/medical signing + automated onboarding email (explore SMS).", "status": "done" },
+    { "owner": "Dev", "action": "Plan the new Pacific Scuba Repair site (SEO-safe, AI optimization, DNS repoint once access lands).", "status": "todo" }
+  ]
+}

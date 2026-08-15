@@ -1,0 +1,25 @@
+{
+  "slug": "2026-05-21-booking-flow-demo-lightspeed",
+  "title": "Booking Flow Demo, Digital Paperwork & Lightspeed Plan",
+  "meetingDate": "2026-05-21",
+  "format": "Working session — live demo + planning",
+  "statusLabel": "Pre-launch; building the course-booking flow",
+  "tldr": "Top Rock demoed the new custom course-booking flow built natively into the shop's own site (merged from Alex's two favorite design directions — lighter, more vibrant \"water\" feel). The end-to-end journey works: pick a course, pick a dated cohort with live seat availability, add multiple divers with age validation, then complete the shop's liability waiver, medical questionnaire and digital signatures inline before a (currently mocked) Stripe payment step. The booking surfaces in a new admin panel the shop can use to manage classes, cohorts, trips and waivers. Plan for Lightspeed: keep it as the system of record — Top Rock's API connection now reads customers, and they will automate the three things the shop does by hand (create/de-dupe the customer, mark the course SKU purchased, and pull + assign an e-learning code from inventory). The biggest immediate request from the shop: make the medical questionnaire conditional (skip the sign-off section if all answers are \"no\") and flag answers that need a physician signature. Trips and their separate bank account are deferred. Next step is to ship the booking flow, hand over the admin panel, and have the team test it hard.",
+  "primaryAccount": "Scuba Dive Utah",
+  "alsoAccounts": [],
+  "actionItems": [
+    { "owner": "Client", "action": "Have everyone (incl. Christy & retail staff) log into the admin panel, book a class, and try to break it; report bugs and any unliked experience.", "status": "done" },
+    { "owner": "Client", "action": "Forward a sample SDI e-learning code email so Top Rock can make pasting codes in easy.", "status": "todo" },
+    { "owner": "Client", "action": "Confirm which documents to digitize vs. keep printable, and have someone review the reformatted forms for missing wording.", "status": "todo" },
+    { "owner": "Client", "action": "Confirm the medical questions that trigger a physician sign-off, and whether the physician PDF is already on the site.", "status": "todo" },
+    { "owner": "Client", "action": "Start an email thread (cc both Austin & partner) and append website issues there — e.g. the contact-form problem — for a clean paper trail.", "status": "done" },
+    { "owner": "Dev", "action": "Email the shop the admin login + how-to and a written homework list.", "status": "done" },
+    { "owner": "Dev", "action": "Make the medical questionnaire conditional + add physician-sign-off pop-up and printable PDF.", "status": "done" },
+    { "owner": "Dev", "action": "Add a month filter/toggle to the cohort list (and better filtering in admin).", "status": "todo" },
+    { "owner": "Dev", "action": "Drop in the shop's real cancellation policy text.", "status": "todo" },
+    { "owner": "Dev", "action": "Build Lightspeed automation: create/de-dupe customer, mark course SKU, pull & assign e-learning code + inventory update, with error handling.", "status": "done" },
+    { "owner": "Dev", "action": "Create TEST customer / TEST e-learning code / fake course in Lightspeed to test against safely.", "status": "done" },
+    { "owner": "Dev", "action": "Rebuild the contact form (Scuba Dive + Pacific) with reliable email delivery.", "status": "todo" },
+    { "owner": "Dev", "action": "Wire up Stripe (currently mocked) once the booking flow is solid; investigate two-bank-account routing for trips later.", "status": "todo" }
+  ]
+}

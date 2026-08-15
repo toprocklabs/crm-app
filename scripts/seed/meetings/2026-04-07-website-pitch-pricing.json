@@ -1,0 +1,16 @@
+{
+  "slug": "2026-04-07-website-pitch-pricing",
+  "title": "Website Pitch & Pricing",
+  "meetingDate": "2026-04-07",
+  "format": "Call — website pitch, pricing & design direction",
+  "statusLabel": "Kickoff — website greenlit",
+  "tldr": "First working call with Flint about taking over the Coatary website. Austin is an investor in Coatary, so the framing is \"I'm not trying to charge anything crazy — mostly cover our cost.\" Plan: drop WordPress + Elementor Pro, keep only the Bluehost domain, and replace it with a custom-coded site (\"a boutique web-dev company for the price of a Wix/Squarespace\"). Top Rock showed example builds (a character-booking site, the Temple View football-recruiting admin site, the Scuba Dive in-housing project) to illustrate the \"build software to fit you, then skin it to the next customer\" thesis. Pricing landed: ~$300 implementation + ~$10/mo, optionally with a self-serve admin panel (or just text Austin for edits). Flint also floated productizing the model into its own entity and a go-to-market partner chasing ~$100K/yr contracts, plus a future data-automation / custom-CRM idea (Flint to send a Loom). Design direction: drop the yellow → black & white with meaningful accent colors that pop, industrial + \"Apple touch,\" showroom feel. Next: Austin mocks up five design versions.",
+  "primaryAccount": "Coatary",
+  "alsoAccounts": [],
+  "actionItems": [
+    { "owner": "Dev", "action": "Mock up 5 website design versions (industrial + Apple, showroom feel).", "status": "done" },
+    { "owner": "Client", "action": "Send a Loom video of the existing tool/process for the automation idea.", "status": "todo" },
+    { "owner": "Client", "action": "Pick a design version from the mockups.", "status": "done" },
+    { "owner": "Dev", "action": "Build the site; drop WP/Elementor; point the Bluehost domain.", "status": "done" }
+  ]
+}

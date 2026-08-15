@@ -1,0 +1,18 @@
+{
+  "slug": "2026-07-01-corporate-wellness-website-discovery",
+  "title": "Corporate Wellness & Website Discovery",
+  "meetingDate": "2026-07-01",
+  "format": "Discovery call — vision & website scoping",
+  "statusLabel": "Kickoff / discovery",
+  "tldr": "First discovery call with Madison, a Utah-based massage therapist (13 years) and breathwork facilitator connected to Top Rock through her dad, Eddie, who knows Justin. Madison is pivoting from one-on-one massage to on-site corporate wellness — going into companies (targeting Silicon Slopes–sized employers) to deliver massage, breathwork, guided workouts/stretching, and health & wellness coaching, plus a layer of organizational psychology to drive a real ROI and culture change. She's burnt out on fishing for individual clients and wants to work with multiple people \"at the source\" of their tension. She needs a website that centers the corporate-wellness offering (while still surfacing massage + breathwork) — welcoming but \"professional and sleek.\" Her business is Garden of Eden Wellness (an LLC renamed in January 2026 from \"Garden of Eden Massage,\" a play on her last name), she loves jewel-tone green, and she builds her own logos/brand kits on Canva. Timeline is ~6 months — she wants the foundation in place by January 2027 (when her master's begins) so she can spend her time selling contracts. Top Rock explained its AI fast-iteration model: they'll transcribe this call, build a first mockup for free, then quote. Next step: Justin reaches back around Monday (July 6) with an initial mockup; Madison sends inspiration, photos, and logos to Austin's email.",
+  "primaryAccount": "Garden of Eden",
+  "alsoAccounts": [],
+  "actionItems": [
+    { "owner": "Client", "action": "Look at inspiration brands / colors / feel and send references (text or email).", "status": "todo" },
+    { "owner": "Client", "action": "Email photos, logos, and any resources to Austin's email to personalize the mockup.", "status": "todo" },
+    { "owner": "Client", "action": "Check which scheduling program her breathwork instructor uses for the consult flow.", "status": "todo" },
+    { "owner": "Dev", "action": "Transcribe the call and build the first mockup direction(s) — jewel-tone green, corporate-wellness focus, with a consult-booking flow.", "status": "todo" },
+    { "owner": "Justin", "action": "Reach back around Monday, July 6 with something to review.", "status": "done" },
+    { "owner": "Dev", "action": "Austin to text Madison his email so she can send resources.", "status": "done" }
+  ]
+}

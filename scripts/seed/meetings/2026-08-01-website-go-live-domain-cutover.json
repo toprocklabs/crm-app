@@ -1,0 +1,28 @@
+{
+  "slug": "2026-08-01-website-go-live-domain-cutover",
+  "title": "Website Goes Live — Domain Cutover & Scheduling Fixes",
+  "meetingDate": "2026-08-01",
+  "format": "In-person working session — live domain cutover + admin walkthrough",
+  "statusLabel": "Marketing site LIVE; scheduling on staging",
+  "tldr": "Big day: the Scuba Dive marketing site went live. The shop's real site had been down (malware on the old HostGator site), so the team pointed the scubadiveriverton.com domain at the new Vercel build during the meeting — keeping the domain registered at HostGator but cancelling the rest of the HostGator add-ons. For now the site's \"Courses\" still links to RentItBiz so nothing breaks while scheduling is finished. Scheduling now lives in a separate staging environment — Kate does her editing there until it's ready to go live. A batch of admin bugs Kate hit were fixed or logged (session times, classroom/pool location reverting, duplicated descriptions, and past/canceled cohorts still showing — which will be auto-hidden). Decisions: migrate existing RentItBiz registrations silently on the back end at go-live (no re-registration emails), add a Service tab that keeps local service under the Scuba Dive brand while Pacific handles out-of-state, route all form submissions into the admin (the old site's forms were never received), and defer e-learning codes until scheduling + payments + signing are solid. Pacific's Google account is still locked (Google flagged the location change as a hack) — the fix is a 15-min call with Preston + Jeff. Justin will send a Google Doc laying out every URL, the admin, and the change list.",
+  "primaryAccount": "Scuba Dive Utah",
+  "alsoAccounts": ["Pacific Scuba Repair"],
+  "actionItems": [
+    { "owner": "Kate", "action": "Delete old bookmarked URLs; use the two new ones — live (real domain) and the staging URL Austin emailed — and do scheduling edits on staging.", "status": "todo" },
+    { "owner": "Kate", "action": "Spot-check the live site for anything broken now that it's public; report issues.", "status": "todo" },
+    { "owner": "Kate", "action": "Help schedule the 15-min Pacific call with Preston + Jeff (+ team) to unlock the Google account.", "status": "todo", "urgent": true },
+    { "owner": "Kate", "action": "Provide RentItBiz login access for the go-live migration of active classes.", "status": "todo" },
+    { "owner": "Kate", "action": "Continue loading/correcting classes & cohorts on staging; flag anything off.", "status": "todo" },
+    { "owner": "Justin", "action": "Send the Google Doc outlining every URL (live vs. staging), the admin, the PIN, and the running scheduling change-list.", "status": "todo" },
+    { "owner": "Dev", "action": "Confirm DNS fully propagates (bare + www, desktop); fix the 308 redirect loop / SSL if it persists.", "status": "todo" },
+    { "owner": "Dev", "action": "Fix the duplicated course description (short top / full bottom).", "status": "todo" },
+    { "owner": "Dev", "action": "Auto-hide past-dated cohorts; default the site to show only open/active; keep canceled/past visible in admin.", "status": "todo" },
+    { "owner": "Dev", "action": "Rework the reserve flow — reserve on the cohort → straight to headcount; remove the extra screen.", "status": "todo" },
+    { "owner": "Dev", "action": "Add a manual \"add to cohort\" function (no notifications) + the back-end registration migration at go-live.", "status": "todo" },
+    { "owner": "Dev", "action": "Add the \"cert card later\" checkbox on certification signups.", "status": "todo" },
+    { "owner": "Dev", "action": "Build the Service tab (pull old content from HostGator) and route the service/contact form into the admin with export.", "status": "todo" },
+    { "owner": "Dev", "action": "Add unpublish / back-date for trips; remove past trips (Fiji, Indonesia) now.", "status": "todo" },
+    { "owner": "Team", "action": "Pull together the Pacific call; pursue Squarespace takeover + find who's paying for the site.", "status": "todo" },
+    { "owner": "Team", "action": "Once stable, give Kate the HostGator cancel list to trim add-ons.", "status": "deferred" }
+  ]
+}

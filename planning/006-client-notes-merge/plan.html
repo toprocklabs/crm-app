@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<!--
+  planning/006-client-notes-merge/plan.html — the HOW.
+  Fold toprock_client_notes into the CRM and rebuild the account page around
+  money + meetings. Keep section order stable for clean diffs.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan · Client notes merge</title>
+<style>
+  :root{--bg:#fbfaf8;--ink:#1c1b1a;--muted:#6b6660;--line:#e6e2db;--accent:#3a5a78;--soft:#eef2f6;--codebg:#f3f1ec;
+    --proposed:#9a7b2f;--proposed-bg:#f6efdd;--accepted:#3f6b4a;--accepted-bg:#e9f1ea;
+    --t0:#3f6b4a;--t0-bg:#e9f1ea;--t1:#3a5a78;--t1-bg:#e8eef4;--t2:#9a7b2f;--t2-bg:#f6efdd;--t3:#9a4b3f;--t3-bg:#f5e8e5;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  main{max-width:820px;margin:0 auto;padding:44px 28px 80px}
+  .top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+  .top a{color:var(--accent);text-decoration:none}
+  .status{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;padding:3px 11px;border-radius:20px;text-transform:capitalize}
+  .s-proposed{color:var(--proposed);background:var(--proposed-bg)}
+  .kicker{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-top:18px}
+  h1{font-size:30px;margin:6px 0 6px;letter-spacing:-.01em}
+  .lede{color:var(--muted);font-size:17px;margin:0 0 8px}
+  h2{font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);
+    border-top:1px solid var(--line);padding-top:22px;margin:32px 0 10px}
+  h3{font-size:15.5px;margin:18px 0 6px}
+  p{margin:8px 0}ul,ol{margin:8px 0;padding-left:22px}li{margin:5px 0}
+  code{background:var(--codebg);padding:1.5px 5px;border-radius:4px;font-size:13.5px;font-family:"SF Mono",Consolas,Menlo,monospace}
+  pre{background:var(--codebg);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:13px;line-height:1.5}
+  pre code{background:none;padding:0}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+  th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;color:var(--muted);background:var(--soft)}
+  .callout{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:12px 16px;margin:14px 0}
+  .callout.warn{border-left-color:var(--t3)}
+  .callout.good{border-left-color:var(--t0)}
+  .phase{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:14px 0}
+  .phase h3{margin:0 0 6px;color:var(--accent)}
+  .phase .tag{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .tier{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:20px;text-transform:uppercase;white-space:nowrap}
+  .tier-0{color:var(--t0);background:var(--t0-bg)}
+  .tier-1{color:var(--t1);background:var(--t1-bg)}
+  .tier-2{color:var(--t2);background:var(--t2-bg)}
+  .tier-3{color:var(--t3);background:var(--t3-bg)}
+  .ev{font-size:13px;color:var(--muted);margin:6px 0 0}
+  .ev code{font-size:12.5px}
+  .mono{font-family:"SF Mono",Consolas,Menlo,monospace;font-size:12.5px}
+  .toc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:18px 0}
+  .toc ol{margin:6px 0;padding-left:20px;font-size:14px;columns:2;column-gap:28px}
+  .toc a{color:var(--accent);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  figure{margin:18px 0}
+  figcaption{font-size:12.5px;color:var(--muted);margin-top:8px;text-align:center}
+  /* Side-by-side page-structure comparison */
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}
+  .col{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}
+  .col h4{margin:0 0 10px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .blk{border:1px solid var(--line);border-radius:7px;padding:8px 10px;margin:6px 0;font-size:13px;line-height:1.35}
+  .blk .sub{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+  .b-hero{background:#f8fafc}
+  .b-money{background:#e9f1ea;border-color:#c6dccc}
+  .b-notes{background:#e8eef4;border-color:#c4d4e2}
+  .b-mute{background:#faf9f7;color:var(--muted)}
+  .b-cut{background:#f5e8e5;border-color:#e3cac5;text-decoration:line-through;color:#8a5a52}
+  .b-fold{background:#efece8;color:var(--muted);border-style:dashed}
+  .rank{display:inline-block;min-width:17px;font-weight:700;color:var(--muted);font-size:11.5px}
+  /* Meeting-card mock in the app's real palette */
+  .mock{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:14px 0}
+  .mock .card{border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin:8px 0;background:#fff}
+  .mock .date{font-family:"SF Mono",Consolas,Menlo,monospace;font-size:12px;color:#0e7490;font-weight:700}
+  .mock .ttl{font-weight:600;font-size:14.5px;margin-top:3px}
+  .mock .sum{font-size:13px;color:#475569;margin-top:4px}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;white-space:nowrap}
+  .p-dev{color:#c2410c;background:#fbeae0}
+  .p-client{color:#0e7490;background:#cffafe}
+  .p-todo{color:#9a7b2f;background:#f6efdd}
+  .p-urgent{color:#b3261e;background:#fce8e6}
+  .p-note{color:#6b6660;background:#eeeced}
+  .num{font-size:26px;font-weight:700;letter-spacing:-.02em}
+  .statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .stat .lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .stat .sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+  footer{margin-top:36px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+  @media (max-width:640px){main{padding:28px 16px 60px}.toc ol{columns:1}.compare{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a href="../index.html">← Planning index</a>
+    <span class="status s-accepted">Accepted</span>
+  </div>
+
+  <div class="kicker">Plan · Feature 006</div>
+  <h1>Client notes into the CRM</h1>
+  <p class="lede">Fold <code>toprock_client_notes</code> into this app as first-class meeting records, and rebuild the account page around the two things that actually matter for a two-person agency: <strong>what this client pays us</strong>, and <strong>everything we've said to each other</strong>. Contacts and opportunities become supporting detail, not the main event.</p>
+
+  <div class="toc">
+    <strong style="font-size:13px">Contents</strong>
+    <ol>
+      <li><a href="#status">Implementation status</a></li>
+      <li><a href="#why">Why this, now</a></li>
+      <li><a href="#today">What exists today, measured</a></li>
+      <li><a href="#mapping">The mapping problem</a></li>
+      <li><a href="#decisions">Decisions</a></li>
+      <li><a href="#schema">Schema</a></li>
+      <li><a href="#page">The account page, rebuilt</a></li>
+      <li><a href="#import">Importing the 14 notes</a></li>
+      <li><a href="#authoring">Authoring notes from here on</a></li>
+      <li><a href="#phases">Phases</a></li>
+      <li><a href="#risks">Risks</a></li>
+      <li><a href="#scope">Out of scope</a></li>
+      <li><a href="#verify">Verification</a></li>
+    </ol>
+  </div>
+
+  <h2 id="status">Implementation status</h2>
+  <p><strong>All six phases shipped on 2026-08-15</strong>, in one pass. The gate in Phase 2 — convert the hardest note and check it before doing thirteen more — passed, so the markdown decision held and the rest followed.</p>
+  <table>
+    <thead><tr><th>Phase</th><th>Status</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>1 · Schema</td><td>Done</td><td>Migration <code>0009</code>: 3 tables + 1 enum, additive, zero drops.</td></tr>
+      <tr><td>2 · Convert &amp; import</td><td>Done</td><td>14 notes → <strong>146 action items</strong>, 150 KB of markdown. MHM Law Firm created (#26).</td></tr>
+      <tr><td>3 · Account page rebuild</td><td>Done</td><td>1,083 → <strong>674 lines</strong>. Money is second, meetings third, everything else collapsed.</td></tr>
+      <tr><td>4 · Meeting detail + authoring</td><td>Done</td><td><code>/meetings/[slug]</code> with inline editing; <code>/meetings</code> index + nav entry (see deviation 3).</td></tr>
+      <tr><td>5 · Cross-account roll-up</td><td>Done</td><td><code>OpenActionItemsRollup</code> on the dashboard and <code>/tasks</code>.</td></tr>
+      <tr><td>6 · Freeze the old repo</td><td>Done <em>(partial)</em></td><td>Banners in <code>index.html</code>, <code>README.md</code>, <code>CLAUDE.md</code>. <strong>Archiving the GitHub repo and retiring the Vercel deploy are still manual.</strong></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout good">
+    <p style="margin:0 0 8px"><strong>The fidelity gate passed, measured.</strong> Every converted note was diffed against its original by distinct-content-word coverage: <strong>96.7%–99.4%</strong> across all 14. Every single miss was inspected and every one is chrome that became structure — table headers (<em>Action</em>, <em>Status</em>, <em>Owner</em>), the <em>Format:</em> / <em>Date:</em> meta labels, breadcrumb text, pill labels that became statuses (<em>Soon</em> → <code>deferred</code>), or HTML entities the checker didn't decode (<code>ldquo</code>, <code>rarr</code>). No prose was lost.</p>
+    <p style="margin:0">What markdown gained: the 146 action items that were prose inside <code>&lt;table&gt;</code> tags are now rows, which is what makes the cross-client roll-up possible at all.</p>
+  </div>
+
+  <div class="callout warn">
+    <p style="margin:0 0 8px"><strong>Deviation 1 — 4 shared-meeting rows, not 7.</strong> The plan assumed all seven scuba notes cover both accounts. Reading them, only four actually name Pacific Scuba Repair in the client line (Apr 11, Jun 17, Jul 15, Aug 1); the other three say only "The Scuba Dive (Riverton)". Linking all seven would have asserted something the notes don't say, so <code>meeting_companies</code> has 4 rows. The join table was still the right call — without it those four notes would be invisible on one of two paying accounts.</p>
+    <p style="margin:0 0 8px"><strong>Deviation 2 — the parked relationship graph moved instead of staying put.</strong> Phase 3 needed the account page short, and ~200 lines of switched-off warm-path UI sat in the middle of it. Rather than delete a feature plan 004 deliberately parked, it moved intact to <code>src/components/account-relationship-graph.tsx</code> with its <code>SHOW_RELATIONSHIP_GRAPH</code> flag. Flipping the flag still restores it.</p>
+    <p style="margin:0 0 8px"><strong>Deviation 3 — a <code>/meetings</code> index was added.</strong> Not in the plan. The repo rule is that every route appears in the sidebar, and a bare <code>/meetings/[slug]</code> with no index would have been the only route without one. It also cost nothing: same query shape as the account panel, one page.</p>
+    <p style="margin:0"><strong>Deviation 4 — action-item statuses were back-filled across meetings.</strong> The old notes site's convention was to update earlier meetings' statuses when a later meeting confirms them. Applying that during conversion means 53 of 146 items imported as <code>done</code> — e.g. "open two Stripe accounts" (Jun 17) is done because the Aug 1 note says payments are live. Without it the roll-up would have opened with 146 open items, most of them fiction.</p>
+  </div>
+
+  <h2 id="why">Why this, now</h2>
+  <p>Two apps hold one relationship. The CRM knows Scuba Dive Utah pays $195/mo and signed a $500 build; the notes site knows their Google account is locked, the DNS is half-propagated, and Kate is the one who actually does the homework. Neither page can answer "how is this client doing," because the answer is split across two logins.</p>
+  <p>The split also inverts the value. Look at the volume:</p>
+
+  <div class="statgrid">
+    <div class="stat"><div class="lbl">CRM activity notes</div><div class="num">177</div><div class="sub">avg characters, 31 rows</div></div>
+    <div class="stat"><div class="lbl">Notes-site meetings</div><div class="num">29,000</div><div class="sub">avg characters, 14 files</div></div>
+    <div class="stat"><div class="lbl">Ratio</div><div class="num">164×</div><div class="sub">memory per record</div></div>
+  </div>
+
+  <p>The CRM's timeline holds one-line touches. The institutional memory — decisions, who said what, what's owed to whom — is <em>entirely</em> in the other app. The account page leads with a hero called "Account Command" and four KPI cards, and mentions the last real conversation nowhere.</p>
+
+  <div class="callout">
+    <p style="margin:0"><strong>The second reason is scale mismatch.</strong> This CRM was built with enterprise sales machinery: pipeline stages, per-opportunity next-step dates, stakeholder coverage scoring, warm-path graphs. The business it serves has <strong>18 accounts, 5 customers, 4 opportunities and 12 contacts</strong>, run by two brothers. The pipeline framing costs more attention than it returns. This plan doesn't delete it — it stops leading with it.</p>
+  </div>
+
+  <h2 id="today">What exists today, measured</h2>
+
+  <h3>The notes app — <code>client-projects/toprock_client_notes</code></h3>
+  <table>
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Shape</td><td>Zero-build static HTML. Dashboard <code>index.html</code> + one folder per client + one file per meeting.</td></tr>
+      <tr><td>Content</td><td>5 clients, 14 meeting notes, <strong>406 KB</strong> of hand-authored HTML.</td></tr>
+      <tr><td>Hosting</td><td>Vercel, PIN-gated by <code>middleware.js</code> (<code>SITE_PIN</code>, cookie <code>tr_auth</code>). Alias <code>toprock-client-notes.vercel.app</code>.</td></tr>
+      <tr><td>Authoring job</td><td>Google Drive transcript folder → Claude reads every doc → writes the note + updates the dashboard roll-up. Documented in <code>add-client-playbook.html</code>.</td></tr>
+      <tr><td>Per-note structure</td><td>TL;DR · Participants · <em>N</em> free-form topic sections · Decisions table · Open questions · Homework table.</td></tr>
+      <tr><td>Cross-client roll-up</td><td>None. Open action items are duplicated by hand onto each client's <code>index.html</code>.</td></tr>
+    </tbody>
+  </table>
+  <p class="ev">The topic sections are the important detail: <em>they differ per meeting</em>. The Aug 1 scuba note has 12 of them (<code>#live</code>, <code>#envs</code>, <code>#dns</code>, <code>#bugs</code>, <code>#reserve</code>, <code>#migrate</code> …). This is prose, not a fixed schema, and any plan that tries to shred it into columns will lose the thing that makes the notes worth keeping.</p>
+
+  <h3>The CRM, right now</h3>
+  <table>
+    <thead><tr><th>Table</th><th>Rows</th><th>Relevance</th></tr></thead>
+    <tbody>
+      <tr><td><code>companies</code></td><td>18 <span class="mono">(5 customer, 2 in_pipeline, 8 new_lead)</span></td><td>The spine. Notes attach here.</td></tr>
+      <tr><td><code>activities</code></td><td>31, across 12 accounts</td><td>Short touches. 24 of 31 are type <code>note</code>. Coexists with meetings.</td></tr>
+      <tr><td><code>deals</code></td><td>4</td><td>Feeds the money panel — <em>cannot be abandoned</em>. See risks.</td></tr>
+      <tr><td><code>payments</code></td><td>7 attributed + 1 unassigned ($150)</td><td>"What they've paid us." Real.</td></tr>
+      <tr><td><code>stripe_subscriptions</code></td><td><strong>0</strong></td><td>"What they pay us monthly" is currently blank. See risks.</td></tr>
+      <tr><td><code>contacts</code></td><td>12</td><td>Thin. The notes site's "People" sections are richer than this table.</td></tr>
+      <tr><td><code>proposals</code></td><td>7</td><td>Already merged (plan 002). Precedent for this merge.</td></tr>
+      <tr><td><code>project_repos</code></td><td>36</td><td>Already merged (plan 005). Delivery signal.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout good">
+    <p style="margin:0"><strong>This is the third merge, and the pattern is proven.</strong> Plan 002 folded in <code>proposal_creator</code>; plan 005 folded in GitHub delivery activity. Both kept the source of truth in Postgres, both left the old thing archived rather than deleted, both were reproducible from an empty database. Follow the same shape.</p>
+  </div>
+
+  <h2 id="mapping">The mapping problem</h2>
+  <p>Five note folders do not map cleanly onto five accounts. Measured against live data:</p>
+  <table>
+    <thead><tr><th>Notes folder</th><th>Notes</th><th>CRM account</th><th>Resolution</th></tr></thead>
+    <tbody>
+      <tr><td><code>the-scuba-dive</code></td><td>7</td><td><strong>Two</strong> — Scuba Dive Utah <span class="mono">#1</span> <em>and</em> Pacific Scuba Repair <span class="mono">#10</span></td><td>Join table. Both accounts show the same meetings.</td></tr>
+      <tr><td><code>vital-alignments</code></td><td>3</td><td>Vital Alignments <span class="mono">#4</span></td><td>Direct.</td></tr>
+      <tr><td><code>coatary</code></td><td>2</td><td>Coatary <span class="mono">#6</span></td><td>Direct.</td></tr>
+      <tr><td><code>garden-of-eden-wellness</code></td><td>1</td><td>Garden of Eden <span class="mono">#21</span> <span class="pill p-todo">in_pipeline</span></td><td>Direct. Note it's a prospect, not a customer — meetings are not a customers-only feature.</td></tr>
+      <tr><td><code>mhm-law-firm</code></td><td>1</td><td><strong>No account exists</strong></td><td>Create it during import.</td></tr>
+      <tr><td>—</td><td>0</td><td>Relationship Blueprint <span class="mono">#20</span> <span class="pill p-note">customer</span></td><td>A paying customer with no notes. The gap is now visible, which is itself useful.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <p style="margin:0 0 8px"><strong>Why the scuba case forces a join table.</strong> The meeting headers say it outright — <span class="mono">Client: The Scuba Dive (Riverton) &amp; Pacific Scuba Repair</span>. Both are real accounts with real money: Scuba Dive Utah carries $195/mo + $500 build, Pacific carries $195/mo + $750. One folder, two payers, seven shared meetings. A single <code>meetings.company_id</code> would be wrong on import day.</p>
+    <p style="margin:0">This mirrors plan 005's repo decision exactly — <em>many, not one; measured, not assumed</em>. Keep <code>company_id</code> as the primary owner so every meeting has one canonical home, and add a join table for the extra accounts.</p>
+  </div>
+
+  <h2 id="decisions">Decisions</h2>
+  <table>
+    <thead><tr><th>Question</th><th>Decision</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Files or database?</td><td><strong>Postgres rows</strong>, one per meeting.</td><td>Cross-client roll-ups, search, and account joins are the whole point. Linking out to a static site would just be the current problem with better navigation.</td></tr>
+      <tr><td>Body format?</td><td><strong>Markdown</strong>, rendered server-side.</td><td>The CRM already renders markdown (proposals, <code>src/lib/proposal/markdown.ts</code>). Markdown is editable in a textarea; stored HTML would need sanitising and would fight the Tailwind design system.</td></tr>
+      <tr><td>How do 14 hand-written HTML files become markdown?</td><td><strong>Converted one at a time by Claude</strong>, not by a parser.</td><td>The section structure is irregular by design. 14 files is a bounded afternoon; a regex parser for irregular hand-authored HTML is an unbounded one.</td></tr>
+      <tr><td>Action items: prose or rows?</td><td><strong>Rows</strong> — <code>meeting_action_items</code>.</td><td>The single biggest thing the merge unlocks is <em>"every open item across every client, in one list."</em> Impossible if they live inside a markdown blob. Today they're maintained by hand-copying onto each client index.</td></tr>
+      <tr><td>Decisions &amp; open questions: rows too?</td><td><strong>No.</strong> Prose in the body.</td><td>Nothing queries them across accounts. Only promote a field to a column when something reads it across rows.</td></tr>
+      <tr><td>Do meetings replace <code>activities</code>?</td><td><strong>No — coexist.</strong></td><td>A meeting is a heavy artifact; an activity is a one-line touch ("emailed Kate"). Both belong on one merged timeline, rendered at different weights.</td></tr>
+      <tr><td>Reuse <code>sales_tasks</code> for action items?</td><td><strong>No.</strong> Separate table.</td><td><code>sales_tasks.due_date</code> is <code>NOT NULL</code> and the table is sales-shaped (<code>assignedTo</code>, <code>dealId</code>). Meeting items have <em>owners</em>, not dates. Merging would mean inventing fake due dates for ~70 imported rows.</td></tr>
+      <tr><td>Client-shareable note links?</td><td><strong>Out of scope for v1.</strong></td><td>These notes are internal and candid. If sharing is ever wanted, reuse the <code>/p/[slug]</code> PIN pattern from proposals rather than inventing a second one.</td></tr>
+      <tr><td>Binary attachments (2 files in <code>mhm-law-firm/assets/</code>)?</td><td><strong>Out of scope.</strong> Link to Drive.</td><td>Two files. Plan 002 already learned that storing base64 blobs on a hot row is a mistake worth avoiding twice.</td></tr>
+      <tr><td>Delete the old repo?</td><td><strong>No. Freeze it.</strong></td><td>README banner pointing here, Vercel deploy left up, GitHub repo archived. Same treatment <code>proposal_creator</code> got.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="schema">Schema</h2>
+  <p>Three additive tables. No drops, no column changes to existing tables.</p>
+  <pre><code>meetings
+  id             serial pk
+  slug           text unique not null      -- "2026-08-01-website-go-live-domain-cutover"
+  title          text not null
+  meeting_date   date not null             -- absolute dates only; the notes convention
+  format         text                      -- "In-person working session" | "Call" | "Demo"
+  status_label   text                      -- free text, e.g. "Marketing site LIVE"
+  tldr           text                      -- the one-paragraph headline
+  body_md        text not null             -- everything else, as markdown
+  company_id     int not null → companies  -- the canonical owner
+  source         data_source not null      -- 'drive' for imports, 'manual', 'agent'
+  created_at, updated_at   timestamptz
+
+  index meetings_company_date_idx (company_id, meeting_date desc)
+
+meeting_companies                          -- secondary accounts (the scuba cluster)
+  meeting_id     int → meetings on delete cascade
+  company_id     int → companies on delete cascade
+  primary key (meeting_id, company_id)
+
+  index meeting_companies_company_idx (company_id)
+
+meeting_action_items
+  id             serial pk
+  meeting_id     int not null → meetings on delete cascade
+  company_id     int not null → companies  -- denormalised, see below
+  owner          text not null             -- 'Dev' | 'Client' | 'Justin' | 'Both'
+  action         text not null
+  status         meeting_action_status not null default 'todo'
+  urgent         boolean not null default false
+  created_at     timestamptz
+  completed_at   timestamptz
+
+  index meeting_action_items_open_idx (company_id, status)
+
+enum meeting_action_status = todo | doing | done | deferred</code></pre>
+
+  <p><strong>Why <code>company_id</code> is denormalised onto action items.</strong> The roll-up query — <em>every open item, grouped by client</em> — is the feature. It should be one indexed read, not a join through <code>meetings</code> and then out through <code>meeting_companies</code>. The denormalisation is safe because an action item can't move between meetings.</p>
+
+  <p><strong>Body size discipline.</strong> 406 KB across 14 rows averages 29 KB of markdown per meeting. That is fine in Postgres and fine to render — but it is exactly the shape that bit plan 002, where a stray <code>select()</code> dragged megabytes of proposal PDF into a list query. <em>Never select <code>body_md</code> in a list query.</em> The account timeline reads <code>id, slug, title, meeting_date, tldr</code>; only the detail route reads the body.</p>
+
+  <h2 id="page">The account page, rebuilt</h2>
+  <p>Today <code>/accounts/[id]</code> renders ten stacked sections in 1,083 lines. The rebuild reorders them around the two questions and folds the rest away.</p>
+
+  <div class="compare">
+    <div class="col">
+      <h4>Today — top to bottom</h4>
+      <div class="blk b-cut"><span class="rank">1</span> "Account Command" hero <span class="sub">3 pills · 3 execution cards · 4 KPI cards</span></div>
+      <div class="blk b-cut"><span class="rank">2</span> Sticky anchor nav <span class="sub">9 jump links</span></div>
+      <div class="blk b-hero"><span class="rank">3</span> Account Details <span class="sub">6 autosave fields + "Account Signals" aside</span></div>
+      <div class="blk b-hero"><span class="rank">4</span> Stakeholders <span class="sub">+ always-mounted Add contact form</span></div>
+      <div class="blk b-hero"><span class="rank">5</span> Opportunities <span class="sub">+ always-mounted 8-field create form</span></div>
+      <div class="blk b-hero"><span class="rank">6</span> Agreements (proposals)</div>
+      <div class="blk b-money"><span class="rank">7</span> Billing / Payments <span class="sub">the money — seventh</span></div>
+      <div class="blk b-hero"><span class="rank">8</span> Follow-up queue (tasks)</div>
+      <div class="blk b-hero"><span class="rank">9</span> Activity timeline <span class="sub">avg 177-char notes</span></div>
+    </div>
+    <div class="col">
+      <h4>Proposed</h4>
+      <div class="blk b-hero"><span class="rank">1</span> Header strip <span class="sub">name · stage · last meeting · website / repo / project links</span></div>
+      <div class="blk b-money"><span class="rank">2</span> <strong>Money</strong> <span class="sub">lifetime paid · $/mo billing vs agreed · build fee progress</span></div>
+      <div class="blk b-notes"><span class="rank">3</span> <strong>Meetings &amp; notes</strong> <span class="sub">reverse-chronological, merged with light activities</span></div>
+      <div class="blk b-notes"><span class="rank">4</span> <strong>Open action items</strong> <span class="sub">owner-tagged, from the meetings</span></div>
+      <div class="blk b-fold"><span class="rank">5</span> People <span class="sub">collapsed</span></div>
+      <div class="blk b-fold"><span class="rank">6</span> Engagement <span class="sub">collapsed — MRR + build fee, renamed from Opportunities</span></div>
+      <div class="blk b-fold"><span class="rank">7</span> Agreements · Tasks · Repos <span class="sub">collapsed</span></div>
+    </div>
+  </div>
+  <figcaption>Red = deleted. Green = promoted. Blue = new. Dashed = collapsed by default.</figcaption>
+
+  <h3>What gets deleted, and the evidence for it</h3>
+  <table>
+    <thead><tr><th>Removed</th><th>Why it's safe</th></tr></thead>
+    <tbody>
+      <tr><td>"Last Activity" hero card</td><td>The identical string (<code>activitySummary</code>) is rendered a second time in the "Account Signals" aside as "Recent touch", and a third time as the timeline's own header. Same variable, three places.</td></tr>
+      <tr><td>"Opportunity Risk" hero card</td><td><code>overdueOpportunities</code> is rendered again below in "Pipeline pressure". Two renderings, one number, four opportunities in the whole database.</td></tr>
+      <tr><td>"Implementation Cost" KPI</td><td>The billing panel already shows build fee as <em>collected of contracted, with a progress bar</em>. The KPI shows only the contracted half, worse.</td></tr>
+      <tr><td>"Stakeholders" KPI + coverage line</td><td>"3 of 4 contacts reachable" is a metric for a sales team with quota. Twelve contacts total across the business.</td></tr>
+      <tr><td>The whole "Account Signals" aside</td><td>All three of its cards restate values already on screen.</td></tr>
+      <tr><td>Sticky anchor nav</td><td>Nine jump links exist because the page is nine screens tall. Fix the cause.</td></tr>
+      <tr><td>Always-mounted create forms</td><td>The 8-field "Create Opportunity" form and the 6-field "Add contact" form sit in the DOM of every account view. Both move behind a button.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>The meetings section</h3>
+  <div class="mock">
+    <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#64748b">Meetings &amp; notes</div>
+    <div style="font-size:18px;font-weight:600;margin-top:4px">7 meetings · last on Aug 1, 2026</div>
+
+    <div class="card">
+      <span class="date">2026-08-01</span> <span class="pill p-note">Working session</span>
+      <div class="ttl">Website Goes Live — Domain Cutover &amp; Scheduling Fixes</div>
+      <div class="sum">Cut the real domain over to the new Vercel site; Courses still redirect to RentItBiz while scheduling matures on staging. Decided to auto-hide past cohorts, migrate registrations silently at go-live, and defer e-learning.</div>
+      <div style="margin-top:8px"><span class="pill p-urgent">1 urgent</span> <span class="pill p-dev">5 Dev</span> <span class="pill p-client">2 Client</span></div>
+    </div>
+
+    <div class="card" style="background:#fafafa;border-style:dashed">
+      <span class="date">2026-07-28</span> <span class="pill p-note">Email</span>
+      <div class="sum" style="margin-top:2px">Sent Kate the HostGator cancellation list.</div>
+    </div>
+
+    <div class="card">
+      <span class="date">2026-07-15</span> <span class="pill p-note">Training</span>
+      <div class="ttl">Admin Training, Website Launch &amp; Domain Recovery</div>
+      <div class="sum">Hands-on training on the class-vs-cohort model, a course-creation UX punch-list, and the go-live plan with real Stripe payments for a few in-person guinea pigs.</div>
+      <div style="margin-top:8px"><span class="pill p-dev">4 Dev</span> <span class="pill p-client">1 Client</span></div>
+    </div>
+  </div>
+  <figcaption>One stream. Meetings render as full cards; ordinary activities render as the dashed one-liner. Clicking a meeting opens the full note.</figcaption>
+
+  <h3>Open action items</h3>
+  <p>Rolled up from every meeting on the account, newest first, grouped by owner. This is the section that replaces the hand-maintained "Open action items" table on each client's <code>index.html</code> — and unlike that table, it also aggregates on the dashboard across all clients.</p>
+  <div class="mock">
+    <div class="card" style="display:flex;gap:10px;align-items:baseline;margin:0">
+      <span class="pill p-urgent">Urgent</span>
+      <span style="flex:1;font-size:13.5px">Schedule the 15-min Pacific call (Preston + Jeff) to unlock the Google account</span>
+      <span class="mono" style="color:#94a3b8">Aug 1</span>
+    </div>
+    <div class="card" style="display:flex;gap:10px;align-items:baseline;margin:8px 0 0">
+      <span class="pill p-dev">Dev</span>
+      <span style="flex:1;font-size:13.5px">Confirm DNS fully propagates (bare + www, desktop); fix the 308 loop if it persists</span>
+      <span class="mono" style="color:#94a3b8">Aug 1</span>
+    </div>
+    <div class="card" style="display:flex;gap:10px;align-items:baseline;margin:8px 0 0">
+      <span class="pill p-client">Client</span>
+      <span style="flex:1;font-size:13.5px">Provide RentItBiz login access for the go-live migration</span>
+      <span class="mono" style="color:#94a3b8">Aug 1</span>
+    </div>
+  </div>
+
+  <h2 id="import">Importing the 14 notes</h2>
+  <p>Reproducible from an empty database, in the style of <code>scripts/map-repos.mjs</code> — the conversion output is committed, so the import is a replay rather than a one-time act of typing.</p>
+  <ol>
+    <li><strong>Convert, one note at a time.</strong> Claude reads <code>clients/&lt;slug&gt;/meetings/&lt;file&gt;.html</code> and writes two committed files under <code>scripts/seed/meetings/</code>: <code>&lt;slug&gt;.md</code> (the body) and <code>&lt;slug&gt;.json</code> (title, date, format, status, tldr, accounts, action items).</li>
+    <li><strong>Convert the client <code>index.html</code> roll-ups too</strong> — their "Snapshot", "Key facts", "People" and "Watch list" sections are per-account context, not per-meeting. Land these as the account's <code>next_step</code> / contacts / a pinned meeting-zero note. <em>Decide per client during the pass; don't automate it.</em></li>
+    <li><strong>Create the missing account:</strong> MHM Law Firm. Stage to be confirmed — the June 22 note reads like a strategy conversation, so <code>engaged</code> unless told otherwise.</li>
+    <li><strong>Run <code>node scripts/import-meetings.mjs [--dry-run]</code>.</strong> Idempotent upsert by <code>slug</code>. Never overwrites an edited body without <code>--force</code>. Writes <code>meeting_companies</code> rows for the scuba pair.</li>
+  </ol>
+  <div class="callout warn">
+    <p style="margin:0"><strong>Convert the hardest note first and stop.</strong> Do <code>2026-08-01-website-go-live-domain-cutover.html</code> (12 topic sections, 36 KB, decisions + open questions + 9 homework rows), render it in the CRM, and put it next to the original in a browser. If markdown loses something that matters — the resolved/open Q&amp;A styling, the inline owner pills — that is the moment to reconsider the format, <em>before</em> converting thirteen more.</p>
+  </div>
+
+  <h2 id="authoring">Authoring notes from here on</h2>
+  <p>The old repo existed to do one job: turn a Drive folder of transcripts into a notes section. That job survives the merge; only its destination changes.</p>
+  <table>
+    <thead><tr><th>Step</th><th>Before</th><th>After</th></tr></thead>
+    <tbody>
+      <tr><td>Read transcripts</td><td>Claude, via Drive MCP</td><td>Unchanged.</td></tr>
+      <tr><td>Draft the note</td><td>Copy <code>_templates/meeting-template.html</code>, fill placeholders</td><td>Draft the same sections as markdown.</td></tr>
+      <tr><td>Land it</td><td>Write file · update client index · update dashboard · commit · <code>vercel --prod</code></td><td>One insert. The roll-ups are queries, so there is nothing to keep in sync.</td></tr>
+      <tr><td>Review</td><td>Read the deployed page</td><td>Optionally route agent drafts through the existing <code>/inbox</code> suggestion queue before they land.</td></tr>
+      <tr><td>By hand</td><td>—</td><td>"Add meeting note" on the account page: date, title, format, TL;DR, body, action-item rows.</td></tr>
+    </tbody>
+  </table>
+  <p class="ev">Four of the five steps in "land it" disappear. That's the merge paying for itself: the dashboard card, the client-index meeting log, and the open-items table were three hand-maintained copies of data that a database derives.</p>
+
+  <h2 id="phases">Phases</h2>
+
+  <div class="phase">
+    <div class="tag">Phase 1 · <span class="tier tier-0">Tier 0 — additive</span></div>
+    <h3>Schema</h3>
+    <p>Three tables + one enum in <code>src/lib/schema.ts</code>; <code>db:generate</code>, review SQL, <code>db:push</code>.</p>
+    <p class="ev"><strong>Done when</strong> the migration applies with zero drops and <code>npm run build</code> passes.</p>
+  </div>
+
+  <div class="phase">
+    <div class="tag">Phase 2 · <span class="tier tier-1">Tier 1 — data</span></div>
+    <h3>Convert and import the 14 notes</h3>
+    <p>Hardest note first (see the callout above), then the remaining 13. Create MHM Law Firm. Write <code>scripts/import-meetings.mjs</code> with <code>--dry-run</code>.</p>
+    <p class="ev"><strong>Done when</strong> <code>select count(*) from meetings</code> = 14, <code>meeting_companies</code> has 7 rows for Pacific Scuba Repair, action items are in the 60–80 range, and the Aug 1 scuba note reads correctly against the original.</p>
+  </div>
+
+  <div class="phase">
+    <div class="tag">Phase 3 · <span class="tier tier-2">Tier 2 — the payoff</span></div>
+    <h3>Rebuild <code>/accounts/[id]</code></h3>
+    <p>Money to the top, meetings as the body, everything else collapsed. Delete the hero, the signals aside, and the sticky nav; move both create forms behind buttons. Update <code>loading.tsx</code> to match the new shape.</p>
+    <p class="ev"><strong>Done when</strong> money and the most recent meeting are both above the fold at 1440×900, and the page is under ~600 lines.</p>
+  </div>
+
+  <div class="phase">
+    <div class="tag">Phase 4 · <span class="tier tier-2">Tier 2</span></div>
+    <h3>Meeting detail + authoring</h3>
+    <p><code>/meetings/[slug]</code> renders the full note (TL;DR callout, markdown body, decisions, action items with inline status toggles). Create/edit form on the account page. <code>loading.tsx</code> per the repo rule.</p>
+    <p class="ev"><strong>Done when</strong> a new note can be written end-to-end in the app without touching SQL.</p>
+  </div>
+
+  <div class="phase">
+    <div class="tag">Phase 5 · <span class="tier tier-2">Tier 2</span></div>
+    <h3>Cross-account action-item roll-up</h3>
+    <p>The thing the static site could never do: every open item across every client, grouped, urgent-first, on the dashboard and <code>/tasks</code>.</p>
+    <p class="ev"><strong>Done when</strong> the dashboard answers "what do we owe clients this week" in one screen.</p>
+  </div>
+
+  <div class="phase">
+    <div class="tag">Phase 6 · <span class="tier tier-3">Tier 3 — cleanup</span></div>
+    <h3>Freeze <code>toprock_client_notes</code></h3>
+    <p>Banner on its <code>index.html</code> and README pointing at the CRM; archive the GitHub repo; leave the Vercel deploy up for 90 days. Update this repo's <code>AGENTS.md</code> so no agent writes there again.</p>
+    <p class="ev"><strong>Done when</strong> the old dashboard says where the notes went, and nothing in either repo instructs an agent to add notes to it.</p>
+  </div>
+
+  <h2 id="risks">Risks</h2>
+  <table>
+    <thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Promoting money makes a hole visible.</strong> <code>stripe_subscriptions</code> is empty, so "monthly maintenance" reads <em>$0/mo billing vs $195/mo agreed</em> on Scuba Dive Utah. Put that at the top of the page and it looks like a bug in this plan.</td>
+        <td>It isn't — it's plan 003's pending webhook, and arguably the correct thing to be shouting. But don't ship Phase 3 believing the number is right. Either finish the Stripe sync first or label the card explicitly when no subscription is mirrored.</td>
+      </tr>
+      <tr>
+        <td><strong>Demoting opportunities can silently break the money panel.</strong> <code>BillingPanel</code> derives "agreed MRR" and "contracted build fee" from <code>deals</code> where <code>stage = 'won'</code>. If nobody maintains opportunities once they're folded away, the reconciliation quietly degrades to comparing against zero.</td>
+        <td>Rename the collapsed section to <strong>Engagement</strong> and keep exactly two editable fields — monthly and build fee. That's the contract, which a two-person agency does need; the pipeline ceremony around it is what's being cut.</td>
+      </tr>
+      <tr>
+        <td><strong>Markdown loses note fidelity.</strong> Resolved/open Q&amp;A blocks, inline owner pills, and per-client accent colours have no markdown equivalent.</td>
+        <td>Owner pills become action-item rows (an upgrade). Q&amp;A blocks become a bolded question + answer. Accent colours are decoration. Validate on the hardest note before committing to thirteen more.</td>
+      </tr>
+      <tr>
+        <td><strong>A client may hold a PIN link to the old site.</strong></td>
+        <td>Check before Phase 6. The 90-day deploy window covers it either way.</td>
+      </tr>
+      <tr>
+        <td><strong>29 KB bodies in list queries.</strong></td>
+        <td>Explicit column lists on every meetings query, exactly as plan 002 concluded for <code>proposal_documents</code>. Enforce in review.</td>
+      </tr>
+      <tr>
+        <td><strong>Scope creep into a wiki.</strong> Once notes are in the CRM it is tempting to add tagging, full-text search, mentions, threading.</td>
+        <td>Five clients, fourteen notes. Ship the roll-up; revisit search when a page of meetings no longer fits on one screen.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 id="scope">Out of scope</h2>
+  <ul>
+    <li>Client-facing note sharing (no public <code>/p/</code>-style route for meetings).</li>
+    <li>Binary attachments — the two files in <code>mhm-law-firm/assets/</code> stay in Drive.</li>
+    <li>Automated transcript ingestion. Claude still reads the Drive folder by hand-off; only the destination changes.</li>
+    <li>Full-text search across notes.</li>
+    <li>Per-client accent colours and the notes site's visual identity.</li>
+    <li>Two-way sync with the old site — it's frozen, not mirrored.</li>
+    <li>Touching <code>/accounts</code> (the list). This plan only rebuilds the detail page.</li>
+  </ul>
+
+  <h2 id="verify">Verification</h2>
+  <ul>
+    <li><code>npm run lint</code> · <code>npm test</code> · <code>npm run build</code>.</li>
+    <li>Schema: migration generated and applied; no drops in the generated SQL.</li>
+    <li>Import: 14 meetings · 5 note-bearing accounts + MHM created · 7 <code>meeting_companies</code> rows for Pacific · action items non-zero on all 14.</li>
+    <li>Spot check: the Aug 1 scuba note side by side with the original HTML.</li>
+    <li>Account page: money and the latest meeting above the fold; every collapsed section still opens and still saves (the autosave fields have not been clicked since the plan 004 refactor — verify them here).</li>
+    <li>Regression: <code>/accounts</code> list, <code>/opportunities/[id]</code>, and the proposals panel unchanged.</li>
+    <li>Every new route has a <code>loading.tsx</code>.</li>
+  </ul>
+
+  <footer>
+    Plan 006 · Toprock CRM · supersedes the standalone <code>toprock_client_notes</code> repo.
+    Follows the merge pattern set by <a href="../002-proposal-creator-merge/plan.html">002</a> and <a href="../005-github-project-activity/plan.html">005</a>.
+  </footer>
+</main>
+</body>
+</html>

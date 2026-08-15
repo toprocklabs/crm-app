@@ -1,0 +1,27 @@
+{
+  "slug": "2026-06-17-domain-recovery-payments",
+  "title": "Domain Recovery, Lightspeed Sync & Payments",
+  "meetingDate": "2026-06-17",
+  "format": "Working session — demo + planning",
+  "statusLabel": "Pre-launch; building toward payments",
+  "tldr": "The most urgent item is recovering the Pacific Scuba domain (registered through Squarespace/old Google Domains) so the flood of \"Contact Us\" leads stops going to the previous owner's inbox. Plan: have the shop create a Squarespace account and request a transfer, while the toprock team goes straight to the source (Jeff, who controls DNS) to cut friction. On the build: the Lightspeed sync is working end-to-end (auto-create customer, de-dupe, create sale SKU, tie an e-learning code). A new wrinkle — SDI can now issue e-learning codes directly through its portal, which could remove that Lightspeed inventory step; decision is to keep Lightspeed as the accounting source of truth. Next big build piece is Stripe payments (two accounts: courses + travel). Trips and rentals are deferred. A simple new Pacific Scuba Repair check-in form was scoped.",
+  "primaryAccount": "Scuba Dive Utah",
+  "alsoAccounts": ["Pacific Scuba Repair"],
+  "actionItems": [
+    { "owner": "Client", "action": "Open two Stripe accounts — courses (Scuba Dive) and trips (Travel).", "status": "done" },
+    { "owner": "Client", "action": "Send Jeff's contact info — email, city/state (California), rough age (~50s–60s).", "status": "done" },
+    { "owner": "Client", "action": "Review the latest changes & forms (new signing/PDF, age fixes, added form) and give feedback.", "status": "done" },
+    { "owner": "Client", "action": "SDI process — get details, provide SDI login access, and the rep's (Darren?) contact.", "status": "todo" },
+    { "owner": "Client", "action": "Play with the admin panel (it's version-managed test data — safe to change anything).", "status": "done" },
+    { "owner": "Client", "action": "Create a Squarespace account for the domain transfer.", "status": "todo" },
+    { "owner": "Preston", "action": "Confirm exact fields / any extra info for the Pacific check-in form.", "status": "done" },
+    { "owner": "Dev", "action": "Email the shop a written homework list + a summary of the latest changes to review.", "status": "done" },
+    { "owner": "Dev", "action": "Send the sample signed PDF for confirmation.", "status": "done" },
+    { "owner": "Dev", "action": "Draft the owner-transfer + Squarespace-escalation message templates.", "status": "todo" },
+    { "owner": "Dev", "action": "Locate & call Jeff directly to get domain access / start the transfer.", "status": "todo", "urgent": true },
+    { "owner": "Dev", "action": "Wire up Stripe checkout once accounts exist; test slowly with trial orders.", "status": "todo" },
+    { "owner": "Dev", "action": "Investigate SDI API / assigning flow once login + rep contact are provided.", "status": "deferred" },
+    { "owner": "Dev", "action": "Scope the Pacific check-in form once Preston confirms fields.", "status": "done" },
+    { "owner": "Both", "action": "Have staff (Christy + team) side-by-side test the booking flow — act like a real customer and try to break it; report findings.", "status": "done" }
+  ]
+}

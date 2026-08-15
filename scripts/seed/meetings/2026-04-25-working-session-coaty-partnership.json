@@ -1,0 +1,21 @@
+{
+  "slug": "2026-04-25-working-session-coaty-partnership",
+  "title": "Working Session — Coaty, Architecture & Partnership",
+  "meetingDate": "2026-04-25",
+  "format": "In-person working session (~3 hrs, bagels & coffee)",
+  "statusLabel": "Site shipped → agent audit + partnership scoping",
+  "tldr": "Three-hour in-person working session with Flint (owner of Coatary Technologies + co-owner of Peaceful Property Management). Three goals: (1) hand off the Coatary website code for Top Rock to manage, (2) show off \"Coaty\" — a Claude-powered product-selection agent Flint built solo in ~30 hours, and (3) scope a longer partnership starting with a Peaceful Maintenance website. The marketing site Top Rock shipped is static (Astro on Vercel); Coaty turns Coatary into a web application, so the big theme was architecting ahead so new surfaces (PO calculator, knowledge base, e-commerce) don't force rewrites. Austin walked Flint through the \"second brain\" concept (organized markdown for LLMs; Obsidian; migrate SharePoint → Google Drive for Claude's native connector). They explored AI-augmenting Peaceful's ops (humans as \"agent managers\"), agreed to build a social media agent for Coatary first (then Peaceful), and adopted Flint's Ideate → Design → Build → Operate → Delegate framework. Partnership shape: Top Rock builds + trains Flint/Emilia to self-maintain in Claude Code; Coatary is the test bed; pricing left open (flat retainer TBD). Immediate next steps: Flint adds Austin to the Coaty repo, Austin audits it and sets Flint up on Claude Code.",
+  "primaryAccount": "Coatary",
+  "alsoAccounts": [],
+  "actionItems": [
+    { "owner": "Client", "action": "Add Austin as a GitHub collaborator on the Coaty repo.", "status": "todo" },
+    { "owner": "Dev", "action": "Clone & audit the Coaty repo end-to-end; write the source-audit doc.", "status": "todo" },
+    { "owner": "Dev", "action": "Set Flint up with Claude Code (step zero for his velocity).", "status": "todo" },
+    { "owner": "Both", "action": "Get added to both Slack workspaces (Peaceful + Coatary).", "status": "todo" },
+    { "owner": "Client", "action": "Whiteboard full ideation for Peaceful Maintenance; bring back to prioritize.", "status": "todo" },
+    { "owner": "Dev", "action": "Whiteboard full ideation for Coatary (the eventual web app); prioritize with Flint.", "status": "todo" },
+    { "owner": "Dev", "action": "Return with partnership proposal options (retainer / project / hybrid).", "status": "todo" },
+    { "owner": "Both", "action": "Build the Coatary social media agent first, then port to Peaceful.", "status": "todo" },
+    { "owner": "Client", "action": "Evaluate moving long-term docs SharePoint → Google Drive.", "status": "todo" }
+  ]
+}

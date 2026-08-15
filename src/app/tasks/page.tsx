@@ -3,6 +3,7 @@ import { completeTask, createTask } from "@/app/actions";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
 import { EmptyState } from "@/components/empty-state";
+import { OpenActionItemsRollup } from "@/components/open-action-items-rollup";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { companies, deals, salesTasks, users } from "@/lib/schema";
@@ -47,6 +48,10 @@ export default async function TasksPage() {
       title="Tasks"
       description="Manage follow-up reminders and close the loop on every open opportunity."
     >
+      {/* Meeting homework first — it's what clients are actually waiting on.
+          The dated task list below is the internal reminder queue. */}
+      <OpenActionItemsRollup returnPath="/tasks" />
+
       <section className="grid gap-6 lg:grid-cols-3">
         <CollapsibleFormSection
           title="New task"

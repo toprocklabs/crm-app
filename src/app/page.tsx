@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { CrmShell } from "@/components/crm-shell";
 import { EmptyState } from "@/components/empty-state";
+import { OpenActionItemsRollup } from "@/components/open-action-items-rollup";
 import { requireUser } from "@/lib/auth";
 import { getDealStageLabel, getDealStageTone } from "@/lib/deal-stage";
 import { currency } from "@/lib/format";
@@ -147,6 +148,9 @@ export default async function Home() {
           href="/opportunities?stage=won"
         />
       </section>
+
+      {/* What we owe clients, ahead of the pipeline board — plan 006. */}
+      <OpenActionItemsRollup returnPath="/" limitPerAccount={4} />
 
       <section className="gong-panel rounded-xl p-5">
         <div className="flex items-start justify-between gap-4">

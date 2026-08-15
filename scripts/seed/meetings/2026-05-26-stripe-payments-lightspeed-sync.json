@@ -1,0 +1,19 @@
+{
+  "slug": "2026-05-26-stripe-payments-lightspeed-sync",
+  "title": "Lightspeed Sync & Stripe Payment Architecture",
+  "meetingDate": "2026-05-26",
+  "format": "Internal dev working session — code walkthrough + planning",
+  "statusLabel": "Pre-launch; building payments",
+  "tldr": "An internal toprock working session walking through the Lightspeed sync code, which is now confirmed working: a booking searches Lightspeed by email to match-or-create a customer, then creates a sale with a tuition SKU and (where the course has one) an e-learning SKU, pulling a serial number from inventory and tying it to the customer in both Lightspeed and toprock's own database. Sales were created in Lightspeed directly from code (payment intentionally doesn't fire yet). The headline decision is on payments: rather than juggle two payment APIs (Stripe for courses, Square for trips), the team will recommend Stripe for everything using two separate Stripe accounts — one per business / bank account — since each Stripe account ties to exactly one bank account. Trips are explicitly out of scope for now. Still to do: build delivery of the e-learning serial/URL to the customer, set up a Stripe sandbox, and have the client open the Stripe account(s) and provide EINs + business names.",
+  "primaryAccount": "Scuba Dive Utah",
+  "alsoAccounts": [],
+  "actionItems": [
+    { "owner": "Client", "action": "Open the Stripe account(s) — two accounts, one per business / bank account.", "status": "done" },
+    { "owner": "Client", "action": "Provide EINs and business names for each entity so accounts/routing can be organized.", "status": "todo" },
+    { "owner": "Dev", "action": "Update the project plan to Stripe-only, two accounts (remove the Stripe-vs-Square branching).", "status": "done" },
+    { "owner": "Dev", "action": "Merge the two payment branches and fix the admin course-setup screen to pull SKUs live from Lightspeed.", "status": "done" },
+    { "owner": "Dev", "action": "Build delivery of the e-learning serial / URL to the customer once assigned.", "status": "deferred" },
+    { "owner": "Dev", "action": "Set up a Stripe sandbox and wire payments so the sale fires only on confirmed payment; test end-to-end.", "status": "todo" },
+    { "owner": "Dev", "action": "Follow up with the shop owner on the payment-plan details that need her input.", "status": "done" }
+  ]
+}

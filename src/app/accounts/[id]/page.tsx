@@ -1,85 +1,42 @@
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   completeTask,
   createContact,
   createDeal,
-  createRelationship,
-  deleteRelationship,
   enrichCompanyFromWebsite,
-  logActivity,
   updateActivityDate,
   updateCompanyField,
   updateContactField,
 } from "@/app/actions";
-import { ActivityTimeline } from "@/components/activity-timeline";
+import { AccountActionItemsPanel } from "@/components/account-action-items-panel";
+import { AccountRelationshipGraph } from "@/components/account-relationship-graph";
+import { AccountTimelinePanel } from "@/components/account-timeline-panel";
 import { AutoSaveActivityDateField } from "@/components/auto-save-activity-date-field";
 import { AutoSaveCompanyField } from "@/components/auto-save-company-field";
 import { AutoSaveCompanySelectField } from "@/components/auto-save-company-select-field";
 import { AutoSaveContactField } from "@/components/auto-save-contact-field";
+import { BillingPanel } from "@/components/billing-panel";
 import { CallLink } from "@/components/call-link";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
 import { CrmShell } from "@/components/crm-shell";
-import { BillingPanel } from "@/components/billing-panel";
 import { EmptyState } from "@/components/empty-state";
 import { ProposalsPanel } from "@/components/proposals-panel";
-import { RelationshipEditor } from "@/components/relationship-editor";
-import { activityTypeOptions, getActivityMeta } from "@/lib/activity-ui";
+import { getActivityMeta } from "@/lib/activity-ui";
 import { accountStageOptions, getAccountStageLabel, getAccountStageTone } from "@/lib/account-stage";
 import { requireUser } from "@/lib/auth";
 import { companyIndustries } from "@/lib/company-industries";
 import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { getDealStageLabel, getDealStageTone } from "@/lib/deal-stage";
-import { edgeTypeOptions, getEdgeTypeLabel, getEdgeTypeTone, getWarmthTone } from "@/lib/edge-type";
-import { findProximityNeighbors, findWarmPaths } from "@/lib/graph";
 import { currency, formatDate } from "@/lib/format";
 import { getDb } from "@/lib/db";
-import { activities, companies, contacts, deals, relationships, salesTasks, users } from "@/lib/schema";
-import type { EntityType } from "@/lib/schema";
+import { formatMeetingDate } from "@/lib/meeting/action-ui";
+import { listAccountMeetings, listAccountOpenActionItems } from "@/lib/meeting/queries";
+import { getPushRecency } from "@/lib/push-recency";
+import { activities, companies, contacts, deals, projectRepos, salesTasks, users } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
-
-// The relationship graph / warm-paths feature is parked: the UI is only
-// half-built, so it's hidden rather than deleted. Flipping this to true
-// restores the section, its three queries, and the nav anchor.
-// Typed as `boolean` (not inferred as literal `false`) so the guarded code
-// still type-checks while switched off.
-const SHOW_RELATIONSHIP_GRAPH: boolean = false;
-
-function getDueTone(dueDate: string | null | undefined, today: string) {
-  if (!dueDate) {
-    return "bg-slate-100 text-slate-700";
-  }
-
-  if (dueDate < today) {
-    return "bg-rose-100 text-rose-800";
-  }
-
-  return "bg-amber-100 text-amber-800";
-}
-
-function getDaysFromToday(value: Date | string, today: string) {
-  const current = new Date(`${today}T00:00:00`);
-  const target = typeof value === "string" ? new Date(value) : value;
-  const utcCurrent = Date.UTC(current.getFullYear(), current.getMonth(), current.getDate());
-  const utcTarget = Date.UTC(target.getFullYear(), target.getMonth(), target.getDate());
-  return Math.round((utcCurrent - utcTarget) / 86400000);
-}
-
-function formatRecencyLabel(value: Date | string, today: string) {
-  const days = getDaysFromToday(value, today);
-
-  if (days <= 0) {
-    return "Today";
-  }
-
-  if (days === 1) {
-    return "Yesterday";
-  }
-
-  return `${days} days ago`;
-}
 
 function getContactInitials(firstName: string, lastName: string) {
   return `${firstName[0] ?? ""}${lastName[0] ?? ""}`.toUpperCase();
@@ -110,11 +67,9 @@ export default async function AccountDetailPage({ params }: Props) {
     companyDeals,
     companyTasks,
     companyActivities,
-    companyRelationships,
-    allCompanies,
-    allContacts,
-    warmPaths,
-    proximityNeighbors,
+    accountMeetings,
+    openActionItems,
+    repos,
   ] = await Promise.all([
     db.query.companies.findFirst({ where: eq(companies.id, companyId) }),
     db.select().from(contacts).where(eq(contacts.companyId, companyId)).orderBy(desc(contacts.createdAt)),
@@ -139,35 +94,25 @@ export default async function AccountDetailPage({ params }: Props) {
       .leftJoin(users, eq(activities.loggedByUserId, users.id))
       .where(eq(activities.companyId, companyId))
       .orderBy(desc(activities.occurredAt)),
-    SHOW_RELATIONSHIP_GRAPH
-      ? db
-          .select()
-          .from(relationships)
-          .where(
-            or(
-              and(eq(relationships.fromType, "company"), eq(relationships.fromId, companyId)),
-              and(eq(relationships.toType, "company"), eq(relationships.toId, companyId)),
-            ),
-          )
-          .orderBy(desc(relationships.strength))
-      : [],
-    db.select({ id: companies.id, name: companies.name }).from(companies).orderBy(companies.name),
+    listAccountMeetings(db, companyId),
+    listAccountOpenActionItems(db, companyId),
     db
       .select({
-        id: contacts.id,
-        firstName: contacts.firstName,
-        lastName: contacts.lastName,
-        companyId: contacts.companyId,
+        fullName: projectRepos.fullName,
+        htmlUrl: projectRepos.htmlUrl,
+        lastPushAt: projectRepos.lastPushAt,
       })
-      .from(contacts)
-      .orderBy(contacts.firstName),
-    SHOW_RELATIONSHIP_GRAPH ? findWarmPaths(db, "company", companyId) : [],
-    SHOW_RELATIONSHIP_GRAPH ? findProximityNeighbors(db, companyId) : [],
+      .from(projectRepos)
+      .where(and(eq(projectRepos.companyId, companyId), ne(projectRepos.archived, true)))
+      .orderBy(desc(projectRepos.lastPushAt)),
   ]);
 
   if (!company) {
     notFound();
   }
+
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
 
   const normalizedIndustry = normalizeCompanyIndustry(company.industry) ?? "";
   const accountStageSelectOptions = accountStageOptions.map((stage) => ({
@@ -178,254 +123,448 @@ export default async function AccountDetailPage({ params }: Props) {
     value: industry,
     label: industry,
   }));
-  const openTasks = companyTasks.filter((task) => task.status === "open").length;
+
   const openCompanyTasks = companyTasks.filter((task) => task.status === "open");
   const completedCompanyTasks = companyTasks.filter((task) => task.status === "done");
   const totalMrrCents = companyDeals.reduce((sum, deal) => sum + deal.valueCents, 0);
-  const totalImplementationCostCents = companyDeals.reduce((sum, deal) => sum + deal.implementationCostCents, 0);
-  const today = new Date().toISOString().slice(0, 10);
+  const latestMeeting = accountMeetings[0] ?? null;
   const latestActivity = companyActivities[0] ?? null;
-  const reachableContacts = companyContacts.filter(
-    (contact) => Boolean(contact.email || contact.phone || contact.linkedinProfileUrl),
-  ).length;
-  const overdueOpportunities = companyDeals.filter(
-    (deal) => Boolean(deal.nextStepDueDate && deal.nextStepDueDate < today && deal.stage !== "won" && deal.stage !== "lost"),
-  ).length;
-  const nextDueOpportunity = companyDeals.find(
-    (deal) => Boolean(deal.nextStepDueDate && deal.stage !== "won" && deal.stage !== "lost"),
-  );
+  const urgentCount = openActionItems.filter((item) => item.urgent).length;
   const accountNextStepLate = Boolean(company.nextStepDueDate && company.nextStepDueDate < today);
-  const accountHealthLabel = accountNextStepLate
-    ? "Attention needed"
-    : company.nextStep
-      ? "On track"
-      : "Needs next step";
-  const accountHealthTone = accountNextStepLate
-    ? "bg-rose-100 text-rose-800"
-    : company.nextStep
-      ? "bg-emerald-100 text-emerald-800"
-      : "bg-amber-100 text-amber-800";
-  const activitySummary = latestActivity
-    ? `${getActivityMeta(latestActivity.type).label} ${formatRecencyLabel(latestActivity.occurredAt, today)}`
-    : "No activity logged yet";
 
-  // ---- Relationship graph: candidates, existing edges, warm paths ----
-  const companyNameById = new Map(allCompanies.map((row) => [row.id, row.name]));
-  const contactNameById = new Map(
-    allContacts.map((row) => [row.id, `${row.firstName} ${row.lastName}`.trim()]),
-  );
-  const labelFor = (type: EntityType, entityId: number) =>
-    type === "company"
-      ? companyNameById.get(entityId) ?? `Company #${entityId}`
-      : contactNameById.get(entityId) ?? `Contact #${entityId}`;
-  const hrefFor = (type: EntityType, entityId: number) =>
-    type === "company" ? `/accounts/${entityId}` : `/contacts/${entityId}`;
+  // Open items per meeting, so a meeting card can show what it still owes
+  // without a second query per row.
+  const openCountsByMeeting = new Map<number, { open: number; urgent: number }>();
+  for (const item of openActionItems) {
+    const current = openCountsByMeeting.get(item.meetingId) ?? { open: 0, urgent: 0 };
+    current.open += 1;
+    if (item.urgent) {
+      current.urgent += 1;
+    }
+    openCountsByMeeting.set(item.meetingId, current);
+  }
 
-  const relationshipCandidates = [
-    ...allCompanies
-      .filter((row) => row.id !== companyId)
-      .map((row) => ({ type: "company" as const, id: row.id, label: row.name })),
-    ...allContacts.map((row) => ({
-      type: "contact" as const,
-      id: row.id,
-      label: `${row.firstName} ${row.lastName}`.trim(),
-      sublabel: row.companyId ? companyNameById.get(row.companyId) ?? null : null,
-    })),
-  ];
-
-  const edgeTypeSelectOptions = edgeTypeOptions.map((edge) => ({
-    value: edge,
-    label: getEdgeTypeLabel(edge),
-  }));
-
-  const displayEdges = companyRelationships.map((edge) => {
-    const selfIsFrom = edge.fromType === "company" && edge.fromId === companyId;
-    const otherType = selfIsFrom ? edge.toType : edge.fromType;
-    const otherId = selfIsFrom ? edge.toId : edge.fromId;
-    return {
-      id: edge.id,
-      edgeType: edge.edgeType,
-      otherType,
-      otherId,
-      otherLabel: labelFor(otherType, otherId),
-      otherHref: hrefFor(otherType, otherId),
-      strength: edge.strength,
-      evidence: edge.evidence,
-    };
-  });
-
-  const isProspect = company.stage !== "customer";
+  const freshestPush = repos[0]?.lastPushAt ?? null;
+  const pushRecency = getPushRecency(freshestPush, now.getTime());
 
   return (
     <CrmShell
       username={session.username}
       title={company.name}
-      description="Account detail with all associated people, opportunities, tasks, and timeline."
+      description="Everything on this client: what they pay, and every conversation."
     >
-      <section className="gong-panel rounded-xl p-6">
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.85fr)]">
-          <div className="rounded-xl border border-slate-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(240,249,255,0.88))] p-5">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${accountHealthTone}`}>
-                    {accountHealthLabel}
-                  </span>
-                  <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getAccountStageTone(company.stage)}`}>
-                    {getAccountStageLabel(company.stage)}
-                  </span>
-                  <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getDueTone(company.nextStepDueDate, today)}`}>
-                    Next step due {formatDate(company.nextStepDueDate)}
-                  </span>
-                  {normalizedIndustry ? (
-                    <span className="inline-flex rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold text-cyan-800">
-                      {normalizedIndustry}
+      {/* Header strip — identity and the two facts you scan for, nothing else. */}
+      <section className="gong-panel rounded-xl p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getAccountStageTone(company.stage)}`}>
+                {getAccountStageLabel(company.stage)}
+              </span>
+              {normalizedIndustry ? (
+                <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                  {normalizedIndustry}
+                </span>
+              ) : null}
+              {urgentCount > 0 ? (
+                <a
+                  href="#account-action-items"
+                  className="inline-flex rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-800 hover:bg-rose-200"
+                >
+                  {urgentCount} urgent
+                </a>
+              ) : null}
+              {accountNextStepLate ? (
+                <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                  Next step overdue
+                </span>
+              ) : null}
+            </div>
+
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{company.name}</h2>
+
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-slate-600">
+              <span>
+                {latestMeeting ? (
+                  <>
+                    Last meeting{" "}
+                    <Link href={`/meetings/${latestMeeting.slug}`} className="font-medium text-slate-900 underline decoration-slate-300 underline-offset-2">
+                      {formatMeetingDate(latestMeeting.meetingDate, "short")}
+                    </Link>
+                  </>
+                ) : latestActivity ? (
+                  <>
+                    Last touch{" "}
+                    <span className="font-medium text-slate-900">
+                      {getActivityMeta(latestActivity.type).label} on {new Date(latestActivity.occurredAt).toLocaleDateString("en-US")}
                     </span>
-                  ) : null}
-                </div>
-
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Account Command</p>
-                  <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{company.name}</h2>
-                  <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-                    {company.nextStep
-                      ? `Current next step: ${company.nextStep}`
-                      : "No account-level next step is set yet. Add one so follow-up work is visible in the account workspace."}
-                  </p>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Execution</p>
-                    <p className="mt-2 text-lg font-semibold text-slate-950">
-                      {company.nextStepDueDate ? formatDate(company.nextStepDueDate) : "Set due date"}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {accountNextStepLate ? "Account next step is overdue." : company.nextStep ? "Next action is active." : "No active next step yet."}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Last Activity</p>
-                    <p className="mt-2 text-lg font-semibold text-slate-950">{activitySummary}</p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {latestActivity ? new Date(latestActivity.occurredAt).toLocaleDateString() : "Use the timeline to capture context."}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Opportunity Risk</p>
-                    <p className="mt-2 text-lg font-semibold text-slate-950">{overdueOpportunities} overdue</p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {nextDueOpportunity?.nextStepDueDate
-                        ? `Next due opportunity step: ${formatDate(nextDueOpportunity.nextStepDueDate)}`
-                        : "No upcoming opportunity step dates."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <Link href="/accounts" className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700">
-                  Back to Accounts
-                </Link>
-                {company.website ? (
-                  <a
-                    href={company.website}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700"
-                  >
-                    Open Website
-                  </a>
-                ) : null}
-                {company.website ? (
-                  <form action={enrichCompanyFromWebsite}>
-                    <input type="hidden" name="companyId" value={company.id} />
-                    <input type="hidden" name="returnPath" value={`/accounts/${company.id}`} />
-                    <button
-                      type="submit"
-                      className="rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-800 hover:bg-cyan-100"
-                    >
-                      Enrich from website
-                    </button>
-                  </form>
-                ) : null}
-                {company.customerProjectUrl ? (
-                  <a
-                    href={company.customerProjectUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white"
-                  >
-                    Open Project
-                  </a>
-                ) : null}
-              </div>
+                  </>
+                ) : (
+                  <span className="text-slate-500">No contact logged yet</span>
+                )}
+              </span>
+              {repos.length > 0 ? (
+                <span>
+                  Last push <span className="font-medium text-slate-900">{pushRecency.label}</span>
+                </span>
+              ) : null}
+              {company.nextStep ? (
+                <span className="truncate">
+                  Next step: <span className="font-medium text-slate-900">{company.nextStep}</span>
+                  {company.nextStepDueDate ? ` (${formatDate(company.nextStepDueDate)})` : ""}
+                </span>
+              ) : null}
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
-            <article className="gong-kpi rounded-lg p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Stakeholders</p>
-              <p className="mt-2 text-3xl font-semibold text-slate-950">{companyContacts.length}</p>
-              <p className="mt-1 text-sm text-slate-600">{reachableContacts} reachable across phone, email, or LinkedIn</p>
-            </article>
-            <article className="gong-kpi rounded-lg p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Open Pipeline MRR</p>
-              <p className="mt-2 text-3xl font-semibold text-slate-950">{currency.format(Math.round(totalMrrCents / 100))}</p>
-              <p className="mt-1 text-sm text-slate-600">{companyDeals.length} opportunities on this account</p>
-            </article>
-            <article className="gong-kpi rounded-lg p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Follow-up Queue</p>
-              <p className="mt-2 text-3xl font-semibold text-slate-950">{openTasks}</p>
-              <p className="mt-1 text-sm text-slate-600">Open tasks protecting the next action</p>
-            </article>
-            <article className="gong-kpi rounded-lg p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Implementation Cost</p>
-              <p className="mt-2 text-3xl font-semibold text-slate-950">
-                {currency.format(Math.round(totalImplementationCostCents / 100))}
-              </p>
-              <p className="mt-1 text-sm text-slate-600">Tracked delivery cost across opportunities</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section className="sticky top-4 z-10 rounded-xl border border-white/80 bg-white/90 p-3 shadow-lg shadow-slate-900/5 backdrop-blur">
-        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <a href="#account-overview" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">Overview</a>
-            {SHOW_RELATIONSHIP_GRAPH ? (
-              <a href="#account-relationships" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">Relationships</a>
+            <Link href="/accounts" className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700">
+              Back
+            </Link>
+            {company.website ? (
+              <a
+                href={company.website}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700"
+              >
+                Website
+              </a>
             ) : null}
-            <a href="#account-people" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">People</a>
-            <a href="#account-pipeline" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">Pipeline</a>
-            <a href="#account-tasks" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">Tasks</a>
-            <a href="#account-activity" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">Activity</a>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <a href="#contact-create" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">Add contact</a>
-            <a href="#opportunity-create" className="rounded-xl border border-slate-300 px-3 py-1.5 text-sm text-slate-700">Create opportunity</a>
-            <a href="#activity-create" className="rounded-xl bg-slate-900 px-3 py-1.5 text-sm font-medium text-white">Log activity</a>
+            {repos[0]?.htmlUrl ? (
+              <a
+                href={repos[0].htmlUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700"
+              >
+                Repo{repos.length > 1 ? ` +${repos.length - 1}` : ""}
+              </a>
+            ) : null}
+            {company.customerProjectUrl ? (
+              <a
+                href={company.customerProjectUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white"
+              >
+                Open Project
+              </a>
+            ) : null}
           </div>
         </div>
       </section>
 
-      <section id="account-overview" className="gong-panel rounded-xl p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Overview</p>
-            <h2 className="mt-2 text-xl font-semibold text-slate-900">Account Details</h2>
-            <p className="mt-2 text-sm text-slate-600">Keep account metadata, links, and the top-level next step current without leaving the workspace.</p>
-          </div>
-          <div className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600 md:grid-cols-3">
-            <p>Website: {company.website ? "Connected" : "Missing"}</p>
-            <p>Customer project: {company.customerProjectUrl ? "Connected" : "Missing"}</p>
-            <p>Created: {new Date(company.createdAt).toLocaleDateString()}</p>
-          </div>
-        </div>
+      {/* 1. What they pay us. */}
+      <BillingPanel companyId={company.id} />
 
-        <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_320px]">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)]">
+      {/* 2. Everything we've said to each other. */}
+      <AccountTimelinePanel
+        companyId={company.id}
+        companyName={company.name}
+        meetings={accountMeetings}
+        openCountsByMeeting={openCountsByMeeting}
+        dealOptions={companyDeals.map((deal) => ({ id: deal.id, name: deal.name }))}
+        contactOptions={companyContacts.map((contact) => ({
+          id: contact.id,
+          firstName: contact.firstName,
+          lastName: contact.lastName,
+        }))}
+        today={today}
+        activities={companyActivities.map((item) => ({
+          id: item.id,
+          type: item.type,
+          notes: item.notes,
+          occurredAt: item.occurredAt,
+          loggedByUsername: item.loggedByUsername,
+          contextLinks: [
+            ...(item.dealName && item.dealId ? [{ label: item.dealName, href: `/opportunities/${item.dealId}` }] : []),
+            ...(item.contactFirstName && item.contactId
+              ? [{ label: `${item.contactFirstName} ${item.contactLastName}`, href: `/contacts/${item.contactId}` }]
+              : []),
+          ],
+          footer: (
+            <AutoSaveActivityDateField
+              action={updateActivityDate}
+              activityId={item.id}
+              defaultValue={new Date(item.occurredAt).toISOString().slice(0, 10)}
+              returnPath={`/accounts/${company.id}`}
+            />
+          ),
+        }))}
+      />
+
+      {/* 3. What's owed, out of those conversations. */}
+      <AccountActionItemsPanel companyId={company.id} items={openActionItems} />
+
+      <AccountRelationshipGraph companyId={company.id} isProspect={company.stage !== "customer"} />
+
+      <ProposalsPanel companyId={company.id} />
+
+      {/* Everything below is supporting detail — folded away by default. A
+          two-person agency does not need a pipeline board on every account. */}
+      <section className="space-y-3">
+        <CollapsibleFormSection
+          id="account-people"
+          title={`People (${companyContacts.length})`}
+          description="Who we talk to at this account."
+        >
+          <ul className="space-y-3">
+            {companyContacts.length === 0 ? (
+              <li>
+                <EmptyState icon="contact" message="No contacts yet." />
+              </li>
+            ) : null}
+            {companyContacts.map((contact) => (
+              <li key={contact.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold tracking-[0.12em] text-cyan-300">
+                      {getContactInitials(contact.firstName, contact.lastName)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-slate-900">
+                        <Link href={`/contacts/${contact.id}`} className="underline decoration-slate-300 underline-offset-2">
+                          {contact.firstName} {contact.lastName}
+                        </Link>
+                      </p>
+                      <p className="mt-1 text-sm text-slate-600">{contact.title || "No title set"}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                        <CallLink phone={contact.phone} />
+                        {contact.email ? (
+                          <a
+                            href={`mailto:${contact.email}`}
+                            className="inline-flex items-center rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                          >
+                            Email
+                          </a>
+                        ) : null}
+                        {contact.linkedinProfileUrl ? (
+                          <a
+                            href={contact.linkedinProfileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                          >
+                            LinkedIn
+                          </a>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-2 md:grid-cols-2">
+                  <AutoSaveContactField
+                    action={updateContactField}
+                    contactId={contact.id}
+                    field="title"
+                    label="Title"
+                    defaultValue={contact.title ?? ""}
+                    returnPath={`/accounts/${company.id}`}
+                  />
+                  <AutoSaveContactField
+                    action={updateContactField}
+                    contactId={contact.id}
+                    field="email"
+                    label="Email"
+                    type="email"
+                    defaultValue={contact.email ?? ""}
+                    returnPath={`/accounts/${company.id}`}
+                  />
+                  <AutoSaveContactField
+                    action={updateContactField}
+                    contactId={contact.id}
+                    field="phone"
+                    label="Phone"
+                    type="tel"
+                    defaultValue={contact.phone ?? ""}
+                    returnPath={`/accounts/${company.id}`}
+                  />
+                  <AutoSaveContactField
+                    action={updateContactField}
+                    contactId={contact.id}
+                    field="linkedinProfileUrl"
+                    label="LinkedIn"
+                    type="url"
+                    defaultValue={contact.linkedinProfileUrl ?? ""}
+                    returnPath={`/accounts/${company.id}`}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <CollapsibleFormSection title="Add contact" description="Create a contact inside this account." className="mt-4" variant="compact">
+            <form action={createContact}>
+              <input type="hidden" name="companyId" value={company.id} />
+              <div className="grid gap-2 md:grid-cols-2">
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>First name</span>
+                  <input name="firstName" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Last name</span>
+                  <input name="lastName" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Email</span>
+                  <input name="email" type="email" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Phone</span>
+                  <input name="phone" type="tel" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Title</span>
+                  <input name="title" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>LinkedIn URL</span>
+                  <input name="linkedinProfileUrl" type="url" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+              </div>
+              <button type="submit" className="mt-3 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                Add contact
+              </button>
+            </form>
+          </CollapsibleFormSection>
+        </CollapsibleFormSection>
+
+        {/* "Engagement", not "Pipeline" — these rows are the contract, and the
+            billing panel above reads their MRR and build fee. Keep them
+            maintained; just stop leading with them. */}
+        <CollapsibleFormSection
+          id="account-engagement"
+          title={`Engagement (${companyDeals.length})`}
+          description={`${currency.format(Math.round(totalMrrCents / 100))}/mo contracted — feeds the payments panel above.`}
+        >
+          <ul className="space-y-3">
+            {companyDeals.length === 0 ? (
+              <li>
+                <EmptyState icon="opportunity" message="No engagement recorded. Add one so the billing panel knows what was agreed." />
+              </li>
+            ) : null}
+            {companyDeals.map((deal) => (
+              <li key={deal.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getDealStageTone(deal.stage)}`}>
+                        {getDealStageLabel(deal.stage)}
+                      </span>
+                      {deal.expectedCloseDate ? (
+                        <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                          Closes {formatDate(deal.expectedCloseDate)}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-3 font-medium text-slate-900">
+                      <Link href={`/opportunities/${deal.id}`} className="underline decoration-slate-300 underline-offset-2">
+                        {deal.name}
+                      </Link>
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600">Owner: {deal.ownerName ?? "Unassigned"}</p>
+                  </div>
+                  <div className="grid min-w-[180px] gap-2 sm:grid-cols-2">
+                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Monthly</p>
+                      <p className="mt-1 text-base font-semibold text-slate-950">{currency.format(Math.round(deal.valueCents / 100))}</p>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Build fee</p>
+                      <p className="mt-1 text-base font-semibold text-slate-950">
+                        {currency.format(Math.round(deal.implementationCostCents / 100))}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <CollapsibleFormSection title="Add engagement" description="Record what this client agreed to pay." className="mt-4" variant="compact">
+            <form action={createDeal}>
+              <input type="hidden" name="companyId" value={company.id} />
+              <div className="grid gap-2 md:grid-cols-2">
+                <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
+                  <span>Name</span>
+                  <input name="name" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Stage</span>
+                  <select name="stage" defaultValue="won" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
+                    <option value="lead">Lead</option>
+                    <option value="qualified">Qualified</option>
+                    <option value="proposal">Proposal</option>
+                    <option value="negotiation">Negotiation</option>
+                    <option value="won">Won</option>
+                    <option value="lost">Lost</option>
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Owner</span>
+                  <input name="ownerName" placeholder="Justin" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Monthly (USD)</span>
+                  <input name="mrrUsd" type="number" placeholder="195" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700">
+                  <span>Build fee (USD)</span>
+                  <input name="implementationCostUsd" type="number" placeholder="500" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+                <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
+                  <span>Next step</span>
+                  <input name="nextStep" required placeholder="Send proposal draft" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
+                </label>
+              </div>
+              <button type="submit" className="mt-3 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                Add engagement
+              </button>
+            </form>
+          </CollapsibleFormSection>
+        </CollapsibleFormSection>
+
+        <CollapsibleFormSection
+          id="account-tasks"
+          title={`Tasks (${openCompanyTasks.length} open)`}
+          description="Dated follow-ups. Meeting homework lives in Open action items above."
+        >
+          <ul className="space-y-3">
+            {openCompanyTasks.length === 0 ? (
+              <li>
+                <EmptyState icon="task" message="No open tasks right now." />
+              </li>
+            ) : null}
+            {openCompanyTasks.map((task) => (
+              <li key={task.id} className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-slate-900">{task.title}</p>
+                    <p className="text-sm text-slate-600">Due {task.dueDate} • {task.assignedTo ?? "Unassigned"}</p>
+                  </div>
+                  <form action={completeTask}>
+                    <input type="hidden" name="taskId" value={task.id} />
+                    <input type="hidden" name="returnPath" value={`/accounts/${company.id}`} />
+                    <button type="submit" className="rounded-md bg-slate-900 px-2.5 py-1 text-xs font-medium text-white hover:bg-slate-800">
+                      Mark done
+                    </button>
+                  </form>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {completedCompanyTasks.length > 0 ? (
+            <p className="mt-3 text-sm text-slate-500">{completedCompanyTasks.length} completed.</p>
+          ) : null}
+        </CollapsibleFormSection>
+
+        <CollapsibleFormSection
+          id="account-details"
+          title="Account details"
+          description="Stage, industry, links, and the account-level next step."
+        >
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <AutoSaveCompanySelectField
               action={updateCompanyField}
               companyId={company.id}
@@ -478,605 +617,57 @@ export default async function AccountDetailPage({ params }: Props) {
               emptyText="No next step date"
             />
           </div>
-          <aside className="rounded-lg border border-slate-200 bg-slate-50/80 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Account Signals</p>
-            <div className="mt-3 space-y-3 text-sm text-slate-600">
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                <p className="font-medium text-slate-900">Coverage</p>
-                <p className="mt-1">{reachableContacts} of {companyContacts.length} contacts are directly reachable.</p>
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                <p className="font-medium text-slate-900">Pipeline pressure</p>
-                <p className="mt-1">
-                  {overdueOpportunities > 0
-                    ? `${overdueOpportunities} opportunity next steps are overdue.`
-                    : "No overdue opportunity next steps right now."}
-                </p>
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                <p className="font-medium text-slate-900">Recent touch</p>
-                <p className="mt-1">{activitySummary}</p>
-              </div>
-            </div>
-          </aside>
-        </div>
-      </section>
 
-      {SHOW_RELATIONSHIP_GRAPH ? (
-      <section id="account-relationships" className="gong-panel rounded-xl p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Relationship Graph</p>
-            <h2 className="mt-2 text-xl font-semibold text-slate-900">Trust &amp; Warm Paths</h2>
-            <p className="mt-2 max-w-2xl text-sm text-slate-600">
-              Map who this account is connected to. The graph finds the warmest path from a prospect back to a
-              customer you&apos;ve already won, so you never go in cold.
-            </p>
-          </div>
-          <div className="rounded-xl bg-slate-100 px-3 py-2 text-right text-sm font-medium text-slate-700">
-            <p>{displayEdges.length} relationships</p>
-            <p className="text-xs text-slate-500">{warmPaths.length} warm paths found</p>
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-          {/* Warm paths */}
-          <div className="rounded-xl border border-slate-200 bg-[linear-gradient(135deg,rgba(255,255,255,0.95),rgba(240,253,250,0.9))] p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                {isProspect ? "Warm paths to this prospect" : "How you reached this customer"}
-              </p>
-              {warmPaths[0] ? (
-                <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getWarmthTone(warmPaths[0].warmth)}`}>
-                  Best: {warmPaths[0].warmth} warmth
-                </span>
-              ) : null}
-            </div>
-            {warmPaths.length === 0 ? (
-              <p className="mt-3 text-sm text-slate-600">
-                No trust path to an existing customer yet. Add relationships below (a referral, a shared plaza, a
-                mutual contact) and warm intro paths will surface here automatically.
-              </p>
-            ) : (
-              <ul className="mt-3 space-y-3">
-                {warmPaths.map((path, index) => (
-                  <li key={`${path.anchorKey}-${index}`} className="rounded-lg border border-slate-200 bg-white p-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getWarmthTone(path.warmth)}`}>
-                        {path.warmth} warmth
-                      </span>
-                      <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                        {path.hops} hop{path.hops === 1 ? "" : "s"}
-                      </span>
-                      <span className="inline-flex rounded-full bg-cyan-100 px-2.5 py-1 text-xs font-semibold text-cyan-800">
-                        min strength {path.minStrength}
-                      </span>
-                    </div>
-                    <p className="mt-2 flex flex-wrap items-center gap-1.5 text-sm font-medium text-slate-900">
-                      {path.pathLabels.map((label, i) => (
-                        <span key={`${label}-${i}`} className="flex items-center gap-1.5">
-                          {i > 0 ? <span className="text-slate-400">→</span> : null}
-                          <span className="rounded-md bg-slate-100 px-2 py-0.5">{label}</span>
-                        </span>
-                      ))}
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{path.suggestedAsk}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {proximityNeighbors.length > 0 ? (
-              <div className="mt-4 rounded-lg border border-violet-200 bg-violet-50/70 p-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-700">
-                  Plaza neighbors ({proximityNeighbors.length})
-                </p>
-                <ul className="mt-2 space-y-1.5 text-sm text-slate-700">
-                  {proximityNeighbors.slice(0, 5).map((neighbor) => (
-                    <li key={neighbor.id} className="flex items-center justify-between gap-2">
-                      <Link href={`/accounts/${neighbor.id}`} className="underline decoration-slate-300 underline-offset-2">
-                        {neighbor.name}
-                      </Link>
-                      <span className="text-xs text-slate-500">
-                        {neighbor.sharedPlaza
-                          ? "same plaza"
-                          : neighbor.distanceMeters != null
-                            ? `${Math.round(neighbor.distanceMeters)}m away`
-                            : "nearby"}
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Delivery</p>
+              {repos.length === 0 ? (
+                <p className="mt-2 text-sm text-slate-500">No repo linked to this account.</p>
+              ) : (
+                <ul className="mt-2 space-y-1.5 text-sm">
+                  {repos.map((repo) => (
+                    <li key={repo.fullName} className="flex items-center justify-between gap-3">
+                      <a
+                        href={repo.htmlUrl ?? "#"}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="truncate font-mono text-xs text-cyan-700 hover:underline"
+                      >
+                        {repo.fullName}
+                      </a>
+                      <span className="shrink-0 text-xs text-slate-500">
+                        {getPushRecency(repo.lastPushAt, now.getTime()).label}
                       </span>
                     </li>
                   ))}
                 </ul>
-              </div>
-            ) : null}
-          </div>
-
-          {/* Existing relationships + add form */}
-          <div className="space-y-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Mapped relationships</p>
-              <ul className="mt-3 space-y-2">
-                {displayEdges.length === 0 ? (
-                  <li>
-                    <EmptyState icon="contact" message="No relationships mapped yet. Add the first connection below." />
-                  </li>
-                ) : null}
-                {displayEdges.map((edge) => (
-                  <li
-                    key={edge.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2"
-                  >
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getEdgeTypeTone(edge.edgeType)}`}>
-                        {getEdgeTypeLabel(edge.edgeType)}
-                      </span>
-                      <Link href={edge.otherHref} className="text-sm font-medium text-slate-900 underline decoration-slate-300 underline-offset-2">
-                        {edge.otherLabel}
-                      </Link>
-                      <span className="text-xs text-slate-500">strength {edge.strength}</span>
-                      {edge.evidence ? <span className="text-xs italic text-slate-400">“{edge.evidence}”</span> : null}
-                    </div>
-                    <form action={deleteRelationship}>
-                      <input type="hidden" name="relationshipId" value={edge.id} />
-                      <input type="hidden" name="returnPath" value={`/accounts/${company.id}`} />
-                      <button
-                        type="submit"
-                        className="rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-rose-50 hover:text-rose-700"
-                      >
-                        Remove
-                      </button>
-                    </form>
-                  </li>
-                ))}
-              </ul>
+              )}
             </div>
-
-            <CollapsibleFormSection
-              title="Add relationship"
-              description="Connect this account to a company or contact to grow the trust graph."
-            >
-              <RelationshipEditor
-                companyId={company.id}
-                candidates={relationshipCandidates}
-                edgeOptions={edgeTypeSelectOptions}
-                returnPath={`/accounts/${company.id}`}
-                action={createRelationship}
-              />
-            </CollapsibleFormSection>
-          </div>
-        </div>
-      </section>
-      ) : null}
-
-      <section id="account-people" className="grid gap-6 lg:grid-cols-2">
-        <article className="gong-panel rounded-xl p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">People</p>
-              <h2 className="mt-2 text-lg font-semibold text-slate-900">Stakeholders</h2>
-              <p className="mt-2 text-sm text-slate-600">Keep account stakeholders current, reachable, and easy to hand off.</p>
-            </div>
-            <div className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
-              {companyContacts.length} total
+            <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Record</p>
+              <p className="mt-2 text-sm text-slate-600">
+                Created {new Date(company.createdAt).toLocaleDateString("en-US")}
+              </p>
+              {company.address ? <p className="mt-1 text-sm text-slate-600">{company.address}</p> : null}
+              {company.stripeCustomerId ? (
+                <p className="mt-1 font-mono text-xs text-slate-500">{company.stripeCustomerId}</p>
+              ) : null}
             </div>
           </div>
-          <div id="contact-create">
-            <CollapsibleFormSection title="Add contact" description="Create a contact inside this account." className="mt-4">
-              <form action={createContact}>
-                <input type="hidden" name="companyId" value={company.id} />
-                <div className="grid gap-2 md:grid-cols-2">
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>First name</span>
-                    <input name="firstName" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>Last name</span>
-                    <input name="lastName" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>Email</span>
-                    <input name="email" type="email" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>Phone</span>
-                    <input name="phone" type="tel" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>LinkedIn URL</span>
-                    <input name="linkedinProfileUrl" type="url" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>Title</span>
-                    <input name="title" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-                  </label>
-                </div>
-                <button type="submit" className="mt-3 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-                  Add contact
-                </button>
-              </form>
-            </CollapsibleFormSection>
-          </div>
-          <ul className="mt-4 space-y-3">
-            {companyContacts.length === 0 ? <li><EmptyState icon="contact" message="No contacts yet. Add a contact to build your account coverage." /></li> : null}
-            {companyContacts.map((contact) => (
-              <li key={contact.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <div className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold tracking-[0.12em] text-cyan-300">
-                      {getContactInitials(contact.firstName, contact.lastName)}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-slate-900">
-                        <Link href={`/contacts/${contact.id}`} className="underline decoration-slate-300 underline-offset-2">
-                          {contact.firstName} {contact.lastName}
-                        </Link>
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">{contact.title || "No title set"}</p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                        <CallLink phone={contact.phone} />
-                        {contact.email ? (
-                          <a
-                            href={`mailto:${contact.email}`}
-                            className="inline-flex items-center rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                          >
-                            Email
-                          </a>
-                        ) : null}
-                        {contact.linkedinProfileUrl ? (
-                          <a
-                            href={contact.linkedinProfileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                          >
-                            LinkedIn
-                          </a>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-                    {contact.email || contact.phone || contact.linkedinProfileUrl ? "Reachable" : "Needs info"}
-                  </div>
-                </div>
-                <div className="mt-4 grid gap-2 md:grid-cols-2">
-                  <AutoSaveContactField
-                    action={updateContactField}
-                    contactId={contact.id}
-                    field="title"
-                    label="Title"
-                    defaultValue={contact.title ?? ""}
-                    returnPath={`/accounts/${company.id}`}
-                  />
-                  <AutoSaveContactField
-                    action={updateContactField}
-                    contactId={contact.id}
-                    field="email"
-                    label="Email"
-                    type="email"
-                    defaultValue={contact.email ?? ""}
-                    returnPath={`/accounts/${company.id}`}
-                  />
-                  <AutoSaveContactField
-                    action={updateContactField}
-                    contactId={contact.id}
-                    field="phone"
-                    label="Phone"
-                    type="tel"
-                    defaultValue={contact.phone ?? ""}
-                    returnPath={`/accounts/${company.id}`}
-                  />
-                  <AutoSaveContactField
-                    action={updateContactField}
-                    contactId={contact.id}
-                    field="linkedinProfileUrl"
-                    label="LinkedIn"
-                    type="url"
-                    defaultValue={contact.linkedinProfileUrl ?? ""}
-                    returnPath={`/accounts/${company.id}`}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </article>
 
-        <article id="account-pipeline" className="gong-panel rounded-xl p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Pipeline</p>
-              <h2 className="mt-2 text-lg font-semibold text-slate-900">Opportunities</h2>
-              <p className="mt-2 text-sm text-slate-600">Track every revenue motion tied to this account and make the next step obvious.</p>
-            </div>
-            <div className="rounded-xl bg-slate-100 px-3 py-2 text-right text-sm font-medium text-slate-700">
-              <p>{companyDeals.length} tracked</p>
-              <p className="text-xs text-slate-500">{currency.format(Math.round(totalMrrCents / 100))} total MRR</p>
-            </div>
-          </div>
-          <div id="opportunity-create">
-            <CollapsibleFormSection title="Create Opportunity" description="Add a new opportunity for this account." className="mt-4">
-              <form action={createDeal}>
-                <input type="hidden" name="companyId" value={company.id} />
-                <div className="grid gap-2 md:grid-cols-2">
-                  <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
-                    <span>Opportunity name</span>
-                    <input name="name" required className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>Stage</span>
-                    <select name="stage" defaultValue="lead" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                      <option value="lead">Lead</option>
-                      <option value="qualified">Qualified</option>
-                      <option value="proposal">Proposal</option>
-                      <option value="negotiation">Negotiation</option>
-                      <option value="won">Won</option>
-                      <option value="lost">Lost</option>
-                    </select>
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>MRR (USD)</span>
-                    <input name="mrrUsd" type="number" placeholder="5000" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>Implementation Cost (USD)</span>
-                    <input
-                      name="implementationCostUsd"
-                      type="number"
-                      placeholder="1500"
-                      className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>Opportunity owner</span>
-                    <input name="ownerName" placeholder="Justin" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
-                    <span>Next step</span>
-                    <input
-                      name="nextStep"
-                      required
-                      placeholder="Send proposal draft"
-                      className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>Next step due</span>
-                    <input name="nextStepDueDate" type="date" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>Expected close</span>
-                    <input name="expectedCloseDate" type="date" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900" />
-                  </label>
-                </div>
-                <button type="submit" className="mt-3 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-                  Create Opportunity
-                </button>
-              </form>
-            </CollapsibleFormSection>
-          </div>
-          <ul className="mt-4 space-y-3">
-            {companyDeals.length === 0 ? <li><EmptyState icon="opportunity" message="No opportunities yet. Create one to start tracking pipeline." /></li> : null}
-            {companyDeals.map((deal) => {
-              const opportunityOverdue = Boolean(
-                deal.nextStepDueDate && deal.nextStepDueDate < today && deal.stage !== "won" && deal.stage !== "lost",
-              );
-
-              return (
-                <li key={deal.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getDealStageTone(deal.stage)}`}>
-                          {getDealStageLabel(deal.stage)}
-                        </span>
-                        {opportunityOverdue ? (
-                          <span className="inline-flex rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-800">
-                            Next step overdue
-                          </span>
-                        ) : null}
-                        {deal.expectedCloseDate ? (
-                          <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                            Closes {formatDate(deal.expectedCloseDate)}
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="mt-3 font-medium text-slate-900">
-                        <Link href={`/opportunities/${deal.id}`} className="underline decoration-slate-300 underline-offset-2">
-                          {deal.name}
-                        </Link>
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">Owner: {deal.ownerName ?? "Unassigned"}</p>
-                    </div>
-                    <div className="grid min-w-[180px] gap-2 sm:grid-cols-2">
-                      <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">MRR</p>
-                        <p className="mt-1 text-base font-semibold text-slate-950">{currency.format(Math.round(deal.valueCents / 100))}</p>
-                      </div>
-                      <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Implementation</p>
-                        <p className="mt-1 text-base font-semibold text-slate-950">
-                          {currency.format(Math.round(deal.implementationCostCents / 100))}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1.3fr)_220px]">
-                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Next step</p>
-                      <p className="mt-2 text-sm leading-6 text-slate-800">{deal.nextStep || "No next step set for this opportunity."}</p>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Due</p>
-                      <p className={`mt-2 text-sm font-medium ${opportunityOverdue ? "text-rose-700" : "text-slate-800"}`}>
-                        {deal.nextStepDueDate ? formatDate(deal.nextStepDueDate) : "No date set"}
-                      </p>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </article>
-      </section>
-
-      <ProposalsPanel companyId={company.id} />
-
-      <BillingPanel companyId={company.id} />
-
-      <section className="grid gap-6 lg:grid-cols-2">
-        <article id="account-tasks" className="gong-panel rounded-xl p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Tasks</p>
-              <h2 className="mt-2 text-lg font-semibold text-slate-900">Follow-up Queue</h2>
-              <p className="mt-2 text-sm text-slate-600">Use this list to protect the next action on the account.</p>
-            </div>
-            <div className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
-              {openTasks} open
-            </div>
-          </div>
-          <ul className="mt-4 space-y-3">
-            {openCompanyTasks.length === 0 ? <li><EmptyState icon="task" message="No open tasks right now." /></li> : null}
-            {openCompanyTasks.map((task) => (
-              <li key={task.id} className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium text-slate-900">{task.title}</p>
-                    <p className="text-sm text-slate-600">Due {task.dueDate} • {task.assignedTo ?? "Unassigned"}</p>
-                  </div>
-                  <form action={completeTask}>
-                    <input type="hidden" name="taskId" value={task.id} />
-                    <input type="hidden" name="returnPath" value={`/accounts/${company.id}`} />
-                    <button type="submit" className="rounded-md bg-slate-900 px-2.5 py-1 text-xs font-medium text-white hover:bg-slate-800">
-                      Mark done
-                    </button>
-                  </form>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <CollapsibleFormSection
-            title={`Completed tasks (${completedCompanyTasks.length})`}
-            description="Expand to review finished follow-ups on this account."
-            className="mt-5 border-slate-200 bg-slate-50/70"
-          >
-            <ul className="space-y-3">
-              {completedCompanyTasks.length === 0 ? <li><EmptyState icon="task" message="No completed tasks yet." /></li> : null}
-              {completedCompanyTasks.map((task) => (
-                <li key={task.id} className="rounded-lg border border-slate-200 bg-white p-4">
-                  <p className="font-medium text-slate-900">{task.title}</p>
-                  <p className="text-sm text-slate-600">Due {task.dueDate} • {task.assignedTo ?? "Unassigned"}</p>
-                  <p className="mt-1">
-                    <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
-                      Done
-                    </span>
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </CollapsibleFormSection>
-        </article>
-
-        <article id="account-activity" className="gong-panel rounded-xl p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Activity</p>
-              <h2 className="mt-2 text-lg font-semibold text-slate-900">Timeline</h2>
-              <p className="mt-2 text-sm text-slate-600">Capture context so the whole team can pick up the thread.</p>
-            </div>
-            <div className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">
-              {companyActivities.length} entries
-            </div>
-          </div>
-          <div id="activity-create">
-            <CollapsibleFormSection title="Log activity" description="Capture a note, call, meeting, or email." className="mt-4">
-              <form action={logActivity}>
-                <input type="hidden" name="companyId" value={company.id} />
-                <input type="hidden" name="returnPath" value={`/accounts/${company.id}`} />
-                <div className="grid gap-2 md:grid-cols-2">
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>Type</span>
-                    <select name="type" defaultValue="note" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                      {activityTypeOptions.map((type) => (
-                        <option key={type} value={type}>
-                          {getActivityMeta(type).label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>Opportunity (optional)</span>
-                    <select name="dealId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                      <option value="">None</option>
-                      {companyDeals.map((deal) => (
-                        <option key={deal.id} value={deal.id}>
-                          {deal.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
-                    <span>Contact (optional)</span>
-                    <select name="contactId" className="rounded-md border border-slate-300 px-3 py-2 text-slate-900">
-                      <option value="">None</option>
-                      {companyContacts.map((contact) => (
-                        <option key={contact.id} value={contact.id}>
-                          {contact.firstName} {contact.lastName}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700">
-                    <span>Activity date</span>
-                    <input
-                      name="occurredOn"
-                      type="date"
-                      defaultValue={today}
-                      className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
-                    <span>Notes</span>
-                    <textarea
-                      name="notes"
-                      required
-                      rows={3}
-                      className="rounded-md border border-slate-300 px-3 py-2 text-slate-900"
-                      placeholder="Add a quick note about this account interaction."
-                    />
-                  </label>
-                </div>
-                <button type="submit" className="mt-3 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-                  Save activity
-                </button>
-              </form>
-            </CollapsibleFormSection>
-          </div>
-          <ActivityTimeline
-            emptyMessage="No activity yet."
-            items={companyActivities.map((item) => ({
-              id: item.id,
-              type: item.type,
-              notes: item.notes,
-              occurredAt: item.occurredAt,
-              loggedByUsername: item.loggedByUsername,
-              contextLinks: [
-                ...(item.dealName && item.dealId ? [{ label: item.dealName, href: `/opportunities/${item.dealId}` }] : []),
-                ...(item.contactFirstName && item.contactId
-                  ? [{ label: `${item.contactFirstName} ${item.contactLastName}`, href: `/contacts/${item.contactId}` }]
-                  : []),
-              ],
-              footer: (
-                <AutoSaveActivityDateField
-                  action={updateActivityDate}
-                  activityId={item.id}
-                  defaultValue={new Date(item.occurredAt).toISOString().slice(0, 10)}
-                  returnPath={`/accounts/${company.id}`}
-                />
-              ),
-            }))}
-          />
-        </article>
+          {company.website ? (
+            <form action={enrichCompanyFromWebsite} className="mt-4">
+              <input type="hidden" name="companyId" value={company.id} />
+              <input type="hidden" name="returnPath" value={`/accounts/${company.id}`} />
+              <button
+                type="submit"
+                className="rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-800 hover:bg-cyan-100"
+              >
+                Enrich from website
+              </button>
+            </form>
+          ) : null}
+        </CollapsibleFormSection>
       </section>
     </CrmShell>
   );

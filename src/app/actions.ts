@@ -2,6 +2,7 @@
 
 import { and, eq, ilike, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { setFlashToast } from "@/lib/flash";
 import { defineAction, type Db } from "@/lib/define-action";
@@ -12,7 +13,7 @@ import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { scrapeCompanyWebsite } from "@/lib/enrich";
 import { geocodeAddress } from "@/lib/geocode";
 import { sourceNearbyBusinesses } from "@/lib/source-nearby";
-import { activities, agentRuns, companies, contacts, deals, payments, placeEnrichment, proposals, relationships, salesTasks, stripeSubscriptions, suggestions, users } from "@/lib/schema";
+import { activities, agentRuns, companies, contacts, deals, meetingActionItems, meetingCompanies, meetings, payments, placeEnrichment, proposals, relationships, salesTasks, stripeSubscriptions, suggestions, users } from "@/lib/schema";
 import { generatePin } from "@/lib/proposal/pin";
 import { parsePricingTotals } from "@/lib/proposal/markdown";
 import { cleanOptionalText, mergeDateWithTime, normalizeUrl, normalizeUsPhone } from "@/lib/normalize";
@@ -1457,5 +1458,252 @@ export const updateProposal = defineAction({
     revalidatePath(parsed.returnPath);
   }
   await setFlashToast("Proposal saved");
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Meeting notes (plan 006) — merged in from the standalone toprock_client_notes
+// site. A meeting is the heavy artifact; `activities` stays for one-line touches.
+// ---------------------------------------------------------------------------
+
+const meetingCreateSchema = z.object({
+  companyId: z.coerce.number().int().positive(),
+  title: z.string().trim().min(2),
+  meetingDate: z.string().trim().min(1),
+  format: z.string().trim().optional(),
+  statusLabel: z.string().trim().optional(),
+  tldr: z.string().trim().optional(),
+  bodyMd: z.string().optional(),
+  returnPath: z.string().optional(),
+});
+
+const meetingFieldSchema = z.object({
+  meetingId: z.coerce.number().int().positive(),
+  field: z.enum(["title", "meetingDate", "format", "statusLabel", "tldr", "bodyMd"]),
+  value: z.string(),
+  returnPath: z.string().optional(),
+});
+
+const meetingActionCreateSchema = z.object({
+  meetingId: z.coerce.number().int().positive(),
+  owner: z.string().trim().min(1),
+  action: z.string().trim().min(2),
+  urgent: z.coerce.boolean().optional(),
+  returnPath: z.string().optional(),
+});
+
+const meetingActionStatusSchema = z.object({
+  actionItemId: z.coerce.number().int().positive(),
+  status: z.enum(["todo", "doing", "done", "deferred"]),
+  returnPath: z.string().optional(),
+});
+
+const meetingActionDeleteSchema = z.object({
+  actionItemId: z.coerce.number().int().positive(),
+  returnPath: z.string().optional(),
+});
+
+function slugifyMeeting(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+// Mirrors the old file-naming convention exactly: YYYY-MM-DD-short-topic. The
+// date prefix is what made those file names sortable and recognisable, so it
+// survives the move into the database.
+async function uniqueMeetingSlug(db: Db, meetingDate: string, title: string) {
+  const root = `${meetingDate}-${slugifyMeeting(title)}`.slice(0, 120).replace(/-+$/, "") || meetingDate;
+  let candidate = root;
+  for (let i = 2; ; i++) {
+    const existing = await db.query.meetings.findFirst({
+      columns: { id: true },
+      where: eq(meetings.slug, candidate),
+    });
+    if (!existing) {
+      return candidate;
+    }
+    candidate = `${root}-${i}`;
+  }
+}
+
+// Every account touched by a meeting needs its page revalidated, not just the
+// primary one — the scuba cluster shares notes across two accounts.
+async function revalidateMeetingAccounts(db: Db, meetingId: number) {
+  const primary = await db
+    .select({ companyId: meetings.companyId })
+    .from(meetings)
+    .where(eq(meetings.id, meetingId));
+  const secondary = await db
+    .select({ companyId: meetingCompanies.companyId })
+    .from(meetingCompanies)
+    .where(eq(meetingCompanies.meetingId, meetingId));
+
+  for (const companyId of new Set([...primary, ...secondary].map((row) => row.companyId))) {
+    revalidatePath(`/accounts/${companyId}`);
+  }
+  revalidatePath("/meetings");
+  revalidatePath("/");
+}
+
+export const createMeeting = defineAction({
+  schema: meetingCreateSchema,
+  input: (formData) => ({
+    companyId: formData.get("companyId"),
+    title: formData.get("title"),
+    meetingDate: formData.get("meetingDate"),
+    format: formData.get("format")?.toString() ?? undefined,
+    statusLabel: formData.get("statusLabel")?.toString() ?? undefined,
+    tldr: formData.get("tldr")?.toString() ?? undefined,
+    bodyMd: formData.get("bodyMd")?.toString() ?? undefined,
+    returnPath: formData.get("returnPath")?.toString() ?? undefined,
+  }),
+  handler: async ({ input: parsed, db }) => {
+    const slug = await uniqueMeetingSlug(db, parsed.meetingDate, parsed.title);
+
+    await db.insert(meetings).values({
+      slug,
+      title: parsed.title,
+      meetingDate: parsed.meetingDate,
+      format: cleanOptionalText(parsed.format),
+      statusLabel: cleanOptionalText(parsed.statusLabel),
+      tldr: cleanOptionalText(parsed.tldr),
+      bodyMd: parsed.bodyMd ?? "",
+      companyId: parsed.companyId,
+      source: "manual",
+    });
+
+    revalidatePath(`/accounts/${parsed.companyId}`);
+    revalidatePath("/meetings");
+    revalidatePath("/");
+    await setFlashToast("Meeting note added");
+    redirect(`/meetings/${slug}`);
+  },
+});
+
+export const updateMeetingField = defineAction({
+  schema: meetingFieldSchema,
+  input: (formData) => ({
+    meetingId: formData.get("meetingId"),
+    field: formData.get("field"),
+    value: formData.get("value") ?? "",
+    returnPath: formData.get("returnPath")?.toString() ?? undefined,
+  }),
+  handler: async ({ input: parsed, db }) => {
+    const trimmed = parsed.value.trim();
+
+    if (parsed.field === "title" && trimmed.length < 2) {
+      throw new Error("A meeting needs a title.");
+    }
+    if (parsed.field === "meetingDate" && !trimmed) {
+      throw new Error("A meeting needs a date.");
+    }
+
+    // The body is stored verbatim — trimming markdown would eat the trailing
+    // blank lines that separate blocks.
+    const value =
+      parsed.field === "bodyMd"
+        ? parsed.value
+        : parsed.field === "title" || parsed.field === "meetingDate"
+          ? trimmed
+          : cleanOptionalText(trimmed);
+
+    await db
+      .update(meetings)
+      .set({ [parsed.field]: value, updatedAt: new Date() })
+      .where(eq(meetings.id, parsed.meetingId));
+
+    await revalidateMeetingAccounts(db, parsed.meetingId);
+    if (parsed.returnPath?.startsWith("/")) {
+      revalidatePath(parsed.returnPath);
+    }
+  },
+});
+
+export const createMeetingActionItem = defineAction({
+  schema: meetingActionCreateSchema,
+  input: (formData) => ({
+    meetingId: formData.get("meetingId"),
+    owner: formData.get("owner"),
+    action: formData.get("action"),
+    urgent: formData.get("urgent") === "on" || formData.get("urgent") === "true",
+    returnPath: formData.get("returnPath")?.toString() ?? undefined,
+  }),
+  handler: async ({ input: parsed, db }) => {
+    const meeting = await db.query.meetings.findFirst({
+      columns: { id: true, companyId: true },
+      where: eq(meetings.id, parsed.meetingId),
+    });
+    if (!meeting) {
+      throw new Error("Meeting not found.");
+    }
+
+    await db.insert(meetingActionItems).values({
+      meetingId: meeting.id,
+      // Denormalised from the meeting, never from the form — a client-supplied
+      // company id here would let an item land on the wrong account.
+      companyId: meeting.companyId,
+      owner: parsed.owner,
+      action: parsed.action,
+      urgent: Boolean(parsed.urgent),
+    });
+
+    await revalidateMeetingAccounts(db, meeting.id);
+    if (parsed.returnPath?.startsWith("/")) {
+      revalidatePath(parsed.returnPath);
+    }
+    await setFlashToast("Action item added");
+  },
+});
+
+export const updateMeetingActionStatus = defineAction({
+  schema: meetingActionStatusSchema,
+  input: (formData) => ({
+    actionItemId: formData.get("actionItemId"),
+    status: formData.get("status"),
+    returnPath: formData.get("returnPath")?.toString() ?? undefined,
+  }),
+  handler: async ({ input: parsed, db }) => {
+    const [updated] = await db
+      .update(meetingActionItems)
+      .set({
+        status: parsed.status,
+        completedAt: parsed.status === "done" ? new Date() : null,
+      })
+      .where(eq(meetingActionItems.id, parsed.actionItemId))
+      .returning({ meetingId: meetingActionItems.meetingId });
+
+    if (updated) {
+      await revalidateMeetingAccounts(db, updated.meetingId);
+    }
+    revalidatePath("/tasks");
+    if (parsed.returnPath?.startsWith("/")) {
+      revalidatePath(parsed.returnPath);
+    }
+  },
+});
+
+export const deleteMeetingActionItem = defineAction({
+  schema: meetingActionDeleteSchema,
+  input: (formData) => ({
+    actionItemId: formData.get("actionItemId"),
+    returnPath: formData.get("returnPath")?.toString() ?? undefined,
+  }),
+  handler: async ({ input: parsed, db }) => {
+    const [deleted] = await db
+      .delete(meetingActionItems)
+      .where(eq(meetingActionItems.id, parsed.actionItemId))
+      .returning({ meetingId: meetingActionItems.meetingId });
+
+    if (deleted) {
+      await revalidateMeetingAccounts(db, deleted.meetingId);
+    }
+    revalidatePath("/tasks");
+    if (parsed.returnPath?.startsWith("/")) {
+      revalidatePath(parsed.returnPath);
+    }
+    await setFlashToast("Action item removed");
   },
 });

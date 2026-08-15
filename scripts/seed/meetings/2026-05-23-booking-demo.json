@@ -1,0 +1,28 @@
+{
+  "slug": "2026-05-23-booking-demo",
+  "title": "Booking System Demo & Lightspeed Integration Plan",
+  "meetingDate": "2026-05-23",
+  "format": "Working session — demo + feedback",
+  "statusLabel": "Mocked flow ready for client testing",
+  "tldr": "The custom booking flow is end-to-end mocked: course → cohort → divers → age check → payment → paperwork → medical → review. An admin panel exists for managing bookings, classes, cohorts, trips, and waivers. Next: ship to the shop for hands-on testing while we wire Stripe and the Lightspeed integration (create customer, mark course purchased, pull and assign an e-learning code from inventory). Trip payments (Square / separate bank account) are deferred to a later iteration.",
+  "primaryAccount": "Scuba Dive Utah",
+  "alsoAccounts": [],
+  "actionItems": [
+    { "owner": "Dev", "action": "Send admin panel login + URL so the shop can start clicking around.", "status": "done" },
+    { "owner": "Dev", "action": "Email the shop their homework / what to test.", "status": "done" },
+    { "owner": "Dev", "action": "Implement conditional Box B rendering on the medical form + physician trigger pop-up.", "status": "done" },
+    { "owner": "Dev", "action": "Add month filter above the customer cohort list; hide cancelled cohorts.", "status": "todo" },
+    { "owner": "Dev", "action": "Build waitlist support on cohorts.", "status": "todo" },
+    { "owner": "Dev", "action": "Wire up Stripe checkout in place of the simulated payment step.", "status": "todo" },
+    { "owner": "Dev", "action": "Create a Test customer + Test E-Learning Code in Lightspeed; build the create-customer + assign-course + assign-code path against it.", "status": "done" },
+    { "owner": "Dev", "action": "Build the new contact form (Pacific + Scuba sides) with reliable email delivery and working spam protection.", "status": "todo" },
+    { "owner": "Dev", "action": "Pacific Scuba domain: identify host, file proof-of-ownership request to recover access.", "status": "todo", "urgent": true },
+    { "owner": "Client", "action": "Forward an example SDI e-learning confirmation email so paste-in UI matches reality.", "status": "todo" },
+    { "owner": "Client", "action": "Verify with training agency whether the liability form needs exact layout or just wording.", "status": "todo" },
+    { "owner": "Client", "action": "Confirm physician form PDF location (or send it over).", "status": "todo" },
+    { "owner": "Client", "action": "Decide: address field skip-able or required?", "status": "todo" },
+    { "owner": "Client", "action": "Have staff (Christy + retail team) actively try to break the booking flow once login is sent. Email findings to the shared thread.", "status": "done" },
+    { "owner": "Client", "action": "Cancellation policy text — provide the official wording to swap into the review screen.", "status": "todo" },
+    { "owner": "Both", "action": "Start a single shared email thread; append all feedback / bug reports there going forward.", "status": "done" }
+  ]
+}

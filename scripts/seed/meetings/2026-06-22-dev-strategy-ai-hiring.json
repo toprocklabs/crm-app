@@ -1,0 +1,19 @@
+{
+  "slug": "2026-06-22-dev-strategy-ai-hiring",
+  "title": "Law Firm Software Build — Dev Strategy, AI & Hiring",
+  "meetingDate": "2026-06-22",
+  "format": "Intro / advisory call",
+  "statusLabel": "Discovery — rethinking the build approach",
+  "tldr": "First call with MHM Law Firm, a medium-sized multi-practice firm that has spent ~3 years and significant money building its own legal-practice software with outside dev shops — and feels behind because the prior builds never integrated AI (\"everyone's on Xbox, we're on Atari\"). The driver: they pay for a stack of disconnected tools (Filevine, Amicus, HotDocs, DocuSign/Adobe, QuickBooks) that don't talk to each other, and estimate an in-house product would pay for itself in ~3 years while also being something they could market and sell to other firms. Top Rock's core reframe: with AI, custom software is now near-commodity — a dev-shop build is the wrong, most expensive path. The recommendation is to hire one strong AI-native engineer in-house (start as a full-time contractor, convert to employee/partner with equity so incentives align), have them start small — nail one feature, then iterate fast rather than rebuild everything. New-grad AI-native talent (e.g. BYU) runs ~$100k/yr; the engineer market is soft right now, so it's a good time to hire. Top Rock won't take the full build (too large for their bandwidth) but will act as thought partner: build clickable prototypes for the firm to play with, and help interview & vet engineering candidates since the partners \"don't speak the language.\" Top Rock to send recap notes + a high-level proposal; MHM to think about the shift from outsourcing to an in-house hire and tap their network for the right engineer.",
+  "primaryAccount": "MHM Law Firm",
+  "alsoAccounts": [],
+  "actionItems": [
+    { "owner": "Dev", "action": "Send MHM the recap / feedback notes from this meeting.", "status": "todo" },
+    { "owner": "Dev", "action": "Put together a high-level proposal / recommendation (in-house hire + Top Rock support).", "status": "todo" },
+    { "owner": "Dev", "action": "Offer to build clickable prototypes of key concepts for MHM to play with.", "status": "todo" },
+    { "owner": "Dev", "action": "Be available to interview & technically vet engineering candidates when MHM has them.", "status": "todo" },
+    { "owner": "Client", "action": "Reflect on the shift from outsourcing to an in-house hire.", "status": "todo" },
+    { "owner": "Client", "action": "Tap the firm's network for referrals to a strong AI-native engineer.", "status": "todo" },
+    { "owner": "Client", "action": "Gather what's needed (access / screenshots) to assess how much of the 3-year build is usable.", "status": "todo" }
+  ]
+}

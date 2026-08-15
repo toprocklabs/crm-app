@@ -1,0 +1,22 @@
+{
+  "slug": "2026-06-04-design-lockin-content-strategy",
+  "title": "Design Lock-In & Content Strategy",
+  "meetingDate": "2026-06-04",
+  "format": "Video call — design walkthrough + content workflow",
+  "statusLabel": "Layout locked; moving to content",
+  "tldr": "Working call (Justin + Brandon) that locked the design layout & style and moved the project into the content phase. Top Rock walked the latest site version (built from Brandon's round-2 color/layout feedback); Brandon approved the flow — lead with what he does, then conditions, then story, services/packages, email capture, and reviews at the bottom. The team agreed a content-iteration workflow: Top Rock ships the live site → Brandon drops screenshots + copy edits into a shared Google Doc → Top Rock uses AI to organize the feedback and ship revisions, async. They scoped a conditions page (modeled loosely on his mentor Dr. Bueller's info-dense page) for SEO + educating considering patients, with AI drafting ~65% of the copy for Brandon to refine. Brandon defined his brand voice (professional, honest, integrity, truth — clinical experience + literature, but not prescriptive or arrogant; kill the \"true aligned practitioner\" line). He still needs professional photos, a logo, and Google/Yelp reviews set up. Hosting decided: domain on GoDaddy, point it to Top Rock's Vercel hosting (off Duda). Lots of bigger ideas parked (patient PDF reports/case studies, a mobility app, dropping Jane App). Brandon's in town week of July 13 for a lunch.",
+  "primaryAccount": "Vital Alignments",
+  "alsoAccounts": [],
+  "actionItems": [
+    { "owner": "Client", "action": "Review the shipped site; send screenshots + copy edits via the shared Google Doc.", "status": "todo" },
+    { "owner": "Client", "action": "Get a round of professional photos (candids, headshots, lifestyle).", "status": "todo" },
+    { "owner": "Client", "action": "Provide a logo.", "status": "todo" },
+    { "owner": "Client", "action": "Set up Google Business + Yelp and start collecting reviews.", "status": "todo" },
+    { "owner": "Client", "action": "Handle the DBA / legal name change.", "status": "todo" },
+    { "owner": "Dev", "action": "Ship the live site to Brandon for copy review.", "status": "todo" },
+    { "owner": "Dev", "action": "Build the conditions page and AI-draft the copy (~65%) for Brandon to refine.", "status": "todo" },
+    { "owner": "Dev", "action": "Tune copy to Brandon's voice; remove \"true aligned practitioner.\"", "status": "todo" },
+    { "owner": "Dev", "action": "Set up Vercel hosting and point the GoDaddy domain to it.", "status": "todo" },
+    { "owner": "Justin", "action": "Schedule the July lunch (week of July 13) — meet in person.", "status": "done" }
+  ]
+}

@@ -97,6 +97,17 @@ export const paymentStatus = pgEnum("payment_status", [
 
 export const paymentType = pgEnum("payment_type", ["one_time", "recurring"]);
 
+// Where a meeting action item stands. Deliberately not `task_status` — meeting
+// items carry an owner rather than a due date, and `deferred` is a real state in
+// the notes ("E-learning deferred until scheduling is solid"), not a synonym for
+// open. See planning/006-client-notes-merge/.
+export const meetingActionStatus = pgEnum("meeting_action_status", [
+  "todo",
+  "doing",
+  "done",
+  "deferred",
+]);
+
 export const users = pgTable(
   "users",
   {
@@ -510,6 +521,90 @@ export const projectRepos = pgTable(
   ],
 );
 
+// Client meeting notes, merged in from the standalone toprock_client_notes site
+// (plan 006). One row per meeting. `bodyMd` averages ~29KB — never select it in
+// a list query; the timeline reads title/date/tldr only.
+export const meetings = pgTable(
+  "meetings",
+  {
+    id: serial("id").primaryKey(),
+    // "2026-08-01-website-go-live-domain-cutover" — carried over from the old
+    // file names so the import is idempotent and the URLs stay recognisable.
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    // Absolute dates only, per the notes convention. Never relative.
+    meetingDate: date("meeting_date").notNull(),
+    format: text("format"), // "In-person working session" | "Call" | "Demo"
+    statusLabel: text("status_label"), // free text, e.g. "Marketing site LIVE"
+    tldr: text("tldr"),
+    bodyMd: text("body_md").notNull().default(""),
+    // The canonical owner. A meeting always has exactly one home account; extra
+    // accounts hang off `meetingCompanies`.
+    companyId: integer("company_id")
+      .references(() => companies.id, { onDelete: "cascade" })
+      .notNull(),
+    source: dataSource("source").default("manual").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("meetings_slug_unique").on(table.slug),
+    // The account timeline: filter by company, sort by date.
+    index("meetings_company_date_idx").on(table.companyId, table.meetingDate),
+    index("meetings_date_idx").on(table.meetingDate),
+  ],
+);
+
+// Secondary accounts on a shared meeting. The scuba cluster is the reason this
+// is a join table and not a column: one notes folder covers both Scuba Dive Utah
+// and Pacific Scuba Repair, and both are paying accounts.
+export const meetingCompanies = pgTable(
+  "meeting_companies",
+  {
+    meetingId: integer("meeting_id")
+      .references(() => meetings.id, { onDelete: "cascade" })
+      .notNull(),
+    companyId: integer("company_id")
+      .references(() => companies.id, { onDelete: "cascade" })
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("meeting_companies_pk").on(table.meetingId, table.companyId),
+    index("meeting_companies_company_idx").on(table.companyId),
+  ],
+);
+
+// Homework out of a meeting. Rows, not prose, because the roll-up across every
+// client ("what do we owe people this week") is the point of the merge.
+export const meetingActionItems = pgTable(
+  "meeting_action_items",
+  {
+    id: serial("id").primaryKey(),
+    meetingId: integer("meeting_id")
+      .references(() => meetings.id, { onDelete: "cascade" })
+      .notNull(),
+    // Denormalised from the parent meeting so the cross-account roll-up is one
+    // indexed read instead of a join out through meeting_companies. Safe: an
+    // action item never moves between meetings.
+    companyId: integer("company_id")
+      .references(() => companies.id, { onDelete: "cascade" })
+      .notNull(),
+    // Free text on purpose: the notes use 'Dev', 'Client', 'Both', 'Justin',
+    // 'Team'. Constraining this to an enum would lose information on import.
+    owner: text("owner").notNull(),
+    action: text("action").notNull(),
+    status: meetingActionStatus("status").default("todo").notNull(),
+    urgent: boolean("urgent").default(false).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("meeting_action_items_meeting_idx").on(table.meetingId),
+    // The roll-up: open items for an account, and open items across all accounts.
+    index("meeting_action_items_open_idx").on(table.companyId, table.status),
+  ],
+);
+
 export type DealStage = (typeof dealStage.enumValues)[number];
 export type ActivityType = (typeof activityType.enumValues)[number];
 export type AccountStage = (typeof accountStage.enumValues)[number];
@@ -520,3 +615,4 @@ export type SuggestionStatus = (typeof suggestionStatus.enumValues)[number];
 export type ProposalStatus = (typeof proposalStatus.enumValues)[number];
 export type PaymentStatus = (typeof paymentStatus.enumValues)[number];
 export type PaymentType = (typeof paymentType.enumValues)[number];
+export type MeetingActionStatus = (typeof meetingActionStatus.enumValues)[number];

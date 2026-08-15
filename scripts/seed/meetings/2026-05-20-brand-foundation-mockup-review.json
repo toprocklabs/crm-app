@@ -1,0 +1,19 @@
+{
+  "slug": "2026-05-20-brand-foundation-mockup-review",
+  "title": "Brand Foundation & Mockup Review",
+  "meetingDate": "2026-05-20",
+  "format": "Video call — brand walkthrough + round-2 mockup review",
+  "statusLabel": "Brand foundation locked; design iterating",
+  "tldr": "Brandon paused the build to nail the brand backbone first — and came in with real clarity. The name is confirmed: Vital Alignments, with a Hawaiian tagline meaning \"live well,\" a one-sentence pitch, mission, target audience, problem and result all written out. He listed his service lineup and described the site as a landing page that funnels visitors to \"book an appointment,\" backed by blog + YouTube content. He's bought into vitalalignments.com (hit a minor login snag, parked it). On look: earth tones — sand, ocean, volcanic rock, wood/trees, sunrise/sunset — \"Apple meets holistic human performance,\" minimal/elegant/cinematic/grounded, not techy/neon/sterile. He reviewed the round-2 mockups: liked Coastal Sanctuary (#1) and Rooted Expression (#3, loved the relief→restore→integrate→optimize care journey); cooled on Vital Precision (#2, too techy / too \"Dr. Bueller\"); liked Living Waters' green-blue depth but wants to kill the orange CTA and drop the Hawaiian-word copy. Logo is paused (he's chasing an old Fuji-bike logo for inspiration, likes a wave+mountain mark). Next: Top Rock generates a round 3 from this feedback.",
+  "primaryAccount": "Vital Alignments",
+  "alsoAccounts": [],
+  "actionItems": [
+    { "owner": "Client", "action": "Send a photo of his handwritten notes/checklist (the foundational brand content).", "status": "done" },
+    { "owner": "Client", "action": "Track down the old Fuji-bike logo detail for logo inspiration.", "status": "todo" },
+    { "owner": "Client", "action": "Confirm the Hawaiian tagline spelling/wording.", "status": "todo" },
+    { "owner": "Dev", "action": "Log this feedback and generate a round 3 of three mockups.", "status": "done" },
+    { "owner": "Dev", "action": "Try non-orange CTA colors and the soft-green/ocean palette.", "status": "done" },
+    { "owner": "Dev", "action": "Keep email capture / newsletter in the design.", "status": "todo" },
+    { "owner": "Justin", "action": "Schedule a July lunch when Brandon is in town (meet Austin in person).", "status": "done" }
+  ]
+}

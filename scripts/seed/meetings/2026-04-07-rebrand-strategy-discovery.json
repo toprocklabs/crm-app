@@ -1,0 +1,17 @@
+{
+  "slug": "2026-04-07-rebrand-strategy-discovery",
+  "title": "Rebrand Strategy & Discovery",
+  "meetingDate": "2026-04-07",
+  "format": "Discovery call — vision & rebrand scoping",
+  "statusLabel": "Kickoff / discovery",
+  "tldr": "First discovery call with Dr. Brandon Imada, a chiropractor connected to Top Rock through Justin (a patient). Brandon wants to rebrand from \"Surf N Sport Chiropractic\" to \"Vital Alignments\" — a name that's less niche and captures his evolving philosophy that real healing is about adjusting beliefs, mindset, body, emotions and spirit, not just the table adjustment. His priority stack: (1) rebrand → (2) new website / landing page → (3) a content platform (blog + YouTube + downloadable PDFs) → (4) paid programs/courses, with one-on-one care as the high-ticket funnel goal. His old WordPress/Duda site (built by designer \"Hayes\") feels dated — a patient once said it \"looks like a Word document you just published.\" Top Rock pitched their model: not a traditional branding agency, but technical + business operators who leverage AI to iterate fast and cheap — they'll generate several full mockup directions to click through instead of a slow weeks-long mood-board process. Agreed next step: Top Rock drafts a proposal (with a small AI down-payment); Brandon gathers his brand notes/materials and sits with what matters most for the rebrand; then a more structured, transcribed brand session.",
+  "primaryAccount": "Vital Alignments",
+  "alsoAccounts": [],
+  "actionItems": [
+    { "owner": "Client", "action": "Gather existing brand content/notes (notepads, prior AI work, docs) and send to Top Rock.", "status": "done" },
+    { "owner": "Client", "action": "Sit with the rebrand and get clear on what matters most right now; add fresh notes for the next session.", "status": "done" },
+    { "owner": "Dev", "action": "Put brains together and draft a proposal (deliverables + small AI down payment).", "status": "done" },
+    { "owner": "Dev", "action": "Schedule a more structured, transcribed brand session once the proposal is approved.", "status": "done" },
+    { "owner": "Dev", "action": "Generate the first round of mockup directions from Brandon's vision.", "status": "done" }
+  ]
+}

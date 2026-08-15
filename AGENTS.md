@@ -40,6 +40,8 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `drizzle/` generated migrations
 - `tests/` `node:test` suites for pure logic — run with `npm test`
 - `scripts/sync-repos.mjs` GitHub org → `project_repos` mirror (`npm run sync:repos [-- --dry-run]`)
+- `scripts/import-meetings.mjs` seeds `meetings` from the committed pairs in `scripts/seed/meetings/`
+- `scripts/seed/meetings/` one `<slug>.md` + `<slug>.json` per imported client note — the source of the import
 - `scripts/map-repos.mjs` links mirrored repos to accounts (`node scripts/map-repos.mjs [--apply]`)
 - `scripts/create-user.mjs` CLI user upsert helper
 - `scripts/run-tests.mjs` test discovery shim (Node 20's runner doesn't glob `.ts`)
@@ -52,6 +54,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `/opportunities`, `/opportunities/[id]`
 - `/proposals`, `/proposals/[id]` (internal proposal management + signed-PDF download at `/proposals/[id]/pdf`)
 - `/payments` Stripe payment mirror (ledger + unassigned-payment matching)
+- `/meetings`, `/meetings/[slug]` client meeting notes (merged in from `toprock_client_notes`)
 - `/tasks`
 - `/activities`
 - `/inbox` human-in-the-loop queue for agent-proposed writes (`suggestions`)
@@ -70,12 +73,16 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `proposals` (client-facing statements of work; markdown content, PIN, status lifecycle)
 - `proposal_documents` (the signed PDF base64, one row per proposal — kept off the hot proposals row)
 - `project_repos` (read-only mirror of the GitHub org's repos; `company_id` links delivery to an account)
+- `meetings` (client meeting notes; markdown body, one canonical account)
+- `meeting_companies` (extra accounts a meeting is shared with — the scuba cluster)
+- `meeting_action_items` (per-meeting homework, rows not prose, so it rolls up across clients)
 - Enums:
   - `account_stage`: new_lead, attempting_to_engage, engaged, in_pipeline, customer
   - `deal_stage`: lead, qualified, proposal, negotiation, won, lost
   - `activity_type`: note, call, meeting, email, instagram, linkedin, task
   - `task_status`: open, done
   - `proposal_status`: draft, sent, viewed, signed, declined, superseded
+  - `meeting_action_status`: todo, doing, done, deferred
 
 ## Coding Conventions (Repo-Specific)
 - Prefer server components for pages and data reads.
@@ -135,6 +142,16 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - The "Last push" column shows `MAX(last_push_at)` across an account's non-archived repos. An account with **no linked repo renders grey `—` and sorts last in both directions** — it is unmeasured, not stale, and must never be colored like an abandoned account.
 - Recency bands live in `src/lib/push-recency.ts` (pure, `now` passed in, covered by `tests/push-recency.test.ts`). Change thresholds there, not in the page.
 
+## Client meeting notes (plan 006)
+- The standalone `client-projects/toprock_client_notes` site is **frozen**. Never add a note there. Meeting notes are CRM records now.
+- An account page leads with **money** (`BillingPanel`) then **Meetings & notes**. Contacts, engagement, tasks and details are collapsed on purpose — this CRM serves a two-person agency, so the pipeline machinery is supporting detail, not the headline. Don't promote them back up.
+- A meeting belongs to one account (`meetings.company_id`) and may be shared with more via `meeting_companies`. Always read through `src/lib/meeting/queries.ts` — a bare `where company_id = ?` silently hides shared notes from the second account.
+- `meeting_action_items.company_id` is denormalised from the meeting's **owner** account. The per-account panel reads by *visibility* (so a shared note's homework shows on both pages); the cross-account roll-up reads by *owner* (so it can't double-count). That asymmetry is deliberate.
+- **Never select `body_md` in a list query** — it averages ~11KB. Only `/meetings/[slug]` reads it. Same lesson as `proposal_documents` in plan 002.
+- Body markdown is parsed by `src/lib/meeting/markdown.ts` into a block tree and rendered by `MeetingBody` — there is no `dangerouslySetInnerHTML` in the meeting path, so an imported note can't inject markup. Supported subset: `##`/`###`, `-` bullets, GFM tables, `---`, `**bold**`, `*em*`, `` `code` ``, `[links](url)`. Extend the parser (and `tests/meeting-markdown.test.ts`), not the callers.
+- Re-import the seed notes with `node scripts/import-meetings.mjs [--dry-run] [--force] [--only <slug>]`. It is idempotent by slug, and **without `--force` it never overwrites an edited body or resurrects completed action items**. The committed `scripts/seed/meetings/*.{md,json}` pairs make the whole import replayable from an empty database.
+- Opportunities feed the money panel (`deals.value_cents` and `implementation_cost_cents` where stage = `won`). Demoted in the UI, still load-bearing — don't stop maintaining them.
+
 ## When Editing Existing Features
 - If touching contact profile editing, preserve blur autosave behavior.
 - If touching phone display, preserve `Call` button (`tel:` link behavior).
@@ -161,6 +178,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - If opportunity workflow touched: verify `/opportunities/[id]` save + stage updates + timeline logging
 - If proposals touched: verify `/proposals` create/edit, the public `/p/[slug]` PIN gate + render, and (for signing changes) an end-to-end test signature against a throwaway proposal row
 - If project repos touched: run `npm run sync:repos -- --dry-run`, then confirm `/accounts` sorts by Last push in both directions with unlinked accounts pinned last
+- If meetings touched: run `node scripts/import-meetings.mjs --dry-run`, open a note with tables (`/meetings/2026-08-01-website-go-live-domain-cutover`), and confirm a shared note still appears on both Scuba Dive Utah and Pacific Scuba Repair
 
 ## Safety Notes
 - Do not store plaintext passwords; always hash with bcrypt (`bcryptjs`).

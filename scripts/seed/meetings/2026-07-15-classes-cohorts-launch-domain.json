@@ -1,0 +1,31 @@
+{
+  "slug": "2026-07-15-classes-cohorts-launch-domain",
+  "title": "Admin Training, Website Launch & Domain Recovery",
+  "meetingDate": "2026-07-15",
+  "format": "In-person working session — hands-on admin training",
+  "statusLabel": "Pre-launch; training toward go-live",
+  "tldr": "Hands-on training session at the shop, walking Kate (and new hire Lola) through the admin. The big mental model landed: a \"class\" is the reusable course definition; a \"cohort\" is a dated session/group of that class — so you build a class once and just add (or duplicate) cohorts for each new set of dates instead of recreating everything. Kate gathered a punch-list of course-creation UX fixes (make image upload easier, mark required vs. optional fields, add placeholders, alt-text should be optional). The website is the next milestone: review the copy, send photos, and pull existing content from the current HostGator site — plus Lola caught a mobile bug (the landing-page hero/backdrop is blocked out on phones). On Pacific: the team mapped the exact Google account recovery path (log in → \"Try another way\" → verification code to Jeff's recovery email → then change recovery to the shop's own), pending getting Jeff to a computer for the 10-minute code. The Pacific check-in form just needs the redundant \"authorize repair\" box removed. Plan for go-live: flip real Stripe payments for a few in-person guinea-pig customers (RentItBiz stays up in parallel), verify it lands correctly in Lightspeed, then transfer the domain.",
+  "primaryAccount": "Scuba Dive Utah",
+  "alsoAccounts": ["Pacific Scuba Repair"],
+  "actionItems": [
+    { "owner": "Kate / Lola", "action": "Add all classes + cohorts (mainly cohorts) — the scuba certification classes & Scuba Discoveries through Sept–Dec; edit/verify course info as they go.", "status": "todo" },
+    { "owner": "Kate", "action": "Send the HostGator login (plus any business copy/docs) so the team can pull existing website content.", "status": "done" },
+    { "owner": "Kate", "action": "Get Jeff on a call / by his computer to read the Google verification code (10-min window); provide his details.", "status": "todo", "urgent": true },
+    { "owner": "Kate", "action": "Review website copy + layout; send photos (team, instructors, facility). Be brutally honest.", "status": "done" },
+    { "owner": "Kate", "action": "Play with Trips in the admin; confirm it displays the way she wants.", "status": "todo" },
+    { "owner": "Kate", "action": "Save the admin PIN once Austin sends it.", "status": "todo" },
+    { "owner": "Kate / Lola", "action": "Run more people through the booking flow (Lola included); do a real/fake end-to-end test and report anything confusing.", "status": "todo" },
+    { "owner": "Dev", "action": "Make image upload easier (file upload) in course creation.", "status": "todo" },
+    { "owner": "Dev", "action": "Make alt text + non-essential fields optional; add ★ required markers, \"optional\" labels, and placeholders.", "status": "todo" },
+    { "owner": "Dev", "action": "Fix the mobile landing-page hero (backdrop/\"Dive Deep\" blocked out on phones).", "status": "todo" },
+    { "owner": "Dev", "action": "Confirm/renew the Lightspeed token so the tuition-item SKU search works.", "status": "todo" },
+    { "owner": "Dev", "action": "Remove the authorization box from the Pacific check-in form.", "status": "todo" },
+    { "owner": "Dev", "action": "Set up auto/confirmation emails on course signup.", "status": "todo" },
+    { "owner": "Dev", "action": "Confirm remaining Stripe logistics (tax ID, etc.) and finish wiring.", "status": "todo" },
+    { "owner": "Dev", "action": "Walk Kate through the full e-learning-code + Lightspeed flow over Zoom with a test; audit the first real sales.", "status": "deferred" },
+    { "owner": "Dev", "action": "Send/set the admin PIN link.", "status": "todo" },
+    { "owner": "Dev", "action": "Pull/copy existing content from HostGator once Kate provides the login.", "status": "done" },
+    { "owner": "Both", "action": "Set a go-live goal date; enable real Stripe payments for a few guinea pigs; plan to swing by a Saturday Scuba Discovery (9–11am).", "status": "todo" },
+    { "owner": "Dev", "action": "Build a laminated one-pager of the admin/tech process — after the admin UX is finalized.", "status": "deferred" }
+  ]
+}
