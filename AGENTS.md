@@ -39,6 +39,8 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `src/components/` shared UI helpers (`crm-shell`, autosave fields, call link, collapsible form section)
 - `drizzle/` generated migrations
 - `tests/` `node:test` suites for pure logic — run with `npm test`
+- `scripts/sync-repos.mjs` GitHub org → `project_repos` mirror (`npm run sync:repos [-- --dry-run]`)
+- `scripts/map-repos.mjs` links mirrored repos to accounts (`node scripts/map-repos.mjs [--apply]`)
 - `scripts/create-user.mjs` CLI user upsert helper
 - `scripts/run-tests.mjs` test discovery shim (Node 20's runner doesn't glob `.ts`)
 
@@ -67,6 +69,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `activities`
 - `proposals` (client-facing statements of work; markdown content, PIN, status lifecycle)
 - `proposal_documents` (the signed PDF base64, one row per proposal — kept off the hot proposals row)
+- `project_repos` (read-only mirror of the GitHub org's repos; `company_id` links delivery to an account)
 - Enums:
   - `account_stage`: new_lead, attempting_to_engage, engaged, in_pipeline, customer
   - `deal_stage`: lead, qualified, proposal, negotiation, won, lost
@@ -93,7 +96,9 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - Preserve the dark utility sidebar, bright analytics canvas, crisp white panels, and cyan/blue accent system unless explicitly redesigning again.
 - Favor dense but readable information hierarchy: compact KPI blocks, sharp tables, restrained pills, and fewer redundant explainer sections.
 - Avoid reintroducing glossy/glassy gradients or duplicative summary panels that repeat the page header or table metadata.
-- On `/accounts`, keep the top area focused on a single add-account action panel plus the main account table.
+- The shell is full-bleed (no centered `max-w` cap) so wide tables get the whole viewport. Don't reintroduce a max-width wrapper in `crm-shell.tsx` or `SkeletonShell`.
+- The desktop sidebar collapses to a 64px icon rail. State lives in `document.documentElement.dataset.sidebar` (`expanded` / `collapsed`), seeded before paint by the inline script in `app/layout.tsx` and persisted to `localStorage["crm.sidebar-collapsed"]`. Collapsed styling is CSS-only (`html[data-sidebar="collapsed"] …` in `globals.css`) — keep it out of React state or it re-introduces a hydration mismatch and a flash of the expanded rail.
+- On `/accounts`, the account table is the page. Add account and Closed Lost are secondary: both are compact `CollapsibleFormSection variant="compact"` toggles, not full panels. Do not promote either back into its own headed section.
 
 ## Key Workflows Added
 - Account stage workflow lives at `/accounts` and `/accounts/[id]`.
@@ -121,6 +126,15 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `proposals.signed_pdf_base64` still exists and is read as a fallback, but nothing writes to it. It is dropped in a follow-up; until then, keep using explicit column lists on proposal queries.
 - The client page must stay visually identical to the legacy hosted proposals (CSS ported verbatim in `src/app/p/proposal-public.css`).
 
+## GitHub project activity (plan 005)
+- `project_repos` is a **read-only mirror** of the `toprocklabs` GitHub org. Nothing in this app writes to GitHub. The request path never calls the GitHub API — `/accounts` reads Postgres only.
+- Refresh with `npm run sync:repos`. One request (`GET /orgs/{org}/repos`) covers every repo because the org listing carries `pushed_at`; a full sync costs 1–2 calls against a 5,000/hour budget. **Not yet scheduled** — until a cron is wired up the column is only as fresh as the last manual run.
+- The sync deliberately does **not** touch `company_id` or `is_internal`. Those are curated by hand and must survive every sync. Repos that vanish from the org listing are marked `archived`, never deleted — the account link is the expensive part.
+- Auth: `GITHUB_TOKEN` (fine-grained PAT, read-only, Contents + Metadata) with `GITHUB_ORG` defaulting to `toprocklabs`. Locally the script falls back to `gh auth token`, so a developer with `gh auth login` needs no extra setup.
+- Mapping new repos: `node scripts/map-repos.mjs` reports, `--apply` writes. The slug matcher gets ~70%; links it can't reach (`scuba-dive-riverton` → *Scuba Dive Utah*) live in `MANUAL_LINKS` inside that script so the mapping is reproducible from an empty database.
+- The "Last push" column shows `MAX(last_push_at)` across an account's non-archived repos. An account with **no linked repo renders grey `—` and sorts last in both directions** — it is unmeasured, not stale, and must never be colored like an abandoned account.
+- Recency bands live in `src/lib/push-recency.ts` (pure, `now` passed in, covered by `tests/push-recency.test.ts`). Change thresholds there, not in the page.
+
 ## When Editing Existing Features
 - If touching contact profile editing, preserve blur autosave behavior.
 - If touching phone display, preserve `Call` button (`tel:` link behavior).
@@ -128,7 +142,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - If adding/renaming routes, update top nav in `src/components/crm-shell.tsx`.
 - If editing create/log forms, preserve the collapsible interaction pattern.
 - If editing account stage selection, preserve immediate client-side feedback and the direct server-action update pattern in `AutoSaveCompanySelectField`.
-- If editing the account create form on `/accounts`, keep it spacious and readable; do not collapse it back into a high-column cramped layout.
+- If editing the account create form on `/accounts`, keep the expanded form spacious and readable (2-column grid, full-width URL/next-step fields); only its collapsed toggle is compact.
 
 ## Database Change Workflow
 1. Update `src/lib/schema.ts`
@@ -146,6 +160,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - If account stage touched: verify `/accounts` create flow and `/accounts/[id]` stage updates
 - If opportunity workflow touched: verify `/opportunities/[id]` save + stage updates + timeline logging
 - If proposals touched: verify `/proposals` create/edit, the public `/p/[slug]` PIN gate + render, and (for signing changes) an end-to-end test signature against a throwaway proposal row
+- If project repos touched: run `npm run sync:repos -- --dry-run`, then confirm `/accounts` sorts by Last push in both directions with unlinked accounts pinned last
 
 ## Safety Notes
 - Do not store plaintext passwords; always hash with bcrypt (`bcryptjs`).

@@ -6,6 +6,9 @@ import { usePathname } from "next/navigation";
 import { useCallback, useState } from "react";
 import { logout } from "@/app/login/actions";
 
+// Desktop sidebar collapse is a per-browser preference, not per-session state.
+const sidebarStorageKey = "crm.sidebar-collapsed";
+
 const links = [
   {
     href: "/",
@@ -166,26 +169,53 @@ export function CrmShell({
   const [menuOpen, setMenuOpen] = useState(false);
   const close = useCallback(() => setMenuOpen(false), []);
 
+  // Collapse is driven by a `data-sidebar` attribute on <html> (seeded by an
+  // inline script in the root layout) rather than React state: it survives
+  // navigation, costs no re-render, and can't produce a hydration mismatch.
+  const toggleCollapsed = useCallback(() => {
+    const root = document.documentElement;
+    const next = root.dataset.sidebar === "collapsed" ? "expanded" : "collapsed";
+    root.dataset.sidebar = next;
+    try {
+      window.localStorage.setItem(sidebarStorageKey, next === "collapsed" ? "1" : "0");
+    } catch {
+      // Private-mode storage failures shouldn't break the toggle.
+    }
+  }, []);
+
   return (
     <main className="crm-shell min-h-screen bg-[var(--app-bg)] text-slate-950">
-      <div className="mx-auto grid min-h-screen w-full max-w-[1500px] gap-0 md:grid-cols-[240px_minmax(0,1fr)]">
+      <div className="crm-shell-grid grid min-h-screen w-full gap-0 md:grid-cols-[240px_minmax(0,1fr)]">
         <aside className="crm-sidebar border-r border-slate-200/95 bg-[var(--sidebar-bg)] px-3 py-4 text-slate-100 md:sticky md:top-0 md:h-screen">
-          <div className="flex items-center gap-2.5 px-2">
-            <Image src="/toprock_logo_black.png" alt="Toprock" width={36} height={32} className="h-8 w-auto rounded-lg" />
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200">Toprock</p>
+          <div className="crm-sidebar-head flex items-center justify-between gap-2 px-2">
+            <div className="flex items-center gap-2.5">
+              <Image src="/toprock_logo_black.png" alt="Toprock" width={36} height={32} className="h-8 w-auto rounded-lg" />
+              <p className="crm-sidebar-label text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200">Toprock</p>
+            </div>
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              aria-label="Toggle navigation width"
+              title="Toggle navigation width"
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/10 hover:text-white"
+            >
+              <svg className="crm-sidebar-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="crm-sidebar-meta">
+            <div className="mt-4 px-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{username}</p>
+            </div>
+
+            <div className="mt-5 px-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Workspace</p>
             </div>
           </div>
 
-          <div className="mt-4 px-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{username}</p>
-          </div>
-
-          <div className="mt-5 px-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Workspace</p>
-          </div>
-
-          <nav className="mt-2 grid gap-0.5">
+          <nav className="crm-sidebar-nav mt-2 grid gap-0.5">
             {links.map((link) => {
               const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
               return (
@@ -193,36 +223,43 @@ export function CrmShell({
                   key={link.href}
                   href={link.href}
                   onClick={close}
-                  className={`group flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm transition ${
+                  title={link.label}
+                  className={`crm-sidebar-link group flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm transition ${
                     isActive
                       ? "bg-white/12 text-white"
                       : "text-slate-400 hover:bg-white/6 hover:text-white"
                   }`}
                 >
                   <span
-                    className={`inline-flex h-7 w-7 items-center justify-center rounded-md ${
+                    className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${
                       isActive ? "text-cyan-300" : "text-slate-500 group-hover:text-slate-300"
                     }`}
                   >
                     {link.icon}
                   </span>
-                  <span className={`font-medium ${isActive ? "text-white" : ""}`}>{link.label}</span>
+                  <span className={`crm-sidebar-label font-medium ${isActive ? "text-white" : ""}`}>{link.label}</span>
                 </Link>
               );
             })}
           </nav>
 
-          <form action={logout} className="mt-6 px-1">
+          <form action={logout} className="crm-sidebar-logout mt-6 px-1">
             <button
               type="submit"
-              className="w-full rounded-lg border border-white/8 bg-white/4 px-3 py-2 text-sm text-slate-400 transition hover:bg-white/8 hover:text-white"
+              title="Log out"
+              className="flex w-full items-center justify-center rounded-lg border border-white/8 bg-white/4 px-3 py-2 text-sm text-slate-400 transition hover:bg-white/8 hover:text-white"
             >
-              Log out
+              <span className="crm-sidebar-label">Log out</span>
+              <svg className="crm-sidebar-logout-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
             </button>
           </form>
         </aside>
 
-        <section className="min-w-0 px-4 py-4 md:px-6 md:py-5">
+        <section className="min-w-0 px-4 py-4 md:px-5 md:py-5">
           <header className="rounded-xl border border-slate-200/95 bg-white px-5 py-4 shadow-sm md:px-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-3">

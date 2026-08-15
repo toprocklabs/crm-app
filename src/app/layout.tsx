@@ -18,6 +18,13 @@ export default async function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full text-slate-900">
+        {/* Apply the stored sidebar width before first paint so a collapsed
+            sidebar never flashes open on navigation. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{document.documentElement.dataset.sidebar=localStorage.getItem("crm.sidebar-collapsed")==="1"?"collapsed":"expanded"}catch(e){}`,
+          }}
+        />
         {children}
         {flashToast ? <Toast message={flashToast} /> : null}
       </body>

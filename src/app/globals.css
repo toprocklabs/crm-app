@@ -253,6 +253,46 @@ body {
   color: rgb(100 116 139);
 }
 
+/* Repo push recency (plan 005). Same geometry as .crm-due-pill, its own colour
+   ramp: cyan = shipping today, through to red = gone quiet. "none" is grey and
+   deliberately not red — an account with no linked repo is unmeasured, not
+   abandoned, and must not read as the latter. */
+.crm-shell .crm-push-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1rem;
+  white-space: nowrap;
+}
+
+.crm-shell .crm-push-pill[data-band="today"] {
+  background: rgb(207 250 254);
+  color: rgb(14 116 144);
+}
+
+.crm-shell .crm-push-pill[data-band="warm"] {
+  background: rgb(220 252 231);
+  color: rgb(21 128 61);
+}
+
+.crm-shell .crm-push-pill[data-band="slow"] {
+  background: rgb(254 243 199);
+  color: rgb(146 64 14);
+}
+
+.crm-shell .crm-push-pill[data-band="cold"] {
+  background: rgb(254 226 226);
+  color: rgb(185 28 28);
+}
+
+.crm-shell .crm-push-pill[data-band="none"] {
+  background: rgb(248 250 252);
+  color: rgb(100 116 139);
+}
+
 .crm-shell .gong-panel {
   border: 1px solid rgb(226 232 240 / 0.95);
   background: #fff;
@@ -293,6 +333,65 @@ body {
 
 .crm-sidebar {
   overflow-y: auto;
+}
+
+/* Collapsed sidebar. Driven by `data-sidebar` on <html> (seeded before paint by
+   the inline script in app/layout.tsx, toggled in crm-shell.tsx) so the width
+   survives navigation without React state or a hydration mismatch. */
+@media (min-width: 768px) {
+  html[data-sidebar="collapsed"] .crm-shell-grid {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+}
+
+html[data-sidebar="collapsed"] .crm-sidebar {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+html[data-sidebar="collapsed"] .crm-sidebar-label,
+html[data-sidebar="collapsed"] .crm-sidebar-meta {
+  display: none;
+}
+
+html[data-sidebar="collapsed"] .crm-sidebar-head {
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+html[data-sidebar="collapsed"] .crm-sidebar-nav {
+  margin-top: 1rem;
+}
+
+html[data-sidebar="collapsed"] .crm-sidebar-link {
+  justify-content: center;
+  gap: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+html[data-sidebar="collapsed"] .crm-sidebar-caret {
+  transform: rotate(180deg);
+}
+
+html[data-sidebar="collapsed"] .crm-sidebar-logout {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+html[data-sidebar="collapsed"] .crm-sidebar-logout button {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.crm-sidebar-logout-icon {
+  display: none;
+}
+
+html[data-sidebar="collapsed"] .crm-sidebar-logout-icon {
+  display: inline-block;
 }
 
 .crm-disclosure > summary::-webkit-details-marker {

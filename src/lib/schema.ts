@@ -475,6 +475,41 @@ export const placeEnrichment = pgTable(
   ],
 );
 
+// Read-only mirror of the GitHub org's repos (plan 005). Nothing here is ever
+// written back to GitHub. `/accounts` reads MAX(last_push_at) per company; the
+// request path never calls the GitHub API.
+export const projectRepos = pgTable(
+  "project_repos",
+  {
+    id: serial("id").primaryKey(),
+    // "owner/name" — the stable identity. A rename produces a new row; the old
+    // one is marked archived by the next full sync rather than deleted.
+    fullName: text("full_name").notNull(),
+    // Nullable on purpose: an unmapped repo is still mirrored so it can show up
+    // in the "delivery with no account" view. Same contract as payments.company_id.
+    companyId: integer("company_id").references(() => companies.id, {
+      onDelete: "set null",
+    }),
+    // Internal tooling (the CRM itself, toprock_brain, ...) is mirrored but
+    // excluded from the orphan view, which would otherwise be mostly noise.
+    isInternal: boolean("is_internal").default(false).notNull(),
+    isPrivate: boolean("is_private").default(true).notNull(),
+    archived: boolean("archived").default(false).notNull(),
+    htmlUrl: text("html_url"),
+    // The signal. Nullable: a repo with no commits has no pushed_at.
+    lastPushAt: timestamp("last_push_at", { withTimezone: true }),
+    lastCommitSha: text("last_commit_sha"),
+    lastCommitMessage: text("last_commit_message"),
+    lastCommitAuthor: text("last_commit_author"),
+    syncedAt: timestamp("synced_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("project_repos_full_name_unique").on(table.fullName),
+    index("project_repos_company_idx").on(table.companyId),
+    index("project_repos_last_push_idx").on(table.lastPushAt),
+  ],
+);
+
 export type DealStage = (typeof dealStage.enumValues)[number];
 export type ActivityType = (typeof activityType.enumValues)[number];
 export type AccountStage = (typeof accountStage.enumValues)[number];

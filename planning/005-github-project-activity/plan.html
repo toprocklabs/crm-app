@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<!--
+  planning/005-github-project-activity/plan.html — the HOW.
+  Surface per-account delivery activity (last git push) on /accounts.
+  Keep section order stable for clean diffs.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan · GitHub project activity</title>
+<style>
+  :root{--bg:#fbfaf8;--ink:#1c1b1a;--muted:#6b6660;--line:#e6e2db;--accent:#3a5a78;--soft:#eef2f6;--codebg:#f3f1ec;
+    --proposed:#9a7b2f;--proposed-bg:#f6efdd;--accepted:#3f6b4a;--accepted-bg:#e9f1ea;
+    --t0:#3f6b4a;--t0-bg:#e9f1ea;--t1:#3a5a78;--t1-bg:#e8eef4;--t2:#9a7b2f;--t2-bg:#f6efdd;--t3:#9a4b3f;--t3-bg:#f5e8e5;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  main{max-width:820px;margin:0 auto;padding:44px 28px 80px}
+  .top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+  .top a{color:var(--accent);text-decoration:none}
+  .status{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;padding:3px 11px;border-radius:20px;text-transform:capitalize}
+  .s-proposed{color:var(--proposed);background:var(--proposed-bg)}
+  .kicker{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-top:18px}
+  h1{font-size:30px;margin:6px 0 6px;letter-spacing:-.01em}
+  .lede{color:var(--muted);font-size:17px;margin:0 0 8px}
+  h2{font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);
+    border-top:1px solid var(--line);padding-top:22px;margin:32px 0 10px}
+  h3{font-size:15.5px;margin:18px 0 6px}
+  p{margin:8px 0}ul,ol{margin:8px 0;padding-left:22px}li{margin:5px 0}
+  code{background:var(--codebg);padding:1.5px 5px;border-radius:4px;font-size:13.5px;font-family:"SF Mono",Consolas,Menlo,monospace}
+  pre{background:var(--codebg);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:13px;line-height:1.5}
+  pre code{background:none;padding:0}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+  th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;color:var(--muted);background:var(--soft)}
+  .callout{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:12px 16px;margin:14px 0}
+  .callout.warn{border-left-color:var(--t3)}
+  .callout.good{border-left-color:var(--t0)}
+  .phase{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:14px 0}
+  .phase h3{margin:0 0 6px;color:var(--accent)}
+  .phase .tag{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .tier{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:20px;text-transform:uppercase;white-space:nowrap}
+  .tier-0{color:var(--t0);background:var(--t0-bg)}
+  .tier-1{color:var(--t1);background:var(--t1-bg)}
+  .tier-2{color:var(--t2);background:var(--t2-bg)}
+  .tier-3{color:var(--t3);background:var(--t3-bg)}
+  .ev{font-size:13px;color:var(--muted);margin:6px 0 0}
+  .ev code{font-size:12.5px}
+  figure{margin:16px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px}
+  figcaption{font-size:12.5px;color:var(--muted);margin-top:10px;text-align:center}
+  /* Mock of the /accounts table cell, using the app's real palette */
+  .mock{background:#fff;border:1px solid var(--line);border-radius:10px;padding:0;overflow:hidden;margin:14px 0}
+  .mock table{margin:0;font-size:13.5px}
+  .mock th{background:#f8fafc;color:#64748b;font-size:11px;letter-spacing:.04em}
+  .mock td{border-bottom:1px solid #f1f5f9}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;white-space:nowrap}
+  .p-fresh{color:#0e7490;background:#cffafe}
+  .p-warm{color:#3f6b4a;background:#e9f1ea}
+  .p-slow{color:#9a7b2f;background:#f6efdd}
+  .p-cold{color:#9a4b3f;background:#f5e8e5}
+  .p-none{color:#6b6660;background:#eeeced}
+  .mono{font-family:"SF Mono",Consolas,Menlo,monospace;font-size:12.5px}
+  .toc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:18px 0}
+  .toc ol{margin:6px 0;padding-left:20px;font-size:14px;columns:2;column-gap:28px}
+  .toc a{color:var(--accent);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  footer{margin-top:36px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+  @media (max-width:640px){main{padding:28px 16px 60px}.toc ol{columns:1}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a href="../index.html">← Planning index</a>
+    <span class="status s-accepted">Accepted</span>
+  </div>
+
+  <div class="kicker">Plan · Feature 005</div>
+  <h1>GitHub project activity on Accounts</h1>
+  <p class="lede">Show, per account, when that client's code last moved — so the Accounts table answers "who are we actually delivering for this week, and who has gone quiet?" without opening GitHub. Mirrored into Postgres, never fetched at render time.</p>
+
+  <div class="toc">
+    <strong style="font-size:13px">Contents</strong>
+    <ol>
+      <li><a href="#status">Implementation status</a></li>
+      <li><a href="#why">Why this, and the real payoff</a></li>
+      <li><a href="#decisions">Decisions taken during scoping</a></li>
+      <li><a href="#arch">Architecture</a></li>
+      <li><a href="#schema">Schema</a></li>
+      <li><a href="#mapping">The mapping problem, measured</a></li>
+      <li><a href="#ux">UX spec</a></li>
+      <li><a href="#phases">Phases</a></li>
+      <li><a href="#auth">Auth &amp; secrets</a></li>
+      <li><a href="#risks">Risks</a></li>
+      <li><a href="#scope">Out of scope</a></li>
+      <li><a href="#verify">Verification</a></li>
+    </ol>
+  </div>
+
+  <h2 id="status">Implementation status</h2>
+  <p><strong>Phases 1 and 2 are shipped, plus the orphan view from Phase 3.</strong> What remains is the live path and the commit detail — both need configuration that doesn't exist yet rather than more code decisions.</p>
+  <table>
+    <thead><tr><th>Item</th><th>Status</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td><code>project_repos</code> table</td><td>Done</td><td>Applied via <code>db:push</code>; additive only, zero drops.</td></tr>
+      <tr><td><code>scripts/sync-repos.mjs</code></td><td>Done</td><td>36 repos mirrored in one API call. Falls back to <code>gh auth token</code> locally.</td></tr>
+      <tr><td>Account ↔ repo mapping</td><td>Done</td><td>17 links, 5 marked internal. See deviation 1.</td></tr>
+      <tr><td>"Last push" column + sort</td><td>Done</td><td>Verified in both directions against the live page.</td></tr>
+      <tr><td>Repo name replaces project URL</td><td>Done</td><td>With a <code>+N</code> affordance for multi-repo accounts.</td></tr>
+      <tr><td>Orphan view</td><td>Done <em>(pulled forward)</em></td><td>14 unlinked repos. Cheap once the mirror existed; see deviation 2.</td></tr>
+      <tr><td>Scheduled sync</td><td><strong>Not started</strong></td><td>The column is only as fresh as the last manual <code>npm run sync:repos</code>.</td></tr>
+      <tr><td>Push webhook</td><td>Not started</td><td>Needs a deployed URL and <code>GITHUB_WEBHOOK_SECRET</code>.</td></tr>
+      <tr><td>Commit detail (sha/message/author)</td><td>Not started</td><td>Columns exist and are nullable; the UI renders fine without them.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <p style="margin:0 0 8px"><strong>Deviation 1 — the matcher scored better than the plan estimated, and the mapping became a script.</strong> The plan budgeted a hand-mapping session against a 13/18 matcher. What shipped is <code>scripts/map-repos.mjs</code>, which re-runs safely and only considers still-unlinked repos, so adding a client repo later proposes just that one. The three scuba links the matcher can't reach live in a <code>MANUAL_LINKS</code> constant inside it, which means the whole mapping is reproducible from an empty database rather than existing only as rows someone once typed. Final tally: 17 links (the extra four are the scuba cluster plus the second GT Cabinets repo), 5 internal, 14 unlinked, 4 accounts with no repo.</p>
+    <p style="margin:0"><strong>Deviation 2 — the orphan view moved from Phase 3 to now.</strong> It needed no new route, no new query shape, and no configuration — one filtered read against a table that already existed. Holding it back would have been sequencing for its own sake.</p>
+  </div>
+
+  <div class="callout">
+    <p style="margin:0"><strong>Lint caught a real constraint.</strong> The first version read the clock with <code>Date.now()</code>, which <code>react-hooks/purity</code> rejects inside a server component. Reusing the single <code>new Date()</code> the page already creates for <code>today</code> fixes it and is better anyway — every due pill and every push pill in a render now measures against one instant instead of two.</p>
+  </div>
+
+  <h2 id="why">Why this, and the real payoff</h2>
+  <p>The CRM tracks the <em>sales</em> half of an account well — stage, opportunities, MRR, next step, payments. It tracks the <em>delivery</em> half not at all. For an agency where every customer is a shipped codebase, "when did we last push for them" is the single cheapest proxy for whether an account is being served, stalling, or quietly abandoned.</p>
+  <p>Two distinct payoffs, and the second one was a surprise:</p>
+  <ol>
+    <li><strong>Staleness detection.</strong> A <code>customer</code>-stage account with no push in six weeks is either finished or dropped, and the difference matters. That's the stated goal.</li>
+    <li><strong>Unbilled delivery.</strong> Comparing the org's repos against the CRM immediately surfaced work that isn't tracked as an account at all — <code>south-pointe-dental-site</code>, <code>dees-autoshop-site</code>, <code>rg-epoxy-floor-site</code>, <code>bottomline-property-management</code>. Every one of those is a repo that exists because someone was paying, or expected to. The reverse view is arguably worth more than the forward one and costs nothing extra once the data is mirrored.</li>
+  </ol>
+
+  <div class="callout good">
+    <p style="margin:0"><strong>Motivating case, from live data.</strong> The account <em>Scuba Dive Utah</em> currently shows nothing about delivery. In GitHub, <code>the_scuba_dive_riverton_web</code> was pushed <strong>2026‑08‑13</strong> — one day before this plan was written — alongside <code>scuba-dive-riverton</code> and <code>scubadiveapi</code>. Three active repos, invisible to the CRM.</p>
+  </div>
+
+  <h2 id="decisions">Decisions taken during scoping</h2>
+  <table>
+    <thead><tr><th>Question</th><th>Decision</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Per-account repos, or just this repo's last commit?</td><td><strong>Per-account.</strong></td><td>Only the per-account reading earns a place on a table of accounts.</td></tr>
+      <tr><td>One repo per account, or many?</td><td><strong>Many.</strong> A join table, not a column.</td><td>Measured, not assumed: GT Cabinets has 2 repos; the scuba cluster has 4. A single <code>companies.repo_full_name</code> would be wrong on day one.</td></tr>
+      <tr><td>MCP server, or REST API?</td><td><strong>Both, for different jobs.</strong></td><td>MCP serves <em>agents</em>, not Next.js request handlers. It's the mapping tool; REST is the runtime.</td></tr>
+      <tr><td>How does the account↔repo mapping get created?</td><td><strong>By hand, in a Claude Code session</strong>, for v1.</td><td>Explicit user call. 36 repos is a one-afternoon job; building an <code>/inbox</code> suggestion flow first would be tooling before need.</td></tr>
+      <tr><td>Fetch at render time?</td><td><strong>No. Mirror into Postgres.</strong></td><td><code>/accounts</code> is <code>force-dynamic</code>; a per-row API call is N requests per page view.</td></tr>
+      <tr><td>Push, or deploy, as the activity signal?</td><td><strong>Push in v1</strong>, schema shaped so deploys can join later.</td><td>See the open question below — not a blocker, but not settled either.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <p style="margin:0"><strong>Open question, deliberately non-blocking.</strong> A push can be someone poking at a branch; a <em>deploy</em> is the client's product actually changing. Vercel is already connected to this workspace, so <code>last_deploy_at</code> is reachable on the same terms as <code>last_push_at</code>. The v1 schema puts activity on the repo row rather than in a <code>push</code>-named table, so adding a second source later is a column and a <code>GREATEST()</code>, not a migration. If deploy turns out to be the truer signal, the UI column becomes "Last activity" and nothing else moves.</p>
+  </div>
+
+  <h2 id="arch">Architecture</h2>
+  <p>This is the same shape as the Stripe mirror in plan 003, deliberately: an external system of record, a read-only local mirror, a reconcile script, and a webhook that keeps the mirror warm. Nothing in the request path talks to GitHub.</p>
+
+  <figure>
+    <svg viewBox="0 0 760 300" width="100%" height="auto" role="img" aria-label="Data flow from GitHub through the sync script and webhook into project_repos and out to the accounts page">
+      <defs>
+        <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b6660"/>
+        </marker>
+      </defs>
+      <!-- GitHub -->
+      <rect x="20" y="90" width="150" height="110" rx="10" fill="#fff" stroke="#e6e2db"/>
+      <text x="95" y="120" text-anchor="middle" font-size="14" font-weight="700" fill="#1c1b1a">GitHub</text>
+      <text x="95" y="141" text-anchor="middle" font-size="11.5" fill="#6b6660">org: toprocklabs</text>
+      <text x="95" y="158" text-anchor="middle" font-size="11.5" fill="#6b6660">36 repos</text>
+      <text x="95" y="180" text-anchor="middle" font-size="11" fill="#3a5a78" font-family="monospace">system of record</text>
+
+      <!-- sync -->
+      <rect x="245" y="30" width="200" height="82" rx="10" fill="#fff" stroke="#e6e2db"/>
+      <text x="345" y="55" text-anchor="middle" font-size="13" font-weight="700" fill="#1c1b1a">sync-repos script</text>
+      <text x="345" y="74" text-anchor="middle" font-size="11" fill="#6b6660" font-family="monospace">GET /orgs/{org}/repos</text>
+      <text x="345" y="93" text-anchor="middle" font-size="11" fill="#3f6b4a">1 request → all 36 repos</text>
+
+      <!-- webhook -->
+      <rect x="245" y="180" width="200" height="82" rx="10" fill="#fff" stroke="#e6e2db"/>
+      <text x="345" y="205" text-anchor="middle" font-size="13" font-weight="700" fill="#1c1b1a">push webhook</text>
+      <text x="345" y="224" text-anchor="middle" font-size="11" fill="#6b6660" font-family="monospace">POST /api/github/webhook</text>
+      <text x="345" y="243" text-anchor="middle" font-size="11" fill="#9a7b2f">phase 2 · near-real-time</text>
+
+      <!-- db -->
+      <rect x="520" y="90" width="150" height="110" rx="10" fill="#eef2f6" stroke="#3a5a78"/>
+      <text x="595" y="120" text-anchor="middle" font-size="14" font-weight="700" fill="#1c1b1a">Postgres</text>
+      <text x="595" y="141" text-anchor="middle" font-size="11.5" fill="#3a5a78" font-family="monospace">project_repos</text>
+      <text x="595" y="160" text-anchor="middle" font-size="11.5" fill="#6b6660">read-only mirror</text>
+      <text x="595" y="180" text-anchor="middle" font-size="11" fill="#6b6660">company_id · last_push_at</text>
+
+      <!-- accounts page -->
+      <rect x="520" y="238" width="150" height="46" rx="8" fill="#fff" stroke="#e6e2db"/>
+      <text x="595" y="258" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1c1b1a">/accounts</text>
+      <text x="595" y="274" text-anchor="middle" font-size="10.5" fill="#6b6660">plain SQL read · no API</text>
+
+      <path d="M175 120 L 240 75" stroke="#6b6660" stroke-width="1.5" fill="none" marker-end="url(#a)"/>
+      <path d="M175 170 L 240 215" stroke="#6b6660" stroke-width="1.5" fill="none" marker-end="url(#a)" stroke-dasharray="4 3"/>
+      <path d="M450 75 L 515 120" stroke="#6b6660" stroke-width="1.5" fill="none" marker-end="url(#a)"/>
+      <path d="M450 215 L 515 170" stroke="#6b6660" stroke-width="1.5" fill="none" marker-end="url(#a)" stroke-dasharray="4 3"/>
+      <path d="M595 205 L 595 233" stroke="#3a5a78" stroke-width="1.5" fill="none" marker-end="url(#a)"/>
+      <text x="345" y="288" text-anchor="middle" font-size="10.5" fill="#8a8580">dashed = phase 2</text>
+    </svg>
+    <figcaption>The request path never leaves Postgres. GitHub reaches the mirror by pull (script) or push (webhook), never by the page asking.</figcaption>
+  </figure>
+
+  <p>The economics are better than expected and worth stating plainly, because they remove the usual objection to this kind of feature:</p>
+  <ul>
+    <li><code>GET /orgs/toprocklabs/repos?per_page=100</code> returns <strong>every repo with its <code>pushed_at</code> in a single request</strong>. There is no per-account fan-out.</li>
+    <li>Authenticated rate limit is 5,000/hour. A full sync costs 1–2 requests.</li>
+    <li>Commit detail (sha, message, author) costs one extra call per repo, or one batched GraphQL query for all of them. Phase 3, only if the hover detail proves wanted.</li>
+  </ul>
+
+  <h2 id="schema">Schema</h2>
+  <p>One new table. It copies the conventions <code>payments</code> established in plan 003 — external ID unique-indexed, <code>company_id</code> nullable so an unmatched record is never dropped, <code>synced_at</code> on every row.</p>
+  <pre><code>export const projectRepos = pgTable(
+  "project_repos",
+  {
+    id: serial("id").primaryKey(),
+    // "owner/name". The stable identity; repo renames are handled by the
+    // webhook's repository.full_name, or caught on the next full sync.
+    fullName: text("full_name").notNull(),
+    // Nullable on purpose: an unmapped repo still gets mirrored, and shows
+    // up in the "delivery with no account" view. Same contract as
+    // payments.company_id — never drop data for want of a match.
+    companyId: integer("company_id").references(() => companies.id, {
+      onDelete: "set null",
+    }),
+    isPrivate: boolean("is_private").default(true).notNull(),
+    archived: boolean("archived").default(false).notNull(),
+    htmlUrl: text("html_url"),
+    // The signal. Nullable: a repo with no commits has no pushed_at.
+    lastPushAt: timestamp("last_push_at", { withTimezone: true }),
+    // Phase 3 detail, all nullable — the column renders without them.
+    lastCommitSha: text("last_commit_sha"),
+    lastCommitMessage: text("last_commit_message"),
+    lastCommitAuthor: text("last_commit_author"),
+    syncedAt: timestamp("synced_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("project_repos_full_name_unique").on(table.fullName),
+    index("project_repos_company_idx").on(table.companyId),
+    index("project_repos_last_push_idx").on(table.lastPushAt),
+  ],
+);</code></pre>
+
+  <p><code>companies</code> gains nothing. The account's activity is <code>MAX(last_push_at)</code> across its repos, computed in the same aggregate query that already builds <code>dealCounts</code> and <code>pipelineTotals</code> on the accounts page — one extra <code>select</code>, no extra round trip per row.</p>
+
+  <div class="callout warn">
+    <p style="margin:0"><strong>Follow the repo's known DB caveat.</strong> Generated SQL under <code>drizzle/</code> is polluted relative to the live schema; <code>db:push</code> is the source of truth. Review the generated statement before pushing and confirm it is <em>additive only</em> — one <code>CREATE TABLE</code> plus three indexes, zero <code>DROP</code>.</p>
+  </div>
+
+  <h2 id="mapping">The mapping problem, measured</h2>
+  <p>Not estimated — actually run against the live database and the live org, on 2026‑08‑14. A slug matcher (lowercase, non-alphanumerics to hyphens, strip trailing <code>-site</code>/<code>-web</code>/<code>-app</code>/<code>-website</code> and a leading <code>the-</code>) scored:</p>
+  <table>
+    <thead><tr><th>Outcome</th><th>Count</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td>Accounts auto-matched</td><td><strong>13 / 18</strong></td><td>Including 2 repos for GT Cabinets, which is how the many-repos decision got made.</td></tr>
+      <tr><td>Accounts with no repo found</td><td>5</td><td>J&nbsp;&amp;&nbsp;S Mechanical, Western States Mechanical, Zen Nails and Spa, Part of your world Princess Parties, <strong>Scuba Dive Utah</strong>.</td></tr>
+      <tr><td>Repos with no account</td><td>22</td><td>Split roughly evenly between genuinely internal and genuinely untracked client work — see below.</td></tr>
+    </tbody>
+  </table>
+
+  <p>The 22 orphans sort into three piles, and the sort is the actual work of the mapping session:</p>
+  <table>
+    <thead><tr><th>Pile</th><th>Examples</th><th>Disposition</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Internal</strong></td><td><code>crm-app</code>, <code>toprock-labs-site</code>, <code>toprock_brain</code>, <code>toprock_client_notes</code>, <code>proposal-creator</code></td><td>Flag as internal; excluded from the orphan view so it stays signal.</td></tr>
+      <tr><td><strong>Missed match</strong></td><td><code>scuba-dive-riverton</code>, <code>the_scuba_dive_riverton_web</code>, <code>scubadiveapi</code> → <em>Scuba Dive Utah</em></td><td>Link by hand. The matcher can't bridge "Utah"→"Riverton"; a human does it instantly.</td></tr>
+      <tr><td><strong>Untracked client</strong></td><td><code>south-pointe-dental-site</code>, <code>dees-autoshop-site</code>, <code>rg-epoxy-floor-site</code>, <code>bottomline-property-management</code></td><td>These are the interesting ones. Either create the account, or mark the repo dormant.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <p style="margin:0"><strong>Why the mapping stays manual in v1.</strong> A 72% matcher whose misses require domain knowledge ("Riverton is Utah", "Princess Parties is the character-booking app") is exactly the wrong thing to automate first. The <code>/inbox</code> suggestion queue could carry the proposals later, but the one-time cost of 36 judgement calls in a Claude Code session is lower than building the flow — and doing it by hand is what produces the confident list of what a good matcher would need.</p>
+  </div>
+
+  <h2 id="ux">UX spec</h2>
+  <p>A sortable <strong>Last push</strong> column on <code>/accounts</code>, plus an upgrade to a line that's currently wasted. The column reuses the page's existing <code>SortKey</code> / <code>sortHref</code> machinery and the <code>crm-due-pill</code> urgency treatment, so it reads as native rather than bolted on.</p>
+
+  <div class="mock">
+    <table>
+      <thead><tr><th>Account</th><th>Stage</th><th style="text-align:right">MRR</th><th>Last push ▾</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Vital Alignments</strong><br><span class="mono" style="color:#0e7490">vital-alignments</span></td>
+          <td>Customer</td><td style="text-align:right">$215</td>
+          <td><span class="pill p-fresh">today</span></td>
+        </tr>
+        <tr>
+          <td><strong>Scuba Dive Utah</strong><br><span class="mono" style="color:#0e7490">the_scuba_dive_riverton_web</span> <span style="color:#94a3b8">+2</span></td>
+          <td>Customer</td><td style="text-align:right">$0</td>
+          <td><span class="pill p-warm">1d ago</span></td>
+        </tr>
+        <tr>
+          <td><strong>Garden of Eden</strong><br><span class="mono" style="color:#0e7490">garden-of-eden-wellness</span></td>
+          <td>In pipeline</td><td style="text-align:right">$0</td>
+          <td><span class="pill p-slow">27d ago</span></td>
+        </tr>
+        <tr>
+          <td><strong>Vive Massage Spa</strong><br><span class="mono" style="color:#0e7490">vive-massage-spa-site</span></td>
+          <td>Engaged</td><td style="text-align:right">$0</td>
+          <td><span class="pill p-cold">136d ago</span></td>
+        </tr>
+        <tr>
+          <td><strong>Zen Nails and Spa</strong><br><span style="color:#94a3b8">no repo linked</span></td>
+          <td>New lead</td><td style="text-align:right">$0</td>
+          <td><span class="pill p-none">—</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="ev" style="text-align:center">Mock rendered from real repo timestamps as of 2026‑08‑14. Other columns elided for width.</p>
+
+  <h3>Recency bands</h3>
+  <table>
+    <thead><tr><th>Band</th><th>Threshold</th><th>Reads as</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill p-fresh">today</span></td><td>&lt; 24h</td><td>Being worked right now.</td></tr>
+      <tr><td><span class="pill p-warm">Nd ago</span></td><td>1–7 days</td><td>Active.</td></tr>
+      <tr><td><span class="pill p-slow">Nd ago</span></td><td>8–30 days</td><td>Slowing — worth a glance.</td></tr>
+      <tr><td><span class="pill p-cold">Nd ago</span></td><td>&gt; 30 days</td><td>Gone quiet. The one the feature exists for.</td></tr>
+      <tr><td><span class="pill p-none">—</span></td><td>no repo linked</td><td>Unknown, not zero. Must not look like "cold".</td></tr>
+    </tbody>
+  </table>
+  <p>The distinction on that last row matters: an account with no linked repo is <em>unmeasured</em>, and rendering it in the same red as a genuinely abandoned account would make the column lie. Grey, and it sorts last in both directions.</p>
+
+  <h3>The second change: reclaim the project-URL line</h3>
+  <p>The account name cell currently renders three lines, the third being a bare hostname from <code>customerProjectUrl</code> — low information. It becomes the repo name, linked to GitHub, with a <code>+N</code> affordance when an account has several. Net line count unchanged; net information up.</p>
+
+  <h2 id="phases">Phases</h2>
+
+  <div class="phase">
+    <h3>Phase 1 — Mirror and map <span class="tier tier-0">Tier 0</span></h3>
+    <p class="tag">Pure addition · nothing existing is touched</p>
+    <ol>
+      <li><code>projectRepos</code> in <code>src/lib/schema.ts</code>; <code>db:generate</code>, review, <code>db:push</code>.</li>
+      <li><code>scripts/sync-repos.mjs</code> — one org call, upsert by <code>full_name</code>, never delete. <code>--dry-run</code> like the other scripts here.</li>
+      <li>Mapping session in Claude Code: run the matcher, confirm the 13, resolve the 5 misses, sort the 22 orphans. Output is a set of <code>company_id</code> updates.</li>
+    </ol>
+    <p class="ev">Ends with a populated table and zero user-visible change. Independently revertable by dropping one table.</p>
+  </div>
+
+  <div class="phase">
+    <h3>Phase 2 — The column <span class="tier tier-2">Tier 2</span></h3>
+    <p class="tag">Visible behaviour change on /accounts</p>
+    <ol>
+      <li><code>MAX(last_push_at)</code> per company folded into the existing aggregate block in <code>src/app/accounts/page.tsx</code>.</li>
+      <li>New <code>SortKey</code> <code>"lastPush"</code>; the sort switch and <code>sortLabels</code> already generalize.</li>
+      <li>Pill component reusing <code>crm-due-pill</code> tokens; repo name replaces the project-URL line.</li>
+      <li>Cron: a Vercel Cron route or a GitHub Actions schedule hitting the sync. Every 30 min is generous.</li>
+    </ol>
+    <p class="ev">Revert cost: one PR. The mirror survives the revert.</p>
+  </div>
+
+  <div class="phase">
+    <h3>Phase 3 — Live, and the reverse view <span class="tier tier-1">Tier 1</span></h3>
+    <p class="tag">Additive on top of a working feature</p>
+    <ol>
+      <li><code>POST /api/github/webhook</code> — org-level <code>push</code> hook, HMAC-verified against <code>GITHUB_WEBHOOK_SECRET</code>. First <code>route.ts</code> under <code>src/app/api/</code>; the signing pattern mirrors what the pending Stripe webhook will need.</li>
+      <li>Commit detail (sha / message / author) on hover or the account detail page.</li>
+      <li><strong>Orphan view</strong>: repos with recent pushes and no <code>company_id</code>, excluding internal. Delivery you aren't tracking as revenue.</li>
+      <li>Optionally a dashboard KPI: <em>N customer accounts with no push in 30 days</em>.</li>
+    </ol>
+  </div>
+
+  <h2 id="auth">Auth &amp; secrets</h2>
+  <p>The local <code>gh</code> CLI is authenticated as <code>a9austin</code> with <code>repo</code> + <code>read:org</code> — enough for the mapping session and for running the sync locally, and it needs no new secret. It is <em>not</em> usable from the deployed app.</p>
+  <table>
+    <thead><tr><th>Env var</th><th>Where</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>GITHUB_TOKEN</code></td><td><code>.env.local</code> + Vercel</td><td>Fine-grained PAT, read-only, Contents + Metadata, scoped to <code>toprocklabs</code>. Matches how <code>RESEND_API_KEY</code> and the Stripe keys are already handled.</td></tr>
+      <tr><td><code>GITHUB_ORG</code></td><td>both</td><td>Defaults to <code>toprocklabs</code>. Not hardcoded — the org name shouldn't be baked into a query.</td></tr>
+      <tr><td><code>GITHUB_WEBHOOK_SECRET</code></td><td>phase 3 only</td><td>HMAC verification. The route must reject unsigned requests outright.</td></tr>
+    </tbody>
+  </table>
+  <p>A GitHub App would be the better long-term identity — it survives credential rotation and isn't tied to one person's account — but it is materially more setup for a read-only feature. PAT now, App if this becomes load-bearing.</p>
+
+  <h2 id="risks">Risks</h2>
+  <table>
+    <thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>A repo is renamed and the mirror keeps a dead <code>full_name</code>.</td><td>Full sync is a reconcile, not an append: rows absent from the org listing are marked <code>archived</code>, never deleted, so a rename shows as one dormant row plus one new one rather than lost history.</td></tr>
+      <tr><td>An unlinked account reads as "abandoned" because the pill is red.</td><td>Explicit fifth band. <code>—</code> in grey, sorted last in both directions. Called out in the UX spec because it's the easy mistake.</td></tr>
+      <tr><td>Token leaks into the client bundle.</td><td>Only the sync script and the webhook route touch GitHub — both server-only. The page reads Postgres. No <code>NEXT_PUBLIC_</code> anything.</td></tr>
+      <tr><td>Private repo names on a shared screen.</td><td>Every repo here is already visible to anyone with CRM access, and the CRM is single-tenant by design. Worth noting, not blocking; revisit with multi-tenancy.</td></tr>
+      <tr><td>Push count is a bad proxy — a docs typo looks like delivery.</td><td>Accepted for v1. It's a recency signal, not a productivity metric, and the failure mode (looks active when it's minor) is the benign direction. Deploys are the upgrade path.</td></tr>
+      <tr><td>Sync fails silently and the whole column quietly ages.</td><td><code>synced_at</code> is per row. If the newest <code>synced_at</code> is stale the column is stale, and that's detectable in one query — surface it in the orphan view rather than letting the page assert false freshness.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="scope">Out of scope</h2>
+  <ul>
+    <li><strong>Commit volume, sparklines, contributor breakdowns.</strong> Trend visualisation is a real idea but it's a different feature; get the timestamp right first.</li>
+    <li><strong>Any write to GitHub.</strong> Read-only mirror, same contract as plan 003. No issue creation, no PR automation.</li>
+    <li><strong>In-app repo linking UI.</strong> Deferred by the v1 decision above. Becomes worth building when the org has enough repos that a Claude Code session stops being the fast path.</li>
+    <li><strong>Non-GitHub sources.</strong> No GitLab, no Bitbucket. If a client's code lives elsewhere the account simply reads <code>—</code>.</li>
+    <li><strong>Backfilling historical push activity.</strong> The mirror holds current state, not a time series.</li>
+  </ul>
+
+  <h2 id="verify">Verification</h2>
+  <p>Per the repo checklist, after every phase:</p>
+  <pre><code>npm run lint          # expect: 1 pre-existing warning, no errors
+npx tsc --noEmit      # expect: clean
+npm test
+npm run build</code></pre>
+  <p>Plus, per phase: <strong>Phase 1</strong> — <code>select count(*) from project_repos</code> equals the org repo count, and every one of the 13 confirmed matches has a <code>company_id</code>. <strong>Phase 2</strong> — the column sorts both directions with unlinked accounts pinned last, and <em>Scuba Dive Utah</em> reads as active once linked. <strong>Phase 3</strong> — an unsigned POST to the webhook is rejected; a real push updates <code>last_push_at</code> within seconds.</p>
+
+  <footer>
+    Plan 005 · GitHub project activity · Status: Accepted · Phases 1–2 shipped · Supersedes nothing.<br>
+    Repo and account figures were measured against the live org and database on 2026‑08‑14 and will drift.
+  </footer>
+</main>
+</body>
+</html>

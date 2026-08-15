@@ -1,4 +1,4 @@
-import { desc } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import Link from "next/link";
 import { createCompany, updateCompanyField } from "@/app/actions";
 import { AutoSaveCompanyField } from "@/components/auto-save-company-field";
@@ -11,16 +11,16 @@ import { StageFilter } from "@/components/stage-filter";
 import { accountStageOptions, getAccountStageLabel } from "@/lib/account-stage";
 import { requireUser } from "@/lib/auth";
 import { companyIndustries } from "@/lib/company-industries";
-import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { getDb } from "@/lib/db";
-import { companies, deals, type AccountStage } from "@/lib/schema";
+import { getPushRecency } from "@/lib/push-recency";
+import { companies, deals, projectRepos, type AccountStage } from "@/lib/schema";
 
 export const dynamic = "force-dynamic";
 
 const defaultAccountStageFilter = "customer";
 const allStagesFilterValue = "all";
 
-type SortKey = "account" | "stage" | "industry" | "opportunities" | "mrr" | "nextStep" | "nextStepDue" | "created";
+type SortKey = "account" | "stage" | "mrr" | "lastPush" | "nextStep" | "nextStepDue" | "created";
 type SortDirection = "asc" | "desc";
 type SelectOption = { value: string; label: string };
 
@@ -36,16 +36,15 @@ type AccountsPageProps = {
 const sortLabels: Record<SortKey, string> = {
   account: "Account",
   stage: "Stage",
-  industry: "Industry",
-  opportunities: "Opportunities",
   mrr: "Total MRR",
+  lastPush: "Last push",
   nextStep: "Next step",
   nextStepDue: "Next step due",
   created: "Created",
 };
 
 function getSortKey(value: string | undefined): SortKey {
-  const keys: SortKey[] = ["account", "stage", "industry", "opportunities", "mrr", "nextStep", "nextStepDue", "created"];
+  const keys: SortKey[] = ["account", "stage", "mrr", "lastPush", "nextStep", "nextStepDue", "created"];
   return keys.includes(value as SortKey) ? (value as SortKey) : "created";
 }
 
@@ -144,7 +143,11 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
   // Accounts default to the Customer stage; `stage=all` is the explicit opt-out.
   const stageParam = params.stage ?? defaultAccountStageFilter;
   const stageFilter = stageParam === allStagesFilterValue ? "" : stageParam;
-  const today = new Date().toISOString().slice(0, 10);
+  // One clock reading for the whole render, so the due dates and every push
+  // pill in the table are measured against the same instant.
+  const renderedAt = new Date();
+  const today = renderedAt.toISOString().slice(0, 10);
+  const nowMs = renderedAt.getTime();
   const accountStageSelectOptions = accountStageOptions.map((stage) => ({
     value: stage,
     label: getAccountStageLabel(stage),
@@ -154,27 +157,75 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
     label: industry,
   }));
 
-  const [accountRows, dealRows] = await Promise.all([
+  const [accountRows, dealRows, repoRows, unlinkedRepoRows] = await Promise.all([
     db.select().from(companies).orderBy(desc(companies.createdAt)),
     db.select({ id: deals.id, companyId: deals.companyId, valueCents: deals.valueCents }).from(deals),
+    // Read-only mirror (plan 005). Archived repos still hold their account link
+    // but must not keep an account looking active, so they're excluded here.
+    db
+      .select({
+        companyId: projectRepos.companyId,
+        fullName: projectRepos.fullName,
+        htmlUrl: projectRepos.htmlUrl,
+        lastPushAt: projectRepos.lastPushAt,
+      })
+      .from(projectRepos)
+      .where(and(isNotNull(projectRepos.companyId), eq(projectRepos.archived, false)))
+      .orderBy(desc(projectRepos.lastPushAt)),
+    // Delivery with no account behind it. Internal tooling is excluded or this
+    // list is mostly us, and then nobody reads it.
+    db
+      .select({
+        fullName: projectRepos.fullName,
+        htmlUrl: projectRepos.htmlUrl,
+        lastPushAt: projectRepos.lastPushAt,
+      })
+      .from(projectRepos)
+      .where(
+        and(
+          isNull(projectRepos.companyId),
+          eq(projectRepos.isInternal, false),
+          eq(projectRepos.archived, false),
+        ),
+      )
+      .orderBy(desc(projectRepos.lastPushAt)),
   ]);
 
-  const dealCounts = new Map<number, number>();
   const pipelineTotals = new Map<number, number>();
   for (const row of dealRows) {
     if (!row.companyId) {
       continue;
     }
 
-    dealCounts.set(row.companyId, (dealCounts.get(row.companyId) ?? 0) + 1);
     pipelineTotals.set(row.companyId, (pipelineTotals.get(row.companyId) ?? 0) + row.valueCents);
   }
 
-  const rows = accountRows.map((row) => ({
-    ...row,
-    dealCount: dealCounts.get(row.id) ?? 0,
-    pipelineCents: pipelineTotals.get(row.id) ?? 0,
-  }));
+  // Repos arrive newest-push-first, so the first entry per company is also the
+  // account's most recent push — no per-row MAX() needed.
+  const reposByCompany = new Map<number, typeof repoRows>();
+  for (const repo of repoRows) {
+    if (!repo.companyId) {
+      continue;
+    }
+
+    const bucket = reposByCompany.get(repo.companyId);
+    if (bucket) {
+      bucket.push(repo);
+    } else {
+      reposByCompany.set(repo.companyId, [repo]);
+    }
+  }
+
+  const rows = accountRows.map((row) => {
+    const repos = reposByCompany.get(row.id) ?? [];
+
+    return {
+      ...row,
+      pipelineCents: pipelineTotals.get(row.id) ?? 0,
+      repos,
+      lastPushAt: repos[0]?.lastPushAt ?? null,
+    };
+  });
 
   rows.sort((a, b) => {
     const direction = dir === "asc" ? 1 : -1;
@@ -184,12 +235,19 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
         return a.name.localeCompare(b.name) * direction;
       case "stage":
         return a.stage.localeCompare(b.stage) * direction;
-      case "industry":
-        return (a.industry ?? "").localeCompare(b.industry ?? "") * direction;
-      case "opportunities":
-        return (a.dealCount - b.dealCount) * direction;
       case "mrr":
         return (a.pipelineCents - b.pipelineCents) * direction;
+      case "lastPush": {
+        // Accounts with no linked repo are unmeasured, not stale. They sort to
+        // the bottom in BOTH directions so flipping the arrow never buries the
+        // rows you're actually looking for under a block of blanks.
+        const aTime = a.lastPushAt ? new Date(a.lastPushAt).getTime() : null;
+        const bTime = b.lastPushAt ? new Date(b.lastPushAt).getTime() : null;
+        if (aTime === null && bTime === null) return 0;
+        if (aTime === null) return 1;
+        if (bTime === null) return -1;
+        return (aTime - bTime) * direction;
+      }
       case "nextStep":
         return (a.nextStep ?? "").localeCompare(b.nextStep ?? "") * direction;
       case "nextStepDue":
@@ -253,9 +311,9 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
         <table className="crm-data-table">
           <thead className="text-left text-slate-500">
             <tr>
-              {(["account", "stage", "industry", "opportunities", "mrr", "nextStep", "nextStepDue"] as SortKey[]).map((key) => (
-                <th key={key} className={key === "mrr" || key === "opportunities" ? "text-right" : undefined}>
-                  <Link href={sortHref(key)} className={`inline-flex items-center gap-1 ${key === "mrr" || key === "opportunities" ? "justify-end" : ""}`}>
+              {(["account", "stage", "mrr", "lastPush", "nextStep", "nextStepDue"] as SortKey[]).map((key) => (
+                <th key={key} className={key === "mrr" ? "text-right" : undefined}>
+                  <Link href={sortHref(key)} className={`inline-flex items-center gap-1 ${key === "mrr" ? "justify-end" : ""}`}>
                     <span>{sortLabels[key]}</span>
                     {sortIndicator(key)}
                   </Link>
@@ -266,13 +324,15 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
           <tbody>
             {tableRows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-3 py-4">
+                <td colSpan={6} className="px-3 py-4">
                   <EmptyState icon="account" message={emptyLabel} />
                 </td>
               </tr>
             ) : null}
             {tableRows.map((row) => {
               const dueUrgency = getDueUrgency(row.nextStepDueDate, today);
+              const push = getPushRecency(row.lastPushAt, nowMs);
+              const [primaryRepo, ...otherRepos] = row.repos;
 
               return (
                 <tr key={row.id}>
@@ -295,16 +355,28 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                       ) : "No website"}
                     </p>
                     <p className="text-slate-500">
-                      {row.customerProjectUrl ? (
-                        <a
-                          href={row.customerProjectUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="crm-table-link text-sm font-normal"
-                        >
-                          {getUrlLabel(row.customerProjectUrl)}
-                        </a>
-                      ) : "No customer project URL"}
+                      {primaryRepo ? (
+                        <>
+                          <a
+                            href={primaryRepo.htmlUrl ?? `https://github.com/${primaryRepo.fullName}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="crm-table-link font-mono text-xs font-normal"
+                          >
+                            {primaryRepo.fullName.split("/").pop()}
+                          </a>
+                          {otherRepos.length > 0 ? (
+                            <span
+                              className="ml-1.5 text-xs text-slate-400"
+                              title={otherRepos.map((repo) => repo.fullName).join("\n")}
+                            >
+                              +{otherRepos.length}
+                            </span>
+                          ) : null}
+                        </>
+                      ) : (
+                        <span className="text-sm">No repo linked</span>
+                      )}
                     </p>
                   </td>
                   <td className="min-w-[185px]">
@@ -320,9 +392,20 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                       stageToneStyle
                     />
                   </td>
-                  <td className="min-w-[150px] text-slate-700">{normalizeCompanyIndustry(row.industry) ?? "-"}</td>
-                  <td className="text-right font-medium text-slate-700">{row.dealCount}</td>
                   <td className="crm-money font-semibold text-slate-800">${Math.round(row.pipelineCents / 100).toLocaleString()}</td>
+                  <td className="min-w-[110px]">
+                    <span
+                      className="crm-push-pill"
+                      data-band={push.band}
+                      title={
+                        row.lastPushAt
+                          ? `Last push ${new Date(row.lastPushAt).toLocaleString()}`
+                          : "No repo linked to this account"
+                      }
+                    >
+                      {push.label}
+                    </span>
+                  </td>
                   <td className="min-w-[260px] text-slate-700">
                     <AutoSaveCompanyField
                       action={updateCompanyField}
@@ -366,59 +449,22 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
       title="Accounts"
       description="All account records with opportunities and total tracked MRR."
     >
-      <section className="gong-panel rounded-xl p-6">
-        <div className="flex flex-wrap items-start justify-between gap-5">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Quick Capture</p>
-            <h2 className="mt-2 text-xl font-semibold text-slate-950">Add account</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">Create a new account record and assign its stage without leaving the accounts workspace.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{rows.length} accounts</span>
-            <span className="inline-flex rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-800">{closedLostRows.length} closed lost</span>
-          </div>
-        </div>
-        <div className="mt-4">
-          <CollapsibleFormSection id="add-account" title="Open account form" description="Create a new account record.">
-              <form action={createCompany}>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Account name" name="name" required />
-                  <SelectField label="Stage" name="stage" options={accountStageSelectOptions} defaultValue="new_lead" />
-                  <SelectField label="Industry" name="industry" options={industrySelectOptions} />
-                  <Field label="Next step date" name="nextStepDueDate" type="date" />
-                  <Field label="Website" name="website" placeholder="https://example.com" className="md:col-span-2" />
-                  <Field
-                    label="Customer Project URL"
-                    name="customerProjectUrl"
-                    placeholder="https://app.example.com/project/123"
-                    className="md:col-span-2"
-                  />
-                  <Field
-                    label="Next step"
-                    name="nextStep"
-                    placeholder="Schedule onboarding review"
-                    className="md:col-span-2"
-                  />
-                </div>
-                <button type="submit" className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
-                  Save account
-                </button>
-              </form>
-          </CollapsibleFormSection>
-        </div>
-      </section>
-
       <section className="gong-panel rounded-xl p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-4">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Account Table</p>
-            <h2 className="mt-2 text-lg font-semibold text-slate-950">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold text-slate-950">
               {stageFilter
                 ? `${getAccountStageLabel(stageFilter as AccountStage)} accounts`
                 : "Active account coverage"}
             </h2>
+            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+              {activeRows.length} shown
+            </span>
+            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
+              {rows.length} total
+            </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <SearchInput placeholder="Search accounts..." />
             <StageFilter
               options={accountStageSelectOptions}
@@ -427,27 +473,101 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
             />
           </div>
         </div>
+        <div className="mt-3">
+          <CollapsibleFormSection
+            id="add-account"
+            variant="compact"
+            title="Add account"
+            description="Create a new account record."
+          >
+            <form action={createCompany}>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Account name" name="name" required />
+                <SelectField label="Stage" name="stage" options={accountStageSelectOptions} defaultValue="new_lead" />
+                <SelectField label="Industry" name="industry" options={industrySelectOptions} />
+                <Field label="Next step date" name="nextStepDueDate" type="date" />
+                <Field label="Website" name="website" placeholder="https://example.com" className="md:col-span-2" />
+                <Field
+                  label="Customer Project URL"
+                  name="customerProjectUrl"
+                  placeholder="https://app.example.com/project/123"
+                  className="md:col-span-2"
+                />
+                <Field
+                  label="Next step"
+                  name="nextStep"
+                  placeholder="Schedule onboarding review"
+                  className="md:col-span-2"
+                />
+              </div>
+              <button type="submit" className="mt-4 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+                Save account
+              </button>
+            </form>
+          </CollapsibleFormSection>
+        </div>
         {renderAccountsTable(activeRows, "No active accounts yet.")}
       </section>
 
-      <section className="gong-panel rounded-xl p-5">
-        <div className="border-b border-slate-200 pb-4">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Archive</p>
-            <h2 className="mt-2 text-lg font-semibold text-slate-950">Closed Lost</h2>
-            <p className="mt-2 text-sm text-slate-600">Archived accounts stay editable here without crowding the active coverage table.</p>
-          </div>
-        </div>
-        <div className="mt-4">
-          <CollapsibleFormSection
-            title={`View closed-lost accounts (${closedLostRows.length})`}
-            description="Expand to review or update archived accounts."
-            className="border-slate-200 bg-slate-50/70"
-          >
-            {renderAccountsTable(closedLostRows, "No closed-lost accounts yet.")}
-          </CollapsibleFormSection>
-        </div>
-      </section>
+      {/* Kept as full-width siblings rather than a flex row: a compact
+          disclosure in a flex container shrinks to its summary, which would
+          squeeze the expanded table into a column. */}
+      <div className="space-y-3">
+        <CollapsibleFormSection
+          variant="compact"
+          title={`Closed Lost (${closedLostRows.length})`}
+          description="Archived accounts stay editable here without crowding the active coverage table."
+        >
+          {renderAccountsTable(closedLostRows, "No closed-lost accounts yet.")}
+        </CollapsibleFormSection>
+
+        <CollapsibleFormSection
+          variant="compact"
+          title={`Unlinked repos (${unlinkedRepoRows.length})`}
+          description="Active repos with no account behind them — delivery you may not be tracking as revenue."
+        >
+          <table className="crm-data-table">
+            <thead className="text-left text-slate-500">
+              <tr>
+                <th>Repository</th>
+                <th>Last push</th>
+              </tr>
+            </thead>
+            <tbody>
+              {unlinkedRepoRows.length === 0 ? (
+                <tr>
+                  <td colSpan={2} className="px-3 py-4">
+                    <EmptyState icon="account" message="Every active repo is linked to an account." />
+                  </td>
+                </tr>
+              ) : null}
+              {unlinkedRepoRows.map((repo) => {
+                const push = getPushRecency(repo.lastPushAt, nowMs);
+
+                return (
+                  <tr key={repo.fullName}>
+                    <td className="min-w-[260px]">
+                      <a
+                        href={repo.htmlUrl ?? `https://github.com/${repo.fullName}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="crm-table-link font-mono text-xs"
+                      >
+                        {repo.fullName}
+                      </a>
+                    </td>
+                    <td className="min-w-[110px]">
+                      <span className="crm-push-pill" data-band={push.band}>
+                        {push.label}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </CollapsibleFormSection>
+      </div>
     </CrmShell>
   );
 }

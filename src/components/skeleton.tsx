@@ -13,14 +13,12 @@ export function SkeletonShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="crm-shell flex min-h-screen">
       <aside className="crm-sidebar hidden w-60 shrink-0 md:block" />
-      <div className="flex-1 bg-[var(--app-bg)] p-5 md:p-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="gong-panel rounded-xl px-5 py-4 md:px-6">
-            <Pulse className="h-6 w-32 rounded bg-slate-200" />
-            <Pulse className="mt-2 h-4 w-64 rounded bg-slate-100" />
-          </div>
-          <div className="mt-5 space-y-6">{children}</div>
+      <div className="min-w-0 flex-1 bg-[var(--app-bg)] px-4 py-4 md:px-5 md:py-5">
+        <div className="gong-panel rounded-xl px-5 py-4 md:px-6">
+          <Pulse className="h-6 w-32 rounded bg-slate-200" />
+          <Pulse className="mt-2 h-4 w-64 rounded bg-slate-100" />
         </div>
+        <div className="mt-5 space-y-6">{children}</div>
       </div>
     </div>
   );
