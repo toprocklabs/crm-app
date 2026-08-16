@@ -110,20 +110,20 @@
   </div>
 
   <h2 id="status">Implementation status</h2>
-  <p><strong>Approved and Phase 1 shipped on 2026-08-16.</strong> The plan originated from a handwritten page titled "TOPROCK BRAIN" naming three pillars — CRM, agent memory, client project management — and four constraints: many projects push <em>and</em> pull, external agents talk to the brain so it gets smarter, the data structure must be flexible, and the brain stores markdown files that feed other agents.</p>
+  <p><strong>Complete — all three phases shipped 2026-08-16.</strong> The vault is archived read-only on GitHub. The plan originated from a handwritten page titled "TOPROCK BRAIN" naming three pillars — CRM, agent memory, client project management — and four constraints: many projects push <em>and</em> pull, external agents talk to the brain so it gets smarter, the data structure must be flexible, and the brain stores markdown files that feed other agents.</p>
   <table>
     <thead><tr><th>Phase</th><th>Status</th><th>Result</th></tr></thead>
     <tbody>
-      <tr><td>1 · Import, browse, author</td><td><strong>Done</strong></td><td>69 notes · 203 links · 19 account links · search, backlinks, editing and creation all live. Vault untouched.</td></tr>
-      <tr><td>2 · Write endpoint + repoint both runs</td><td><strong>API done · 1 of 2 runs repointed</strong></td><td>Ingest API live and verified. The Claude Code weekly run is rewritten but not yet triggered. The Codex daily run is untouched — see below.</td></tr>
-      <tr><td>3 · Freeze &amp; archive</td><td>Blocked</td><td>Blocked by design until <strong>both</strong> runs are off the vault.</td></tr>
+      <tr><td>1 · Import, browse, author</td><td><strong>Done</strong></td><td>75 notes · 230 links · 20 account links · search, backlinks, editing and creation all live.</td></tr>
+      <tr><td>2 · Write endpoint + repoint runs</td><td><strong>Done</strong></td><td>Ingest API live and verified end to end. The Claude Code weekly run is rewritten (never triggered — it was not actually scheduled; see below).</td></tr>
+      <tr><td>3 · Freeze &amp; archive</td><td><strong>Done</strong></td><td>Freeze notice committed and pushed; <code>toprocklabs/toprock_brain</code> archived read-only on GitHub.</td></tr>
     </tbody>
   </table>
 
   <div class="statgrid">
-    <div class="stat"><div class="lbl">Notes imported</div><div class="num">69</div><div class="sub">41 with frontmatter, 28 without</div></div>
-    <div class="stat"><div class="lbl">Wiki-links resolved</div><div class="num">184</div><div class="sub">of 203; 19 dangle by design</div></div>
-    <div class="stat"><div class="lbl">Linked to an account</div><div class="num">19</div><div class="sub">+ 3 contact links</div></div>
+    <div class="stat"><div class="lbl">Notes imported</div><div class="num">75</div><div class="sub">43 with frontmatter, 32 without</div></div>
+    <div class="stat"><div class="lbl">Wiki-links resolved</div><div class="num">210</div><div class="sub">of 230; 20 dangle by design</div></div>
+    <div class="stat"><div class="lbl">Linked to an account</div><div class="num">20</div><div class="sub">+ 3 contact links</div></div>
     <div class="stat"><div class="lbl">Tests</div><div class="num">119</div><div class="sub">all passing, 11 new</div></div>
   </div>
 
@@ -177,6 +177,13 @@
   </div>
 
   <p>All of it verified against the live database: bad token → 401, folder list, existence check, new digest → 201, agent rewriting its own digest → 200, blind write to <code>People/Austin.md</code> → 409, <code>createOnly</code> on an existing note → 409 and on a new one → 201, stale <code>expectedSha</code> → 409, correct one → 200, and a journal append landing on a human-authored note. Wiki-links in an agent-written digest resolve (<code>[[Coatary]]</code>, <code>[[Flint Gardner]]</code>) with unknown targets left dangling. Run accounting: <code>items_proposed</code> incremented per write, <code>finished_at</code> stamped on close. Test data removed afterwards — back to 69 notes, 203 links, 0 agent-authored.</p>
+
+  <h3>Two corrections found at the end, both worth recording</h3>
+  <div class="callout warn">
+    <p style="margin:0 0 8px"><strong>1 — The import first ran against a stale clone.</strong> Checking the repo before archiving it showed <code>pushedAt</code> on the remote was 2026-05-21 while the local clone's last commit was 2026-05-10. One unpulled commit held <strong>six notes that had never reached the CRM</strong> (including <code>Companies/Vital Alignments.md</code>, a paying account) and four that were out of date. Pulled, re-seeded, re-imported: 69 → 75 notes, 203 → 230 links. <em>Archiving without that check would have stranded a client's notes outside the brain.</em></p>
+    <p style="margin:0 0 8px">It also demonstrated the edit-guard doing its job and its limitation: a plain re-import created the 6 new notes but held back 4 bodies, because it cannot tell "a human edited this in the app" from "the source file legitimately changed". <code>--force</code> was correct here only because no note had been hand-edited yet.</p>
+    <p style="margin:0"><strong>2 — The "critical path" framing was wrong.</strong> This plan asserted that archiving the vault would break two live scheduled runs. In fact the Windows task <code>ToprockBrain-CodeIngest-Weekly</code> <strong>does not exist on the machine</strong>, and no note in the vault post-dates 2026-05-20. Both ingests had been dormant for three months. Phase 2 did not rescue a live pipeline; it rebuilt a dead one on better foundations. Worth knowing before deciding whether to revive either.</p>
+  </div>
 
   <h3>Phase 2 — what is left</h3>
   <div class="callout warn">
