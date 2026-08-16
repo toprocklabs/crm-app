@@ -7,30 +7,45 @@
 // is no `dangerouslySetInnerHTML` anywhere in the meeting path, and imported
 // client notes can never inject markup.
 //
-// Supported subset, matching what the 14 imported notes actually use:
-//   ## / ###   headings
-//   - item     flat bullet lists
-//   | a | b |  GFM tables (header row + separator + body)
-//   ---        horizontal rule
-//   text       paragraphs (consecutive lines join with a space)
-// Inline: **strong**, *em*, `code`, [text](href).
+// Since plan 007 this also parses brain notes imported from the Obsidian vault,
+// which is why the subset below covers three constructs meetings never used:
+// `#` H1, `- [ ]` task items, and [[wiki-links]].
+//
+// Supported subset:
+//   # / ## / ###   headings
+//   - item         flat bullet lists
+//   - [ ] / - [x]  task items (a list item that carries a checkbox)
+//   | a | b |      GFM tables (header row + separator + body)
+//   ---            horizontal rule
+//   text           paragraphs (consecutive lines join with a space)
+// Inline: **strong**, *em*, `code`, [text](href), [[wiki-link]].
 
 export type Span =
   | { kind: "text"; text: string }
   | { kind: "strong"; text: string }
   | { kind: "em"; text: string }
   | { kind: "code"; text: string }
-  | { kind: "link"; text: string; href: string };
+  | { kind: "link"; text: string; href: string }
+  // `target` is the note being pointed at; `text` is what to display, which
+  // differs only for the alias form [[Target|shown text]]. Resolving a target
+  // to a URL is the renderer's job — the parser stays ignorant of routes, so a
+  // meeting body can render the same span as plain text.
+  | { kind: "wikilink"; text: string; target: string };
+
+/** A bullet. `checked` is present only on `- [ ]` / `- [x]` task items. */
+export type ListItem = { spans: Span[]; checked?: boolean };
 
 export type Block =
-  | { kind: "heading"; level: 2 | 3; spans: Span[] }
+  | { kind: "heading"; level: 1 | 2 | 3; spans: Span[] }
   | { kind: "paragraph"; spans: Span[] }
-  | { kind: "list"; items: Span[][] }
+  | { kind: "list"; items: ListItem[] }
   | { kind: "table"; headers: Span[][]; rows: Span[][][] }
   | { kind: "rule" };
 
-// Order matters: `**` must be tried before `*`, or bold parses as two empty ems.
-const INLINE = /`([^`]+)`|\*\*(.+?)\*\*|\*(.+?)\*|\[(.+?)\]\((.+?)\)/g;
+// Order matters twice over: [[wiki-links]] must be tried before [links](href),
+// and `**` before `*` or bold parses as two empty ems.
+const INLINE =
+  /\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|([^\]]*))?\]\]|`([^`]+)`|\*\*(.+?)\*\*|\*(.+?)\*|\[(.+?)\]\((.+?)\)/g;
 
 export function parseInline(text: string): Span[] {
   const spans: Span[] = [];
@@ -45,8 +60,12 @@ export function parseInline(text: string): Span[] {
       spans.push({ kind: "text", text: text.slice(cursor, match.index) });
     }
 
-    const [, code, strong, em, linkText, href] = match;
-    if (code !== undefined) {
+    const [, wikiTarget, wikiAlias, code, strong, em, linkText, href] = match;
+    if (wikiTarget !== undefined) {
+      const target = wikiTarget.trim();
+      const alias = (wikiAlias ?? "").trim();
+      spans.push({ kind: "wikilink", target, text: alias || target });
+    } else if (code !== undefined) {
       spans.push({ kind: "code", text: code });
     } else if (strong !== undefined) {
       spans.push({ kind: "strong", text: strong });
@@ -84,7 +103,7 @@ export function parseMeetingMarkdown(markdown: string): Block[] {
   const blocks: Block[] = [];
 
   let paragraph: string[] = [];
-  let listItems: string[] = [];
+  let listItems: { text: string; checked?: boolean }[] = [];
 
   const flushParagraph = () => {
     if (paragraph.length) {
@@ -95,7 +114,16 @@ export function parseMeetingMarkdown(markdown: string): Block[] {
 
   const flushList = () => {
     if (listItems.length) {
-      blocks.push({ kind: "list", items: listItems.map(parseInline) });
+      blocks.push({
+        kind: "list",
+        items: listItems.map((item) =>
+          // Keep `checked` absent rather than undefined on a plain bullet, so a
+          // renderer can branch on the key existing.
+          item.checked === undefined
+            ? { spans: parseInline(item.text) }
+            : { spans: parseInline(item.text), checked: item.checked },
+        ),
+      });
       listItems = [];
     }
   };
@@ -136,12 +164,14 @@ export function parseMeetingMarkdown(markdown: string): Block[] {
       continue;
     }
 
-    const heading = trimmed.match(/^(#{2,3})\s+(.*)$/);
+    // H1 is here for brain notes, which open with "# Coatary". Meeting bodies
+    // start at H2 because the page renders the title itself.
+    const heading = trimmed.match(/^(#{1,3})\s+(.*)$/);
     if (heading) {
       flushAll();
       blocks.push({
         kind: "heading",
-        level: heading[1].length === 2 ? 2 : 3,
+        level: heading[1].length as 1 | 2 | 3,
         spans: parseInline(heading[2].trim()),
       });
       continue;
@@ -149,7 +179,14 @@ export function parseMeetingMarkdown(markdown: string): Block[] {
 
     if (trimmed.startsWith("- ")) {
       flushParagraph();
-      listItems.push(trimmed.slice(2).trim());
+      const rest = trimmed.slice(2).trim();
+      // "- [ ] OCR the signed proposal" — the vault's Open Items convention.
+      const task = /^\[([ xX])\]\s*(.*)$/.exec(rest);
+      if (task) {
+        listItems.push({ text: task[2].trim(), checked: task[1].toLowerCase() === "x" });
+      } else {
+        listItems.push({ text: rest });
+      }
       continue;
     }
 
@@ -171,7 +208,7 @@ export function meetingMarkdownToText(markdown: string): string {
         case "paragraph":
           return [spansToText(block.spans)];
         case "list":
-          return block.items.map(spansToText);
+          return block.items.map((item) => spansToText(item.spans));
         case "table":
           return block.rows.map((row) => row.map(spansToText).join(" — "));
         case "rule":

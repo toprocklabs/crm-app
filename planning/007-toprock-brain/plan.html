@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<!--
+  planning/007-toprock-brain/plan.html — the HOW.
+  Retire the toprock_brain Obsidian vault and make the CRM the Toprock Brain.
+  Keep section order stable for clean diffs.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan · Toprock Brain</title>
+<style>
+  :root{--bg:#fbfaf8;--ink:#1c1b1a;--muted:#6b6660;--line:#e6e2db;--accent:#3a5a78;--soft:#eef2f6;--codebg:#f3f1ec;
+    --proposed:#9a7b2f;--proposed-bg:#f6efdd;--accepted:#3f6b4a;--accepted-bg:#e9f1ea;
+    --t0:#3f6b4a;--t0-bg:#e9f1ea;--t1:#3a5a78;--t1-bg:#e8eef4;--t2:#9a7b2f;--t2-bg:#f6efdd;--t3:#9a4b3f;--t3-bg:#f5e8e5;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  main{max-width:820px;margin:0 auto;padding:44px 28px 80px}
+  .top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+  .top a{color:var(--accent);text-decoration:none}
+  .status{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;padding:3px 11px;border-radius:20px;text-transform:capitalize}
+  .s-accepted{color:var(--accepted);background:var(--accepted-bg)}
+  .kicker{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-top:18px}
+  h1{font-size:30px;margin:6px 0 6px;letter-spacing:-.01em}
+  .lede{color:var(--muted);font-size:17px;margin:0 0 8px}
+  h2{font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);
+    border-top:1px solid var(--line);padding-top:22px;margin:32px 0 10px}
+  h3{font-size:15.5px;margin:18px 0 6px}
+  p{margin:8px 0}ul,ol{margin:8px 0;padding-left:22px}li{margin:5px 0}
+  code{background:var(--codebg);padding:1.5px 5px;border-radius:4px;font-size:13.5px;font-family:"SF Mono",Consolas,Menlo,monospace}
+  pre{background:var(--codebg);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:13px;line-height:1.5}
+  pre code{background:none;padding:0}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+  th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;color:var(--muted);background:var(--soft)}
+  .callout{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:12px 16px;margin:14px 0}
+  .callout.warn{border-left-color:var(--t3)}
+  .callout.good{border-left-color:var(--t0)}
+  .phase{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:14px 0}
+  .phase h3{margin:0 0 6px;color:var(--accent)}
+  .phase .tag{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .tier{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:20px;text-transform:uppercase;white-space:nowrap}
+  .tier-0{color:var(--t0);background:var(--t0-bg)}
+  .tier-1{color:var(--t1);background:var(--t1-bg)}
+  .tier-2{color:var(--t2);background:var(--t2-bg)}
+  .tier-3{color:var(--t3);background:var(--t3-bg)}
+  .ev{font-size:13px;color:var(--muted);margin:6px 0 0}
+  .ev code{font-size:12.5px}
+  .mono{font-family:"SF Mono",Consolas,Menlo,monospace;font-size:12.5px}
+  .toc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:18px 0}
+  .toc ol{margin:6px 0;padding-left:20px;font-size:14px;columns:2;column-gap:28px}
+  .toc a{color:var(--accent);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  figure{margin:18px 0}
+  figcaption{font-size:12.5px;color:var(--muted);margin-top:8px;text-align:center}
+  svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;white-space:nowrap}
+  .p-dev{color:#c2410c;background:#fbeae0}
+  .p-client{color:#0e7490;background:#cffafe}
+  .p-todo{color:#9a7b2f;background:#f6efdd}
+  .p-urgent{color:#b3261e;background:#fce8e6}
+  .p-note{color:#6b6660;background:#eeeced}
+  .num{font-size:26px;font-weight:700;letter-spacing:-.02em}
+  .statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .stat .lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .stat .sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+  /* Folder census bars */
+  .bars{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:14px 0}
+  .bar{display:grid;grid-template-columns:96px 1fr 34px;align-items:center;gap:10px;margin:5px 0;font-size:13px}
+  .bar .track{background:var(--soft);border-radius:4px;height:15px;overflow:hidden}
+  .bar .fill{height:100%;border-radius:4px}
+  .f-entity{background:#7ea3c4}
+  .f-digest{background:#c9b07a}
+  .bar .n{text-align:right;color:var(--muted);font-family:"SF Mono",Consolas,Menlo,monospace;font-size:12px}
+  .legend{font-size:12px;color:var(--muted);margin-top:10px}
+  .swatch{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  footer{margin-top:36px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+  @media (max-width:640px){main{padding:28px 16px 60px}.toc ol{columns:1}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a href="../index.html">← Planning index</a>
+    <span class="status s-accepted">Accepted</span>
+  </div>
+
+  <div class="kicker">Plan · Feature 007</div>
+  <h1>The Toprock Brain</h1>
+  <p class="lede">Retire the <code>toprock_brain</code> Obsidian vault and make this CRM the brain. Import its 69 notes as first-class records, give the app the authoring loop Obsidian was providing, and repoint the two scheduled agent runs that currently write markdown into it — <strong>in that order</strong>, because archiving first breaks both of them.</p>
+
+  <div class="toc">
+    <strong style="font-size:13px">Contents</strong>
+    <ol>
+      <li><a href="#status">Implementation status</a></li>
+      <li><a href="#why">Why this, now</a></li>
+      <li><a href="#today">What exists today, measured</a></li>
+      <li><a href="#requires">What retiring the vault requires</a></li>
+      <li><a href="#target">Target architecture</a></li>
+      <li><a href="#decisions">Decisions</a></li>
+      <li><a href="#schema">Schema</a></li>
+      <li><a href="#import">The import</a></li>
+      <li><a href="#phases">Phases</a></li>
+      <li><a href="#risks">Risks</a></li>
+      <li><a href="#scope">Out of scope</a></li>
+      <li><a href="#verify">Verification</a></li>
+    </ol>
+  </div>
+
+  <h2 id="status">Implementation status</h2>
+  <p><strong>Approved and Phase 1 shipped on 2026-08-16.</strong> The plan originated from a handwritten page titled "TOPROCK BRAIN" naming three pillars — CRM, agent memory, client project management — and four constraints: many projects push <em>and</em> pull, external agents talk to the brain so it gets smarter, the data structure must be flexible, and the brain stores markdown files that feed other agents.</p>
+  <table>
+    <thead><tr><th>Phase</th><th>Status</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>1 · Import, browse, author</td><td><strong>Done</strong></td><td>69 notes · 203 links · 19 account links · search, backlinks, editing and creation all live. Vault untouched.</td></tr>
+      <tr><td>2 · Write endpoint + repoint both runs</td><td><strong>API done · 1 of 2 runs repointed</strong></td><td>Ingest API live and verified. The Claude Code weekly run is rewritten but not yet triggered. The Codex daily run is untouched — see below.</td></tr>
+      <tr><td>3 · Freeze &amp; archive</td><td>Blocked</td><td>Blocked by design until <strong>both</strong> runs are off the vault.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="statgrid">
+    <div class="stat"><div class="lbl">Notes imported</div><div class="num">69</div><div class="sub">41 with frontmatter, 28 without</div></div>
+    <div class="stat"><div class="lbl">Wiki-links resolved</div><div class="num">184</div><div class="sub">of 203; 19 dangle by design</div></div>
+    <div class="stat"><div class="lbl">Linked to an account</div><div class="num">19</div><div class="sub">+ 3 contact links</div></div>
+    <div class="stat"><div class="lbl">Tests</div><div class="num">119</div><div class="sub">all passing, 11 new</div></div>
+  </div>
+
+  <h3>What shipped</h3>
+  <table>
+    <thead><tr><th>Area</th><th>Files</th></tr></thead>
+    <tbody>
+      <tr><td>Schema</td><td><code>brain_documents</code>, <code>brain_document_links</code>, <code>brain_doc_kind</code> in <code>src/lib/schema.ts</code>; migration <code>0010</code>, additive, zero drops; <code>brain_documents_fts_idx</code> created by hand.</td></tr>
+      <tr><td>Import</td><td><code>scripts/seed/brain/**</code> (69 notes committed) · <code>scripts/import-brain.mts</code> · <code>scripts/map-brain.mts</code> · npm scripts <code>import:brain</code>, <code>map:brain</code>.</td></tr>
+      <tr><td>Logic</td><td><code>src/lib/brain/frontmatter.ts</code> (pure, tested) · <code>queries.ts</code> · <code>links.ts</code>.</td></tr>
+      <tr><td>Routes</td><td><code>/brain</code>, <code>/brain/[...slug]</code>, <code>/brain/new</code> — each with a <code>loading.tsx</code>; nav entry added.</td></tr>
+      <tr><td>Writes</td><td><code>updateBrainDocumentField</code>, <code>createBrainDocument</code>, <code>archiveBrainDocument</code> via <code>defineAction</code>.</td></tr>
+      <tr><td>Shared</td><td>Parser gains <code>#</code> H1, <code>- [ ]</code> tasks, <code>[[wiki-links]]</code> · <code>MeetingBodyEditor</code> → <code>MarkdownBodyEditor</code> · <code>AccountBrainPanel</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <p style="margin:0 0 8px"><strong>Two bugs the verification caught.</strong> Both typechecked and would have shipped silently — the reason to test against the live vault rather than trust <code>tsc</code>.</p>
+    <p style="margin:0 0 8px"><strong>1 — Authored notes' wiki-links never resolved.</strong> Only the importer wrote link rows, so a note written at <code>/brain/new</code> rendered every <code>[[link]]</code> as dangling. Fixed by adding <code>src/lib/brain/links.ts</code> and calling <code>rebuildDocumentLinks</code> / <code>resolveDanglingLinksTo</code> from the create and update actions. <em>Anything that writes a body must now rebuild the graph</em> — recorded in <code>AGENTS.md</code>.</p>
+    <p style="margin:0"><strong>2 — <code>= any(${'{'}array{'}'})</code> throws in Drizzle.</strong> It expands a JS array into separate placeholders and Postgres rejects it (<code>op ANY/ALL (array) requires array on right side</code>). It would have thrown on every note save. Switched to <code>inArray()</code>.</p>
+  </div>
+
+  <div class="callout">
+    <p style="margin:0 0 8px"><strong>Deviation — the migration was applied as reviewed SQL, not by <code>db:push</code>.</strong> The repo's drizzle meta has drifted before, and <code>db:push</code> diffs against the live database, so it can propose drops on unrelated tables and is interactive. <code>db:generate</code> produced 13 statements, all <code>CREATE</code>; those exact statements were applied through a guard that refuses anything matching <code>drop|truncate|delete</code>. Net effect is identical, blast radius is not.</p>
+    <p style="margin:0"><strong>Deviation — a throwaway user was created to verify the auth-gated pages</strong> (<code>qa-brain-verify</code>), then deleted. The headless browser kept dropping its session cookie, so most verification ran by minting a session token with the app's own <code>src/lib/auth.ts</code> and fetching pages directly.</p>
+  </div>
+
+  <h3>Phase 2 — what the API actually had to be</h3>
+  <p>The plan assumed one <code>POST</code>. Reading the 233-line ingest prompt showed the run does more than write: it checks whether a <code>People/</code> note exists before creating one, lists <code>Projects/ Clients/ Companies/</code> to map a session to a note, and appends to an existing journal entry. Write-only would have forced it to blind-write and clobber hand-written notes. So the surface is:</p>
+  <table>
+    <thead><tr><th>Call</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET /api/brain/documents?folder=Projects</code></td><td>List a folder — titles and paths, never bodies.</td></tr>
+      <tr><td><code>GET …?path=&lt;path&gt;</code></td><td>Existence check. <code>404</code> means absent.</td></tr>
+      <tr><td><code>GET …?path=&lt;path&gt;&amp;include=body</code></td><td>Read a note plus its current <code>contentSha</code>.</td></tr>
+      <tr><td><code>POST /api/brain/documents</code></td><td>Create or replace, addressed by vault path.</td></tr>
+      <tr><td><code>POST /api/brain/runs</code></td><td>Open a run; post again with <code>id</code> to close it.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout good">
+    <p style="margin:0 0 8px"><strong>Ownership is enforced by the API, not by convention.</strong> That is what makes <code>--dangerously-skip-permissions</code> on a scheduled agent defensible: a buggy run physically cannot destroy a hand-written note.</p>
+    <table style="margin:0">
+      <thead><tr><th>Path</th><th>Owner</th><th>Blind write</th></tr></thead>
+      <tbody>
+        <tr><td><code>Code/…</code>, <code>Sources/…</code></td><td>the agent</td><td>Replaced freely — re-running a week is idempotent.</td></tr>
+        <tr><td><code>People/…</code>, <code>Journal/…</code>, <code>Projects/…</code></td><td>a person</td><td><code>409 manual_authored</code>.</td></tr>
+      </tbody>
+    </table>
+    <p style="margin:8px 0 0">To edit a human-owned note the caller must read it and resend with <code>expectedSha</code> — read-modify-write, which is how the journal append works. <code>createOnly</code> covers "ensure <code>People/Austin.md</code> exists" without ever overwriting. <strong>There is deliberately no force flag;</strong> adding one removes the guarantee.</p>
+  </div>
+
+  <p>All of it verified against the live database: bad token → 401, folder list, existence check, new digest → 201, agent rewriting its own digest → 200, blind write to <code>People/Austin.md</code> → 409, <code>createOnly</code> on an existing note → 409 and on a new one → 201, stale <code>expectedSha</code> → 409, correct one → 200, and a journal append landing on a human-authored note. Wiki-links in an agent-written digest resolve (<code>[[Coatary]]</code>, <code>[[Flint Gardner]]</code>) with unknown targets left dangling. Run accounting: <code>items_proposed</code> incremented per write, <code>finished_at</code> stamped on close. Test data removed afterwards — back to 69 notes, 203 links, 0 agent-authored.</p>
+
+  <h3>Phase 2 — what is left</h3>
+  <div class="callout warn">
+    <p style="margin:0 0 8px"><strong>The Claude Code weekly run is rewritten but has not been run.</strong> <code>prompts/weekly-ingest-prompt.md</code>, <code>CLAUDE.md</code>, <code>README.md</code> and <code>run-weekly-ingest.ps1</code> in <code>toprock-labs-brain-scheduled-run</code> now use the API; the wrapper loads <code>.env.local</code>, refuses to start without credentials, and probes the API before spending a model call. Its filesystem access to the vault was removed outright. Pre-flight is verified; <strong>a full <code>/ingest-weekly</code> has not been triggered</strong> — that is a real agent run writing real digests, and it should happen with someone watching.</p>
+    <p style="margin:0"><strong>The Codex daily run is untouched and still writes to the vault.</strong> It lives on <code>E:\Codex Projects\toprock_brain_scheduled_run_jt</code>, which is not mounted on this machine. Until it is repointed on its host, archiving the vault silently destroys a daily digest. This is the one thing standing between here and phase 3.</p>
+  </div>
+
+  <div class="callout warn">
+    <p style="margin:0 0 8px"><strong>Three things now need a decision.</strong></p>
+    <p style="margin:0 0 8px"><strong>The vault knows 5 businesses the CRM doesn't</strong> — Peaceful Property Management, South Pointe Dental, Surf n Sport Chiro, EPOXY LLC, Farr West. 14 notes are unlinked because of it. Create the accounts, or leave the notes searchable-but-unlinked?</p>
+    <p style="margin:0 0 8px"><strong>The vault duplicates itself five times</strong> (see below). Both copies imported and both point at the same account, so the divergence is visible. Merging them is editorial.</p>
+    <p style="margin:0"><strong>19 wiki-links dangle</strong> — notes referenced but never written. That is the same signal Obsidian's graph gave for free, and is kept deliberately.</p>
+  </div>
+
+  <div class="callout good">
+    <p style="margin:0 0 8px"><strong>This is the fourth merge and the pattern is proven.</strong> Plan 002 folded in <code>proposal_creator</code>, plan 005 folded in GitHub delivery activity, plan 006 folded in <code>toprock_client_notes</code>. All three kept Postgres as the source of truth, left the old thing archived rather than deleted, and stayed reproducible from an empty database. Follow the same shape.</p>
+    <p style="margin:0"><strong>Two pieces are already built.</strong> <code>suggestions</code> (kind · jsonb payload · confidence · evidence · status · <code>agent_run_id</code>) is a human-in-the-loop write queue, and <code>agent_runs</code> (model · tokens in/out · cost · items seen/proposed) is per-run cost accounting. Most projects bolt those on late and badly. <code>activities.source</code> already distinguishes <code>manual</code> from <code>agent</code>.</p>
+  </div>
+
+  <h2 id="why">Why this, now</h2>
+  <p>Two systems hold one set of facts. The CRM knows Coatary is a customer with a signed proposal and a $150 deposit; the vault knows the signed PDF couldn't be text-extracted, that Flint Gardner is the stakeholder, and that five things are still open on the engagement. Both keep a list of open items. Neither knows the other exists.</p>
+
+  <div class="statgrid">
+    <div class="stat"><div class="lbl">Vault notes</div><div class="num">69</div><div class="sub">150 KB of bodies, 11 folders</div></div>
+    <div class="stat"><div class="lbl">Notes with no frontmatter</div><div class="num">28</div><div class="sub">every dated digest</div></div>
+    <div class="stat"><div class="lbl">Agents writing to it</div><div class="num">2</div><div class="sub">both on schedulers</div></div>
+  </div>
+
+  <p>The duplication is not theoretical: <code>Companies/Coatary.md</code> and the Coatary <code>companies</code> row are the same thing, maintained separately, drifting. Every account in the business has this shape.</p>
+
+  <div class="callout warn">
+    <p style="margin:0 0 8px"><strong>The vault also duplicates itself.</strong> Five businesses have <em>both</em> a <code>Clients/X.md</code> and a <code>Companies/X.md</code> — Coatary, Peaceful Property Management, South Pointe Dental, Surf n Sport Chiro, The Scuba Dive Riverton. The notes are near-identical and already disagree: <code>Clients/Coatary.md</code> says <code>status: active</code> / <code>tags: [client]</code>, <code>Companies/Coatary.md</code> says <code>status: client</code> / <code>tags: [company]</code>.</p>
+    <p style="margin:0">That is the same drift this plan exists to end, happening one folder apart. Both notes import (nothing is thrown away) and both link to the same <code>companies</code> row, so the account page shows them together and the divergence becomes visible instead of invisible. Merging them is an editorial decision for after the import, not something the importer should guess at.</p>
+  </div>
+
+  <div class="callout">
+    <p style="margin:0"><strong>The standing direction is one app, not many.</strong> Multiple things to log into is the problem being solved across plans 002, 003, 005 and 006. A vault that needs Obsidian open beside the CRM is another login by another name.</p>
+  </div>
+
+  <h2 id="today">What exists today, measured</h2>
+
+  <h3>The vault — <code>toprocklabs/toprock_brain</code></h3>
+  <table>
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Shape</td><td>Obsidian vault in git. 69 markdown notes, <strong>150 KB</strong> of body text (613 KB on disk including <code>.git</code>), 11 top-level folders, 8 commits.</td></tr>
+      <tr><td>Clone</td><td><code>~/Dev/truong-dynasty/toprock-brain</code></td></tr>
+      <tr><td>Written by</td><td>Two scheduled agents, plus Austin and Justin editing in Obsidian.</td></tr>
+      <tr><td>Structure</td><td>YAML frontmatter (inconsistently) + <code>[[wiki-links]]</code> + <code>## Open Items</code> checklists.</td></tr>
+      <tr><td>Roll-ups</td><td>None across notes. Open items live per-note and are read by eye.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="bars">
+    <div class="bar"><span>Projects</span><span class="track"><span class="fill f-entity" style="width:100%"></span></span><span class="n">11</span></div>
+    <div class="bar"><span>Companies</span><span class="track"><span class="fill f-entity" style="width:91%"></span></span><span class="n">10</span></div>
+    <div class="bar"><span>People</span><span class="track"><span class="fill f-entity" style="width:91%"></span></span><span class="n">10</span></div>
+    <div class="bar"><span>Sources</span><span class="track"><span class="fill f-digest" style="width:82%"></span></span><span class="n">9</span></div>
+    <div class="bar"><span>Journal</span><span class="track"><span class="fill f-digest" style="width:55%"></span></span><span class="n">6</span></div>
+    <div class="bar"><span>Clients</span><span class="track"><span class="fill f-entity" style="width:45%"></span></span><span class="n">5</span></div>
+    <div class="bar"><span>Drive</span><span class="track"><span class="fill f-digest" style="width:45%"></span></span><span class="n">5</span></div>
+    <div class="bar"><span>Delivery</span><span class="track"><span class="fill f-digest" style="width:36%"></span></span><span class="n">4</span></div>
+    <div class="bar"><span>Pipeline</span><span class="track"><span class="fill f-digest" style="width:36%"></span></span><span class="n">4</span></div>
+    <div class="bar"><span>Meetings</span><span class="track"><span class="fill f-digest" style="width:27%"></span></span><span class="n">3</span></div>
+    <div class="bar"><span>Code</span><span class="track"><span class="fill f-digest" style="width:9%"></span></span><span class="n">1</span></div>
+    <div class="legend">
+      <span class="swatch f-entity"></span>Entity notes — one per thing, frontmatter, long-lived &nbsp;
+      <span class="swatch f-digest"></span>Dated digests — one per run, <code>YYYY-MM-DD</code> prefix, append-only
+    </div>
+  </div>
+
+  <p class="ev">Note the <code>Meetings/</code> row: <strong>3 notes in the vault against 14 already imported into the CRM by plan 006</strong>. That pillar has effectively already moved. This plan finishes the job for the other ten folders.</p>
+
+  <h3>The two scheduled agents — the load-bearing dependency</h3>
+  <table>
+    <thead><tr><th>Run</th><th>Cadence</th><th>Produces</th><th>Reachable from here?</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>toprock-labs-brain-scheduled-run</code><br><span class="mono">Claude Code</span></td>
+        <td>Sundays 18:00 America/Denver, Task Scheduler task <code>ToprockBrain-CodeIngest-Weekly</code></td>
+        <td><code>Code/&lt;date&gt; Code Weekly Digest.md</code><br><code>Sources/&lt;date&gt; Code Source Status.md</code></td>
+        <td><span class="pill p-client">Yes</span> <span class="mono">~/Dev/truong-dynasty/</span></td>
+      </tr>
+      <tr>
+        <td><code>toprock_brain_scheduled_run_jt</code><br><span class="mono">Codex</span></td>
+        <td>Daily</td>
+        <td>Granola / Gmail / Drive / Discord digests</td>
+        <td><span class="pill p-urgent">No</span> — lives on <code>E:\Codex Projects\</code>, not mounted on this machine</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="ev">Both write <code>.md</code> into the vault and <code>git push</code>. Archive the vault before repointing them and both break on their next fire — silently, since a push to an archived repo fails inside a scheduled task nobody is watching.</p>
+
+  <h2 id="requires">What retiring the vault requires</h2>
+  <p>Obsidian is doing more jobs than "storing files". Each one needs a home before the vault can go.</p>
+  <table>
+    <thead><tr><th>The vault does this today</th><th>Lands here</th><th>Effort</th></tr></thead>
+    <tbody>
+      <tr><td>Stores 69 <code>.md</code> notes</td><td><code>brain_documents.body_md</code></td><td><span class="pill p-todo">New table</span></td></tr>
+      <tr><td>Human editing of a note body</td><td><code>MeetingBodyEditor</code>, generalized</td><td><span class="pill p-client">Already built</span> — plan 006, blur-to-save markdown textarea</td></tr>
+      <tr><td>Creating notes; daily journal</td><td><code>/brain/new</code> + a one-click daily entry</td><td><span class="pill p-dev">New</span></td></tr>
+      <tr><td>Backlinks and graph view</td><td><code>brain_document_links</code> + backlinks panel</td><td><span class="pill p-todo">New table</span></td></tr>
+      <tr><td>Search across notes</td><td>Postgres FTS — <code>to_tsvector</code> + GIN</td><td><span class="pill p-dev">New</span></td></tr>
+      <tr><td>Two agents writing files + <code>git push</code></td><td><code>POST /api/brain/documents</code></td><td><span class="pill p-urgent">Critical path</span></td></tr>
+      <tr><td>Git history of the notes</td><td>Repo archived read-only; seed files committed here</td><td><span class="pill p-note">Phase 3</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="target">Target architecture</h2>
+  <figure>
+    <svg viewBox="0 0 820 372" role="img" aria-label="Sources flow into brain_documents in Postgres, which serves the brain routes, the account page, and later an MCP endpoint">
+      <defs>
+        <marker id="a" markerWidth="9" markerHeight="9" refX="7.5" refY="3.2" orient="auto">
+          <path d="M0,0 L7.5,3.2 L0,6.4 z" fill="#8a8580"/>
+        </marker>
+        <marker id="ad" markerWidth="9" markerHeight="9" refX="7.5" refY="3.2" orient="auto">
+          <path d="M0,0 L7.5,3.2 L0,6.4 z" fill="#b9b3ab"/>
+        </marker>
+      </defs>
+      <style>
+        .bx{fill:#fff;stroke:#e6e2db}
+        .lbl{font:600 12.5px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#1c1b1a}
+        .sub{font:11px "SF Mono",Consolas,Menlo,monospace;fill:#6b6660}
+        .hdr{font:600 10.5px -apple-system,sans-serif;fill:#6b6660;letter-spacing:.09em}
+        .ln{stroke:#8a8580;stroke-width:1.4;fill:none}
+        .ln-d{stroke:#b9b3ab;stroke-width:1.4;fill:none;stroke-dasharray:5 4}
+      </style>
+
+      <text x="14" y="20" class="hdr">SOURCES</text>
+      <text x="292" y="20" class="hdr">THE BRAIN · POSTGRES</text>
+      <text x="628" y="20" class="hdr">SURFACES</text>
+
+      <!-- sources -->
+      <rect x="14" y="34" width="196" height="46" rx="8" class="bx"/>
+      <text x="26" y="53" class="lbl">Codex daily run</text>
+      <text x="26" y="70" class="sub">Granola · Gmail · Drive · Discord</text>
+
+      <rect x="14" y="92" width="196" height="46" rx="8" class="bx"/>
+      <text x="26" y="111" class="lbl">Claude Code weekly run</text>
+      <text x="26" y="128" class="sub">GitHub · CC sessions</text>
+
+      <rect x="14" y="150" width="196" height="46" rx="8" class="bx" style="fill:#e8eef4;stroke:#c4d4e2"/>
+      <text x="26" y="169" class="lbl">Austin &amp; Justin</text>
+      <text x="26" y="186" class="sub">typing in /brain</text>
+
+      <rect x="14" y="208" width="196" height="46" rx="8" class="bx" style="fill:#e9f1ea;stroke:#c6dccc"/>
+      <text x="26" y="227" class="lbl">Existing CRM records</text>
+      <text x="26" y="244" class="sub">companies · deals · payments</text>
+
+      <!-- write paths -->
+      <rect x="232" y="52" width="120" height="44" rx="8" class="bx" style="fill:#f6efdd;stroke:#e3d5ae"/>
+      <text x="242" y="70" class="lbl">POST /api/</text>
+      <text x="242" y="86" class="sub">brain/documents</text>
+
+      <rect x="232" y="152" width="120" height="44" rx="8" class="bx" style="fill:#e8eef4;stroke:#c4d4e2"/>
+      <text x="242" y="170" class="lbl">server actions</text>
+      <text x="242" y="186" class="sub">defineAction()</text>
+
+      <path class="ln" d="M210 57 H226 Q232 57 232 63 V68" marker-end="url(#a)"/>
+      <path class="ln" d="M210 115 H222 Q232 115 232 105 V100" marker-end="url(#a)"/>
+      <path class="ln" d="M210 173 H226" marker-end="url(#a)"/>
+      <path class="ln" d="M210 231 H222 Q232 231 232 214 V200" marker-end="url(#a)"/>
+
+      <!-- the store -->
+      <rect x="384" y="40" width="200" height="212" rx="10" class="bx" style="fill:#fbfaf8;stroke:#c9c2b6;stroke-width:1.5"/>
+      <text x="398" y="62" class="lbl">brain_documents</text>
+      <text x="398" y="79" class="sub">path · slug · body_md</text>
+      <text x="398" y="95" class="sub">frontmatter jsonb</text>
+      <text x="398" y="111" class="sub">company_id → companies</text>
+
+      <rect x="398" y="126" width="172" height="44" rx="7" class="bx" style="fill:#eef2f6"/>
+      <text x="410" y="144" class="lbl">brain_document_links</text>
+      <text x="410" y="160" class="sub">the [[wiki-link]] graph</text>
+
+      <rect x="398" y="180" width="172" height="44" rx="7" class="bx" style="fill:#eef2f6"/>
+      <text x="410" y="198" class="lbl">GIN · to_tsvector</text>
+      <text x="410" y="214" class="sub">vector column later</text>
+
+      <text x="398" y="243" class="sub">+ suggestions · agent_runs</text>
+
+      <path class="ln" d="M352 74 H370 Q378 74 378 84 V96 H384" marker-end="url(#a)"/>
+      <path class="ln" d="M352 174 H370 Q378 174 378 164 V150 H384" marker-end="url(#a)"/>
+
+      <!-- surfaces -->
+      <rect x="618" y="40" width="188" height="42" rx="8" class="bx"/>
+      <text x="630" y="58" class="lbl">/brain</text>
+      <text x="630" y="74" class="sub">search · browse</text>
+
+      <rect x="618" y="92" width="188" height="42" rx="8" class="bx"/>
+      <text x="630" y="110" class="lbl">/brain/[slug]</text>
+      <text x="630" y="126" class="sub">render · edit · backlinks</text>
+
+      <rect x="618" y="144" width="188" height="42" rx="8" class="bx"/>
+      <text x="630" y="162" class="lbl">/accounts/[id]</text>
+      <text x="630" y="178" class="sub">Brain notes, collapsed</text>
+
+      <rect x="618" y="196" width="188" height="42" rx="8" class="bx" style="stroke-dasharray:5 4;stroke:#b9b3ab"/>
+      <text x="630" y="214" class="lbl" style="fill:#6b6660">/api/mcp</text>
+      <text x="630" y="230" class="sub">plan 008 — every agent</text>
+
+      <path class="ln" d="M584 90 H600 Q610 90 610 74 V61 H618" marker-end="url(#a)"/>
+      <path class="ln" d="M584 118 H610 V113 H618" marker-end="url(#a)"/>
+      <path class="ln" d="M584 146 H600 Q610 146 610 158 V165 H618" marker-end="url(#a)"/>
+      <path class="ln-d" d="M584 200 H600 Q610 200 610 210 V217 H618" marker-end="url(#ad)"/>
+
+      <!-- the vault, gone -->
+      <rect x="232" y="278" width="352" height="52" rx="8" style="fill:#f5e8e5;stroke:#e3cac5"/>
+      <text x="246" y="300" class="lbl" style="fill:#8a5a52">toprock_brain vault — archived read-only (phase 3)</text>
+      <text x="246" y="318" class="sub" style="fill:#8a5a52">69 notes committed here as scripts/seed/brain/**</text>
+      <path class="ln-d" d="M408 278 V262 Q408 254 418 254 H484" marker-end="url(#ad)"/>
+      <text x="492" y="258" class="sub" style="fill:#8a8580">one-time import</text>
+    </svg>
+    <figcaption>One store, four writers, four readers. Dashed = later or retired. The vault becomes committed seed data, not a live system.</figcaption>
+  </figure>
+
+  <h2 id="decisions">Decisions</h2>
+  <table>
+    <thead><tr><th>Question</th><th>Decision</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Vault or CRM as source of truth?</td>
+        <td><strong>CRM. Retire the vault.</strong></td>
+        <td>Considered and rejected: a split by data type with a one-way <code>vault → Postgres</code> index. It works, but it keeps two systems and two editing surfaces alive forever. Same call plan 006 made about the notes site.</td>
+      </tr>
+      <tr>
+        <td>Where do the scheduled agents write?</td>
+        <td><strong>Digests → the write endpoint. Record changes → <code>/inbox</code>.</strong></td>
+        <td>A weekly digest is a document, not a proposed change — routing five a week through an approval queue is friction with no signal. Anything that mutates a <code>companies</code> or <code>deals</code> row still goes through <code>suggestions</code>, where approval earns its keep.</td>
+      </tr>
+      <tr>
+        <td>Auth on the write endpoint?</td>
+        <td><strong>Bearer token</strong> (<code>BRAIN_INGEST_TOKEN</code>), not the session cookie.</td>
+        <td>Both callers are headless scheduled scripts with no browser and no way to hold a JWT cookie. Plan 008's MCP server wraps the same handler behind OAuth.</td>
+      </tr>
+      <tr>
+        <td>How much authoring does the CRM need?</td>
+        <td><strong>Edit + create + daily journal.</strong></td>
+        <td>Anything less and Obsidian stays open in practice, which means the vault is not actually retired. The body editor already exists; only creation is new.</td>
+      </tr>
+      <tr>
+        <td>Retrieval depth?</td>
+        <td><strong>Postgres FTS only.</strong> Vector-ready.</td>
+        <td>69 notes. An embedding pipeline adds an API key, a re-embed step and tuning for no measurable gain at this size. The <code>vector</code> column drops in beside <code>search_text</code> later with no rewrite.</td>
+      </tr>
+      <tr>
+        <td>Flexible schema — how?</td>
+        <td><strong>JSONB</strong> for frontmatter. Not EAV.</td>
+        <td>EAV turns every two-condition query into self-joins, stores all values as text, and thrashes indexes on write. JSONB indexes with GIN and keeps native types. Already the choice made for <code>suggestions.payload</code>.</td>
+      </tr>
+      <tr>
+        <td>Consolidation — LLM fact extraction now?</td>
+        <td><strong>No. Entity resolution first.</strong></td>
+        <td>With 69 notes and the CRM already holding the structured facts, the consolidation that pays is deterministic: make <code>Companies/Coatary.md</code> and the Coatary row the same thing. Temporal fact rows need an API budget and are worthless until that works.</td>
+      </tr>
+      <tr>
+        <td>URL identity?</td>
+        <td><strong><code>slug</code></strong>, derived from <code>path</code>.</td>
+        <td>Vault filenames contain spaces (<code>Drive/2026-04-24 Drive Digest.md</code>). <code>path</code> stays the import identity; <code>companies/coatary</code> is the URL, matching the existing <code>/meetings/[slug]</code> convention.</td>
+      </tr>
+      <tr>
+        <td>Delete the vault repo?</td>
+        <td><strong>No. Freeze it.</strong></td>
+        <td>README pointing here, 69 notes committed as seed data, GitHub repo archived. Same treatment <code>proposal_creator</code> and <code>toprock_client_notes</code> got.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 id="schema">Schema</h2>
+  <p>Two additive tables and one enum. No drops, no changes to existing tables. <code>source</code> reuses the existing <code>data_source</code> enum.</p>
+  <pre><code>brain_documents
+  id             serial pk
+  path           text unique not null      -- "Companies/Coatary.md", the vault identity
+  slug           text unique not null      -- "companies/coatary", the URL
+  title          text not null             -- frontmatter title/name, else filename stem
+  kind           brain_doc_kind not null   -- entity | digest | meta
+  folder         text not null
+  note_date      date                      -- from the filename prefix; null on entity notes
+  body_md        text not null default ''  -- ~9 KB average. NEVER select in a list query.
+  frontmatter    jsonb not null default '{}'
+  content_sha    text not null
+  company_id     int → companies           -- curated; survives re-import
+  contact_id     int → contacts
+  source         data_source not null default 'manual'
+  search_text    text not null default ''
+  archived_at    timestamptz               -- soft delete, never hard
+  created_at, updated_at   timestamptz
+
+  unique  brain_documents_path_unique (path)
+  unique  brain_documents_slug_unique (slug)
+  index   brain_documents_company_idx (company_id)
+  index   brain_documents_kind_date_idx (kind, note_date)
+
+brain_document_links                       -- the [[wiki-link]] graph
+  id             serial pk
+  source_doc_id  int not null → brain_documents on delete cascade
+  raw_target     text not null             -- "Flint Gardner", as written
+  target_doc_id  int → brain_documents on delete set null   -- null = dangling
+
+  index   brain_document_links_source_idx (source_doc_id)
+  index   brain_document_links_target_idx (target_doc_id)
+
+enum brain_doc_kind = entity | digest | meta</code></pre>
+
+  <div class="callout warn">
+    <p style="margin:0 0 8px"><strong>The full-text index is created by hand, not by Drizzle.</strong> Drizzle 0.45 has no first-class <code>tsvector</code> type, <code>db:push</code> is this repo's source of truth, and the generated SQL is already polluted. After <code>npm run db:push</code>, run once:</p>
+    <pre style="margin:8px 0 0"><code>CREATE INDEX IF NOT EXISTS brain_documents_fts_idx
+  ON brain_documents USING GIN (to_tsvector('english', search_text));</code></pre>
+    <p style="margin:8px 0 0">Query with <code>to_tsvector('english', search_text) @@ plainto_tsquery('english', $1)</code>, ranked by <code>ts_rank</code>. An expression index needs no schema column, so nothing here fights the ORM — and a <code>vector</code> column can join it later.</p>
+  </div>
+
+  <p><strong>Dangling links are kept, not dropped.</strong> A <code>[[Kanoa Imada]]</code> pointing at a note that doesn't exist yet is exactly the signal Obsidian's graph view gives you for free: something worth writing. <code>target_doc_id</code> stays null and resolves itself the moment the note appears.</p>
+
+  <p><strong>Body size discipline.</strong> Measured: 150 KB of bodies across 69 rows — <strong>2.2 KB average, 12.4 KB largest</strong> (<code>Code/2026-05-10 Code Weekly Digest.md</code>). Smaller than the 29 KB meeting bodies plan 006 dealt with, but the digests grow every week and an unfiltered list query still drags ~150 KB today. This is the shape that bit plan 002, where a stray <code>select()</code> pulled megabytes of proposal PDF into a list query. <em>Never select <code>body_md</code> in a list query.</em> Third plan to write this down; enforce it in review.</p>
+
+  <h2 id="import">The import</h2>
+
+  <h3>What it can and cannot rely on</h3>
+  <p>Measured against the live vault, not assumed:</p>
+  <table>
+    <thead><tr><th>Signal</th><th>Reliable?</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Frontmatter</td>
+        <td><span class="pill p-urgent">No</span></td>
+        <td><strong>28 of 69 notes have none</strong> — every dated digest. Those that do disagree: <code>name</code> (34) vs <code>title</code> (4), <code>type: person</code> vs <code>tags: [person]</code> (37), <code>status</code> on 26. Long tail of 23 distinct keys.</td>
+      </tr>
+      <tr><td>Folder</td><td><span class="pill p-client">Yes</span></td><td>Clean split, verified: 37 entity · 23 digest · 9 meta.</td></tr>
+      <tr><td>Filename date prefix</td><td><span class="pill p-client">Yes</span></td><td><code>YYYY-MM-DD </code> on <strong>every</strong> note in a digest folder — zero exceptions across all 23.</td></tr>
+      <tr><td><code>[[wiki-links]]</code></td><td><span class="pill p-client">Yes</span></td><td>The actual graph: <strong>203 links</strong>, of which 182 resolve to another note by title and 21 dangle.</td></tr>
+    </tbody>
+  </table>
+  <p class="ev">Measured by running <code>src/lib/brain/frontmatter.ts</code> over the live vault before the importer was written. <strong>Zero slug collisions</strong> across all 69. So: import <strong>every</strong> <code>.md</code> unconditionally, classify by folder, date from the filename, link by wiki-link and name match. Frontmatter is a JSONB bag read only when present — never a precondition.</p>
+
+  <h3>How it runs</h3>
+  <ol>
+    <li><strong>Commit the 69 notes</strong> verbatim under <code>scripts/seed/brain/</code>. Same contract as <code>scripts/seed/meetings/</code>: the import replays from an empty database.</li>
+    <li><strong><code>node scripts/import-brain.mjs [--dry-run] [--force] [--only &lt;slug&gt;]</code></strong>. Idempotent by <code>path</code>; without <code>--force</code> it never overwrites an edited body. Mirrors <code>scripts/import-meetings.mjs</code>.</li>
+    <li><strong><code>node scripts/map-brain.mjs [--apply]</code></strong> links documents to accounts. Mirrors <code>scripts/map-repos.mjs</code>, including its <code>MANUAL_LINKS</code> const so the mapping is reproducible.</li>
+  </ol>
+
+  <div class="callout">
+    <p style="margin:0"><strong>The slug matcher will not get everything.</strong> <code>Companies/Coatary.md → Coatary</code> is free. <code>People/Eddy.md</code> carries <code>company: Vive Massage</code> in frontmatter and needs it read; <code>People/Alex Larson.md</code> has no company at all. Anything the matcher can't reach goes in <code>MANUAL_LINKS</code> — the same decision plan 005 made for <code>scuba-dive-riverton → Scuba Dive Utah</code>, and for the same reason: a hand-curated link that survives every re-run beats a clever heuristic that silently mislinks.</p>
+  </div>
+
+  <h3>Parser extension</h3>
+  <p><code>src/lib/meeting/markdown.ts</code> parses to a block tree that React renders — there is no <code>dangerouslySetInnerHTML</code> in the meeting path, and there must be none in the brain path either. The vault uses three things its subset lacks:</p>
+  <table>
+    <thead><tr><th>Construct</th><th>Change</th></tr></thead>
+    <tbody>
+      <tr><td><code>[[wiki-links]]</code></td><td>New <code>wikilink</code> span kind. Renders as a link in the brain, as plain text in <code>MeetingBody</code>.</td></tr>
+      <tr><td><code># H1</code></td><td><code>heading</code> gains <code>level: 1</code>.</td></tr>
+      <tr><td><code>- [ ]</code> / <code>- [x]</code></td><td>List items gain <code>checked?: boolean</code>.</td></tr>
+    </tbody>
+  </table>
+  <p class="ev">Extend the parser and <code>tests/meeting-markdown.test.ts</code> — not the callers. That is the rule this repo already wrote down for exactly this situation.</p>
+
+  <h2 id="phases">Phases</h2>
+
+  <figure>
+    <svg viewBox="0 0 820 128" role="img" aria-label="Three-phase cutover: import while the vault stays live, then repoint agents, then archive">
+      <style>
+        .ph{font:600 12.5px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#1c1b1a}
+        .pn{font:11px "SF Mono",Consolas,Menlo,monospace;fill:#6b6660}
+        .vs{font:600 10.5px -apple-system,sans-serif;letter-spacing:.05em}
+      </style>
+      <line x1="16" y1="34" x2="804" y2="34" stroke="#e6e2db" stroke-width="2"/>
+
+      <circle cx="112" cy="34" r="7" fill="#3f6b4a"/>
+      <text x="112" y="60" class="ph" text-anchor="middle">Phase 1</text>
+      <text x="112" y="77" class="pn" text-anchor="middle">import · browse · author</text>
+
+      <circle cx="410" cy="34" r="7" fill="#3a5a78"/>
+      <text x="410" y="60" class="ph" text-anchor="middle">Phase 2</text>
+      <text x="410" y="77" class="pn" text-anchor="middle">write endpoint · repoint runs</text>
+
+      <circle cx="708" cy="34" r="7" fill="#9a4b3f"/>
+      <text x="708" y="60" class="ph" text-anchor="middle">Phase 3</text>
+      <text x="708" y="77" class="pn" text-anchor="middle">freeze · archive</text>
+
+      <rect x="16" y="96" width="480" height="22" rx="5" fill="#e9f1ea" stroke="#c6dccc"/>
+      <text x="256" y="111" class="vs" fill="#3f6b4a" text-anchor="middle">VAULT LIVE — agents still writing to it, nothing at risk</text>
+
+      <rect x="504" y="96" width="300" height="22" rx="5" fill="#f5e8e5" stroke="#e3cac5"/>
+      <text x="654" y="111" class="vs" fill="#8a5a52" text-anchor="middle">VAULT READ-ONLY, THEN ARCHIVED</text>
+    </svg>
+    <figcaption>The vault stays live and writable until the agents have been moved and verified. Order is the whole safety mechanism.</figcaption>
+  </figure>
+
+  <div class="phase">
+    <div class="tag">Phase 1 · <span class="tier tier-0">Tier 0 — additive</span> · <span class="tier tier-0">✓ Shipped 2026-08-16</span></div>
+    <h3>Import, browse, author</h3>
+    <p>Schema + the manual FTS index. <code>src/lib/brain/frontmatter.ts</code> (pure, tested first — fastest feedback), then the parser extension, then <code>import-brain.mjs</code> and <code>map-brain.mjs</code>. Then <code>src/lib/brain/queries.ts</code>, the <code>/brain</code>, <code>/brain/[slug]</code> and <code>/brain/new</code> routes each with a <code>loading.tsx</code>, the nav entry, and a collapsed <strong>Brain notes</strong> entry inside the account page's existing "Meetings &amp; notes" area.</p>
+    <p class="ev"><strong>Done when</strong> a note can be found, read, edited and created entirely in the app, and re-running the import doesn't clobber the edit.</p>
+  </div>
+
+  <div class="phase">
+    <div class="tag">Phase 2 · <span class="tier tier-1">Tier 1 — the critical path</span> · <span class="tier tier-2">Partly shipped 2026-08-16</span></div>
+    <h3>Write endpoint, then repoint both runs</h3>
+    <p><code>src/app/api/brain/documents/route.ts</code> — <code>POST</code>, Zod-validated, upsert by <code>path</code>, <code>source = 'agent'</code>, bearer-token auth, logged against <code>agent_runs</code>. Then update <code>toprock-labs-brain-scheduled-run</code> (prompts write via the endpoint; <code>run-weekly-ingest.ps1</code> drops the commit and push) and the Codex daily run.</p>
+    <p class="ev"><strong>Done when</strong> a manually-triggered <code>/ingest-weekly</code> lands its digest in the CRM with an <code>agent_runs</code> row and writes nothing to the vault.</p>
+  </div>
+
+  <div class="phase">
+    <div class="tag">Phase 3 · <span class="tier tier-3">Tier 3 — cleanup</span></div>
+    <h3>Freeze and archive</h3>
+    <p>README on <code>toprock-brain</code> pointing at <code>/brain</code>; archive <code>toprocklabs/toprock_brain</code>; add a "Client brain (plan 007)" section to <code>AGENTS.md</code> so no agent writes there again.</p>
+    <p class="ev"><strong>Done when</strong> nothing in any repo instructs an agent to write to the vault, and the vault's README says where the brain went.</p>
+  </div>
+
+  <h2 id="risks">Risks</h2>
+  <table>
+    <thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>The Codex daily run can't be repointed from this machine.</strong> It lives on <code>E:\Codex Projects\toprock_brain_scheduled_run_jt</code>, which isn't mounted here. Until someone changes it on the host machine, it keeps writing daily digests into a vault nobody reads — and those digests are simply lost.</td>
+        <td>Do not enter phase 3 until it's moved. If it can't be, keep the vault writable and treat phase 3 as blocked rather than working around it. Track it as an explicit hand-off, not a to-do buried in a phase.</td>
+      </tr>
+      <tr>
+        <td><strong>Retiring the vault contradicts the source plan's literal wording</strong> — "the BRAIN will store markdown files in the repo".</td>
+        <td>Markdown survives as the content format in <code>body_md</code>; the 69 files stay committed as seed data. If a future agent genuinely needs files on disk, a generated export job is small and additive. Flagged so it's a decision, not a drift.</td>
+      </tr>
+      <tr>
+        <td><strong>Obsidian's editing loop is better than a textarea.</strong> Backlink autocomplete, graph view, instant local search, offline. Replace it badly and the vault quietly reopens.</td>
+        <td>Ship phase 1 fully — including <em>create</em> and the daily entry — before archiving anything. The honest test is whether Obsidian goes a week unopened, and that test can only run while the vault still exists.</td>
+      </tr>
+      <tr>
+        <td><strong>Entity resolution mislinks quietly.</strong> A wrong <code>company_id</code> puts Coatary's notes on the wrong account and nobody notices.</td>
+        <td><code>map-brain.mjs</code> reports before it applies; unresolvable cases go in <code>MANUAL_LINKS</code> rather than being guessed. Unlinked is a safe state — an unlinked note is still searchable.</td>
+      </tr>
+      <tr>
+        <td><strong>Scope creep into a wiki.</strong> Once notes are in the CRM it's tempting to add tags, mentions, threading, embeddings, a graph canvas.</td>
+        <td>69 notes. Ship search and backlinks; revisit when a page of results no longer fits on one screen. The same guard plan 006 set, for the same reason.</td>
+      </tr>
+      <tr>
+        <td><strong>9 KB bodies in list queries.</strong></td>
+        <td>Explicit column lists on every brain query. Third plan to write this down (002, 006, now); enforce in review.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 id="scope">Out of scope</h2>
+  <ul>
+    <li><strong>MCP server</strong> (<code>/api/mcp</code>) — plan 008. <code>brain_documents</code> + FTS is exactly what its <code>search_brain</code> tool wraps, and it reuses the phase-2 write handler. Nothing here may assume a single caller.</li>
+    <li><strong>The agent-memory pillar</strong> — plan 009. Worth knowing first: Anthropic's Managed Agents <em>memory stores</em> are path-addressed markdown documents, versioned per mutation with actor and timestamp, mounted into agent containers as a filesystem. That is this vault, hosted. Build-vs-buy, decided deliberately.</li>
+    <li><strong>Embeddings / pgvector</strong> — deferred by decision. Add the column when FTS demonstrably falls short.</li>
+    <li><strong>LLM fact extraction</strong> — temporal <code>valid_from</code>/<code>valid_to</code> fact rows. Genuinely useful for "what did we agree in April versus now"; needs a budget; worthless before entity resolution works.</li>
+    <li><strong>Markdown export back to a repo.</strong> Additive later if an agent needs files.</li>
+    <li><strong>GitHub webhooks</strong> replacing the manual <code>sync:repos</code> poll — unrelated and unblocked.</li>
+    <li><strong>Obsidian's graph canvas.</strong> Backlinks yes; a force-directed visualisation no.</li>
+  </ul>
+
+  <h2 id="verify">Verification</h2>
+  <ul>
+    <li><code>npm run lint</code> · <code>npm test</code> · <code>npm run build</code>.</li>
+    <li>Schema: migration generated and applied, no drops; the FTS index exists (<code>\di brain_documents*</code>).</li>
+    <li><code>import-brain.mjs --dry-run</code> reports <strong>69 documents · 41 with frontmatter · 28 without · 37 entity / 23 digest / 9 meta · 203 wiki-links · 0 slug collisions</strong>, and no errors on filenames containing spaces.</li>
+    <li>Run it for real, then again without <code>--force</code> — zero updates. Idempotent.</li>
+    <li>Edit a note in <code>/brain</code>, re-import without <code>--force</code> — the edit survives. <em>This is the contract that makes re-import safe.</em></li>
+    <li><code>map-brain.mjs</code> reports, then <code>--apply</code> writes; <code>Companies/Coatary.md</code> lands on Coatary and stays through another import.</li>
+    <li><code>/brain</code>: search <code>scuba</code> returns ranked results, and <code>body_md</code> is absent from the list query — check the SQL, not the page.</li>
+    <li><code>/brain/companies/coatary</code>: headings, task lists and tables render; <code>[[Flint Gardner]]</code> is a working link; backlinks show the four digests referencing it.</li>
+    <li>Create a note and a daily journal entry from <code>/brain/new</code>; edit, blur, reload, confirm it persisted.</li>
+    <li>Account page: Brain notes inside Meetings &amp; notes, collapsed; money panel still first.</li>
+    <li><code>POST /api/brain/documents</code> with a bad token → 401; with a good one → upserts and appears at <code>/brain</code>.</li>
+    <li>Manual <code>/ingest-weekly</code>: digest lands in the CRM, <code>agent_runs</code> records it, vault untouched.</li>
+    <li>Every new route has a <code>loading.tsx</code>; <code>/brain</code> is in the sidebar.</li>
+    <li>Regression: <code>/meetings/[slug]</code> still renders (the shared parser changed underneath it).</li>
+  </ul>
+
+  <footer>
+    Plan 007 · Toprock CRM · supersedes the standalone <code>toprock_brain</code> vault.
+    Follows the merge pattern set by <a href="../002-proposal-creator-merge/plan.html">002</a>, <a href="../005-github-project-activity/plan.html">005</a> and <a href="../006-client-notes-merge/plan.html">006</a>.
+    Plan 008 (MCP) and 009 (agent memory) depend on this.
+  </footer>
+</main>
+</body>
+</html>

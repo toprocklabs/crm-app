@@ -44,6 +44,17 @@ const links = [
     ),
   },
   {
+    href: "/brain",
+    label: "Brain",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 5a3 3 0 0 0-3 3 3 3 0 0 0-2 5.2A3 3 0 0 0 9 18a3 3 0 0 0 3-1.5" />
+        <path d="M12 5a3 3 0 0 1 3 3 3 3 0 0 1 2 5.2A3 3 0 0 1 15 18a3 3 0 0 1-3-1.5" />
+        <line x1="12" y1="5" x2="12" y2="19" />
+      </svg>
+    ),
+  },
+  {
     href: "/contacts",
     label: "Contacts",
     icon: (

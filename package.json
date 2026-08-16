@@ -19,7 +19,9 @@
     "sync:repos": "node scripts/sync-repos.mjs",
     "source:nearby": "node scripts/source-nearby.mjs",
     "cleanup:demo": "node scripts/cleanup-demo.mjs",
-    "stripe:import": "tsx scripts/import-stripe.mts"
+    "stripe:import": "tsx scripts/import-stripe.mts",
+    "import:brain": "tsx scripts/import-brain.mts",
+    "map:brain": "tsx scripts/map-brain.mts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
