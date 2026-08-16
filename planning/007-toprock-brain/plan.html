@@ -188,7 +188,7 @@
   <h3>Phase 2 — what is left</h3>
   <div class="callout warn">
     <p style="margin:0 0 8px"><strong>The Claude Code weekly run is rewritten but has not been run.</strong> <code>prompts/weekly-ingest-prompt.md</code>, <code>CLAUDE.md</code>, <code>README.md</code> and <code>run-weekly-ingest.ps1</code> in <code>toprock-labs-brain-scheduled-run</code> now use the API; the wrapper loads <code>.env.local</code>, refuses to start without credentials, and probes the API before spending a model call. Its filesystem access to the vault was removed outright. Pre-flight is verified; <strong>a full <code>/ingest-weekly</code> has not been triggered</strong> — that is a real agent run writing real digests, and it should happen with someone watching.</p>
-    <p style="margin:0"><strong>The Codex daily run is untouched and still writes to the vault.</strong> It lives on <code>E:\Codex Projects\toprock_brain_scheduled_run_jt</code>, which is not mounted on this machine. Until it is repointed on its host, archiving the vault silently destroys a daily digest. This is the one thing standing between here and phase 3.</p>
+    <p style="margin:0"><strong>The Codex daily run was never repointed.</strong> It lives on <code>E:\Codex Projects\toprock_brain_scheduled_run_jt</code>, which is not mounted on this machine. It has produced nothing since 2026-05-07, so archiving the vault destroyed no live pipeline — but if it is ever revived it must be pointed at the ingest API first, or it will write to an archived repo and fail.</p>
   </div>
 
   <div class="callout warn">
