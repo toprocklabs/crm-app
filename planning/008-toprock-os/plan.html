@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<!--
+  planning/008-toprock-os/plan.html — the HOW.
+  Rename the product from Toprock CRM to Toprock OS, regroup the nav around
+  modules, and give the two module with no surface a page.
+  Keep section order stable for clean diffs.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan · Toprock OS</title>
+<style>
+  :root{--bg:#fbfaf8;--ink:#1c1b1a;--muted:#6b6660;--line:#e6e2db;--accent:#3a5a78;--soft:#eef2f6;--codebg:#f3f1ec;
+    --proposed:#9a7b2f;--proposed-bg:#f6efdd;--accepted:#3f6b4a;--accepted-bg:#e9f1ea;
+    --t0:#3f6b4a;--t0-bg:#e9f1ea;--t1:#3a5a78;--t1-bg:#e8eef4;--t2:#9a7b2f;--t2-bg:#f6efdd;--t3:#9a4b3f;--t3-bg:#f5e8e5;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  main{max-width:820px;margin:0 auto;padding:44px 28px 80px}
+  .top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+  .top a{color:var(--accent);text-decoration:none}
+  .status{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;padding:3px 11px;border-radius:20px;text-transform:capitalize}
+  .s-proposed{color:var(--proposed);background:var(--proposed-bg)}
+  .kicker{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-top:18px}
+  h1{font-size:30px;margin:6px 0 6px;letter-spacing:-.01em}
+  .lede{color:var(--muted);font-size:17px;margin:0 0 8px}
+  h2{font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);
+    border-top:1px solid var(--line);padding-top:22px;margin:32px 0 10px}
+  h3{font-size:15.5px;margin:18px 0 6px}
+  p{margin:8px 0}ul,ol{margin:8px 0;padding-left:22px}li{margin:5px 0}
+  code{background:var(--codebg);padding:1.5px 5px;border-radius:4px;font-size:13.5px;font-family:"SF Mono",Consolas,Menlo,monospace}
+  pre{background:var(--codebg);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;font-size:13px;line-height:1.5}
+  pre code{background:none;padding:0}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+  th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;color:var(--muted);background:var(--soft)}
+  .callout{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:12px 16px;margin:14px 0}
+  .callout.warn{border-left-color:var(--t3)}
+  .callout.good{border-left-color:var(--t0)}
+  .phase{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:14px 0}
+  .phase h3{margin:0 0 6px;color:var(--accent)}
+  .phase .tag{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .tier{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:20px;text-transform:uppercase;white-space:nowrap}
+  .tier-0{color:var(--t0);background:var(--t0-bg)}
+  .tier-1{color:var(--t1);background:var(--t1-bg)}
+  .tier-2{color:var(--t2);background:var(--t2-bg)}
+  .tier-3{color:var(--t3);background:var(--t3-bg)}
+  .ev{font-size:13px;color:var(--muted);margin:6px 0 0}
+  .ev code{font-size:12.5px}
+  .mono{font-family:"SF Mono",Consolas,Menlo,monospace;font-size:12.5px}
+  .toc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:18px 0}
+  .toc ol{margin:6px 0;padding-left:20px;font-size:14px;columns:2;column-gap:28px}
+  .toc a{color:var(--accent);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  figure{margin:18px 0}
+  figcaption{font-size:12.5px;color:var(--muted);margin-top:8px;text-align:center}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;white-space:nowrap}
+  .p-dev{color:#c2410c;background:#fbeae0}
+  .p-client{color:#0e7490;background:#cffafe}
+  .p-todo{color:#9a7b2f;background:#f6efdd}
+  .p-urgent{color:#b3261e;background:#fce8e6}
+  .p-note{color:#6b6660;background:#eeeced}
+  .num{font-size:26px;font-weight:700;letter-spacing:-.02em}
+  .statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .stat .lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .stat .sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+  /* Nav before/after */
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}
+  .col{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}
+  .col h4{margin:0 0 10px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .navitem{border:1px solid var(--line);border-radius:7px;padding:6px 10px;margin:5px 0;font-size:13px;background:#fafafa}
+  .navgroup{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:12px 0 4px}
+  .navgroup:first-child{margin-top:0}
+  .n-new{background:#e9f1ea;border-color:#c6dccc}
+  .n-flat{background:#f5f4f2;color:var(--muted)}
+  footer{margin-top:36px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:16px}
+  @media (max-width:640px){main{padding:28px 16px 60px}.toc ol{columns:1}.compare{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a href="../index.html">← Planning index</a>
+    <span class="status s-proposed">Proposed</span>
+  </div>
+
+  <div class="kicker">Plan · Feature 008</div>
+  <h1>Toprock OS</h1>
+  <p class="lede">Rename the product from <strong>Toprock CRM</strong> to <strong>Toprock OS</strong>, regroup the sidebar around modules instead of a flat list of CRM pages, and give the two modules that have no surface at all a page. CRM doesn't disappear — it stops being the product and becomes one module inside it.</p>
+
+  <div class="toc">
+    <strong style="font-size:13px">Contents</strong>
+    <ol>
+      <li><a href="#why">Why this, now</a></li>
+      <li><a href="#survey">The survey — what actually has to change</a></li>
+      <li><a href="#dont">What not to touch</a></li>
+      <li><a href="#decisions">Decisions</a></li>
+      <li><a href="#ia">The nav, regrouped</a></li>
+      <li><a href="#pages">The two missing pages</a></li>
+      <li><a href="#phases">Phases</a></li>
+      <li><a href="#risks">Risks</a></li>
+      <li><a href="#scope">Out of scope</a></li>
+      <li><a href="#verify">Verification</a></li>
+    </ol>
+  </div>
+
+  <h2 id="why">Why this, now</h2>
+  <p>The name stopped describing the thing. Six plans in, this app holds client records, signed agreements, a Stripe payment mirror, a GitHub delivery mirror, 75 brain notes with a link graph, an agent write API and a human-in-the-loop approval queue. "CRM" describes roughly three of its twelve pages.</p>
+  <p>The nav is the evidence. Twelve flat items in CRM order, with <code>/brain</code> — the thing plan 007 just spent three phases building — wedged in at position four between Meetings and Contacts. That is a CRM with features bolted on, not an operating system with modules.</p>
+
+  <div class="callout">
+    <p style="margin:0"><strong>The rename is worth doing mostly because of what it forces.</strong> Renaming strings is cosmetic and cheap. Asking "if this is an OS, what are its modules?" is not — and the honest answer surfaces two gaps that the CRM framing kept invisible: <strong>delivery has no page</strong> (repo activity exists only as a column on <code>/accounts</code>), and <strong>agent runs have no page at all</strong>, despite <code>agent_runs</code> now recording every ingest write.</p>
+  </div>
+
+  <h2 id="survey">The survey — what actually has to change</h2>
+  <p>360 case-insensitive matches for "crm" in the repo. Almost none of them matter. Measured:</p>
+
+  <table>
+    <thead><tr><th>Where</th><th>Hits</th><th>Kind</th><th>Risk</th></tr></thead>
+    <tbody>
+      <tr><td><code>CrmShell</code> imports and usages</td><td>59</td><td>Identifier</td><td><span class="pill p-client">None</span> — the compiler catches every miss</td></tr>
+      <tr><td><code>.crm-shell</code> / <code>crm_session</code> / <code>crm.sidebar-collapsed</code></td><td>80</td><td>Identifier, <strong>stateful</strong></td><td><span class="pill p-todo">Low</span> — see below</td></tr>
+      <tr><td><code>"Toprock CRM"</code> in the UI</td><td>8</td><td>Visible string</td><td><span class="pill p-client">None</span></td></tr>
+      <tr><td><code>planning/</code></td><td>94</td><td>Historical prose</td><td><span class="pill p-urgent">Do not touch</span></td></tr>
+      <tr><td><code>docs/</code>, <code>scripts/</code>, root docs</td><td>52</td><td>Prose</td><td><span class="pill p-client">None</span></td></tr>
+      <tr><td><code>.codex-tmp/</code>, <code>.gstack/</code></td><td>7</td><td>Tool scratch</td><td>Ignore</td></tr>
+    </tbody>
+  </table>
+
+  <p>Three of those 80 stateful hits are the only ones with a user-visible consequence:</p>
+  <table>
+    <thead><tr><th>Identifier</th><th>Consequence of renaming</th><th>Handling</th></tr></thead>
+    <tbody>
+      <tr><td><code>crm_session</code> cookie</td><td>Everyone is logged out once.</td><td>Accept it. Two users, one re-login.</td></tr>
+      <tr><td><code>crm.sidebar-collapsed</code></td><td>Sidebar preference resets.</td><td>Read the old key as a fallback for one release, then drop it.</td></tr>
+      <tr><td><code>.crm-shell</code> CSS class</td><td>A miss shows up as <em>broken visuals</em>, not a build error.</td><td>The one rename to check by eye. It is coupled to <code>.gong-panel</code> in <code>globals.css</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout good">
+    <p style="margin:0"><strong>Checked and clear: there is no hardcoded domain anywhere in the app.</strong> Every client-facing proposal link is a relative <code>/p/[slug]</code>. So no rename inside the repo can break a PIN link a client is holding — only renaming the deployment could, and the deployment is on a custom domain, which makes the Vercel project name cosmetic.</p>
+  </div>
+
+  <h2 id="dont">What not to touch</h2>
+  <div class="callout warn">
+    <p style="margin:0 0 8px"><strong>Do not rewrite <code>planning/</code>.</strong> Those 94 hits are the historical record. Plans 002–007 say "Toprock CRM" because that is what it was called when those decisions were made. Rewriting them would make the OS framing look like it existed all along, and this repo's own rule is that an accepted plan is superseded, never edited to reverse a decision. Add one dated line to <code>planning/index.html</code> noting the rename; leave the plans alone.</p>
+    <p style="margin:0">Same for <code>docs/agentic-crm-plan.html</code> — a historical artifact. It keeps its name.</p>
+  </div>
+
+  <div class="callout warn">
+    <p style="margin:0"><strong>The folder rename has a silent cost.</strong> <code>crm-app</code> → <code>toprock-os</code> on disk changes the Claude Code project key <code>C--Users-…-crm-app</code>, which <strong>orphans the assistant's persistent memory for this project</strong> — 11 files covering plans 002–007 and standing preferences. Recoverable by copying the directory to the new key, but only if someone remembers. That copy is a required step of phase 3, not an afterthought.</p>
+  </div>
+
+  <h2 id="decisions">Decisions</h2>
+  <table>
+    <thead><tr><th>Question</th><th>Decision</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Does "CRM" survive?</td>
+        <td><strong>Yes — as a module name.</strong></td>
+        <td>Toprock OS is the product; CRM is what the Accounts / Contacts / Opportunities group is called inside it. Keeps the word where it is accurate and retires it where it is not.</td>
+      </tr>
+      <tr>
+        <td>Rename the on-disk folder?</td>
+        <td><strong>Yes, and migrate the memory directory.</strong></td>
+        <td>One consistent name everywhere. The alternative — repo renamed, folder still <code>crm-app</code> — is the kind of mismatch that confuses you in six months.</td>
+      </tr>
+      <tr>
+        <td>Rename the GitHub repo?</td>
+        <td><strong>Yes.</strong> GitHub keeps redirects from the old URL.</td>
+        <td>Cheap and safe. The local remote needs updating; clones elsewhere keep working.</td>
+      </tr>
+      <tr>
+        <td>Rename the Vercel project?</td>
+        <td><strong>Yes</strong> — the deployment is on a custom domain.</td>
+        <td>The project name is cosmetic once a custom domain fronts it. Client proposal links are unaffected.</td>
+      </tr>
+      <tr>
+        <td>Rename with the IA change, or separately?</td>
+        <td><strong>Separate phases, one branch.</strong></td>
+        <td>Mechanical renames and design decisions review very differently. Keeping them as distinct commits means a nav regroup can be reverted without unpicking 200 string changes.</td>
+      </tr>
+      <tr>
+        <td>Where does <code>agent_runs</code> surface?</td>
+        <td><strong>A new <code>/agents</code> page.</strong></td>
+        <td>Plan 007 phase 2 made every agent write auditable and then left the audit invisible — a claim that "runs are auditable at <code>/inbox</code>" turned out to be false, because <code>/inbox</code> reads <code>suggestions</code>. Build the page or stop claiming the audit exists.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 id="ia">The nav, regrouped</h2>
+
+  <div class="compare">
+    <div class="col">
+      <h4>Today — 12 flat items</h4>
+      <div class="navitem n-flat">Dashboard</div>
+      <div class="navitem n-flat">Accounts</div>
+      <div class="navitem n-flat">Meetings</div>
+      <div class="navitem n-flat">Brain</div>
+      <div class="navitem n-flat">Contacts</div>
+      <div class="navitem n-flat">Opportunities</div>
+      <div class="navitem n-flat">Proposals</div>
+      <div class="navitem n-flat">Payments</div>
+      <div class="navitem n-flat">Tasks</div>
+      <div class="navitem n-flat">Activities</div>
+      <div class="navitem n-flat">Inbox</div>
+      <div class="navitem n-flat">Map</div>
+    </div>
+    <div class="col">
+      <h4>Proposed — 5 modules</h4>
+      <div class="navitem">Dashboard</div>
+      <div class="navgroup">CRM</div>
+      <div class="navitem">Accounts</div>
+      <div class="navitem">Contacts</div>
+      <div class="navitem">Opportunities</div>
+      <div class="navitem">Map</div>
+      <div class="navgroup">Money</div>
+      <div class="navitem">Proposals</div>
+      <div class="navitem">Payments</div>
+      <div class="navgroup">Brain</div>
+      <div class="navitem">Brain</div>
+      <div class="navitem">Meetings</div>
+      <div class="navitem">Activities</div>
+      <div class="navitem">Tasks</div>
+      <div class="navgroup">Delivery</div>
+      <div class="navitem n-new">Delivery <span style="font-size:11px;color:#3f6b4a">new</span></div>
+      <div class="navgroup">Agents</div>
+      <div class="navitem">Inbox</div>
+      <div class="navitem n-new">Runs <span style="font-size:11px;color:#3f6b4a">new</span></div>
+    </div>
+  </div>
+  <figcaption>Green = new page. No route is renamed or removed — only regrouped.</figcaption>
+
+  <p><strong>Two placements are judgment calls worth arguing about.</strong> <em>Meetings</em> sits under Brain rather than CRM because since plan 007 a meeting note is a knowledge artifact that happens to have an account, not a CRM record — and it already shares the markdown parser and body editor with brain notes. <em>Tasks</em> and <em>Activities</em> sit under Brain for the same reason: they are the record of what was said and what is owed, not pipeline machinery. If that reads wrong in use, moving a link between groups is a one-line change.</p>
+
+  <div class="callout warn">
+    <p style="margin:0"><strong>The collapsed rail constrains the implementation.</strong> The sidebar collapses to a 64px icon rail, and per <code>AGENTS.md</code> that styling is <strong>CSS-only</strong> — driven by <code>html[data-sidebar="collapsed"]</code> in <code>globals.css</code>, deliberately kept out of React state because it re-introduced a hydration mismatch and a flash of the expanded rail. Group headings must therefore hide via CSS, not by branching in the component. <code>links</code> is also rendered twice (desktop sidebar and mobile nav), so the grouped structure has to work in both renderers.</p>
+  </div>
+
+  <h2 id="pages">The two missing pages</h2>
+
+  <h3><code>/delivery</code> — what we're building</h3>
+  <p>Pillar 3 from the handwritten brain page. <code>project_repos</code> has mirrored the org's repos since plan 005, but surfaces only as a "Last push" column on <code>/accounts</code> and a per-account list. There is no answer to "what did we ship this week, across all clients."</p>
+  <ul>
+    <li>Every non-archived repo: name, linked account, last push, last commit message and author.</li>
+    <li>Sorted by <code>last_push_at</code>, using the existing recency bands in <code>src/lib/push-recency.ts</code> — pure, tested, thresholds live there and nowhere else.</li>
+    <li>Unlinked repos ("delivery with no account") called out, since that view already exists on <code>/accounts</code> and belongs here instead.</li>
+    <li>Honest about staleness: the sync is still manual (<code>npm run sync:repos</code>), so the page states when it last ran rather than implying it is live.</li>
+  </ul>
+
+  <h3><code>/agents</code> — what the machines did</h3>
+  <p><code>agent_runs</code> records loop, model, status, tokens in/out, cost, items seen and proposed, started and finished — and nothing renders it.</p>
+  <ul>
+    <li>Runs newest first: loop, status, duration, items proposed, token and cost totals.</li>
+    <li>An unfinished run (no <code>finished_at</code>, status still <code>running</code>) shown as such — a run that died should look dead, not complete.</li>
+    <li>Link across to the <code>suggestions</code> a run produced, which is the connection <code>/inbox</code> cannot currently make.</li>
+  </ul>
+  <p class="ev">Both are read-only list pages over tables that already exist. No schema change in this plan.</p>
+
+  <h2 id="phases">Phases</h2>
+
+  <div class="phase">
+    <div class="tag">Phase 0 · <span class="tier tier-3">Prerequisite</span></div>
+    <h3>Land plan 007 first</h3>
+    <p>Branch <code>plan-007-toprock-brain</code> has four unmerged commits. Renaming on top of an unmerged branch tangles a 200-file string diff with the brain work and makes both harder to review or revert.</p>
+    <p class="ev"><strong>Done when</strong> 007 is merged to <code>main</code> and this work starts from a clean branch off it.</p>
+  </div>
+
+  <div class="phase">
+    <div class="tag">Phase 1 · <span class="tier tier-0">Tier 0 — cosmetic</span></div>
+    <h3>Identity</h3>
+    <p>The 8 UI strings, <code>package.json</code> name, <code>README.md</code>, <code>AGENTS.md</code> prose, and a dated rename note in <code>planning/index.html</code>. No identifiers, no behaviour.</p>
+    <p class="ev"><strong>Done when</strong> the app calls itself Toprock OS everywhere a person can see, and <code>planning/</code> is untouched apart from the index note.</p>
+  </div>
+
+  <div class="phase">
+    <div class="tag">Phase 2 · <span class="tier tier-1">Tier 1 — mechanical</span></div>
+    <h3>Code identifiers</h3>
+    <p><code>CrmShell</code> → <code>AppShell</code> (59 usages), <code>.crm-shell</code> → <code>.app-shell</code>, <code>crm_session</code> → <code>toprock_session</code>, <code>crm.sidebar-collapsed</code> → <code>toprock.sidebar-collapsed</code> with a one-release fallback read of the old key.</p>
+    <p class="ev"><strong>Done when</strong> lint, tests and build pass, the sidebar still collapses and remembers, and logging in works after the forced logout.</p>
+  </div>
+
+  <div class="phase">
+    <div class="tag">Phase 3 · <span class="tier tier-2">Tier 2 — external</span></div>
+    <h3>Repo, folder, deployment</h3>
+    <p>Rename the GitHub repo, update the local remote, rename the working directory, <strong>copy the Claude Code memory directory to the new project key</strong>, fix the one path reference in <code>toprock-labs-brain-scheduled-run/CLAUDE.md</code>, and rename the Vercel project.</p>
+    <p class="ev"><strong>Done when</strong> a fresh clone, the dev server, the ingest API and the assistant's memory all work under the new name.</p>
+  </div>
+
+  <div class="phase">
+    <div class="tag">Phase 4 · <span class="tier tier-2">Tier 2 — design</span></div>
+    <h3>Regroup the nav</h3>
+    <p>Turn the flat <code>links</code> array into groups, update both renderers, and keep group headings CSS-hidden in the collapsed rail.</p>
+    <p class="ev"><strong>Done when</strong> both nav renderings show five modules, the collapsed rail still works with no hydration warning, and every existing route still resolves.</p>
+  </div>
+
+  <div class="phase">
+    <div class="tag">Phase 5 · <span class="tier tier-0">Tier 0 — additive</span></div>
+    <h3><code>/delivery</code> and <code>/agents</code></h3>
+    <p>Two read-only pages over existing tables, each with a <code>loading.tsx</code>.</p>
+    <p class="ev"><strong>Done when</strong> "what shipped this week" and "what did the last ingest cost" are each answerable in one click.</p>
+  </div>
+
+  <h2 id="risks">Risks</h2>
+  <table>
+    <thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>The memory directory is silently orphaned</strong> by the folder rename, losing the plan 002–007 history and standing preferences.</td>
+        <td>Copying it is an explicit, verified step of phase 3 — not "remember to do this". Verify by listing the new key's <code>memory/</code> before deleting anything at the old one.</td>
+      </tr>
+      <tr>
+        <td><strong>A <code>.crm-shell</code> miss shows up as broken styling</strong> rather than a build failure, and the collapsed-rail CSS is easy to half-rename.</td>
+        <td>Grep for the old class after the rename and expect zero hits, then check the sidebar expanded <em>and</em> collapsed by eye. Not a test the suite can run.</td>
+      </tr>
+      <tr>
+        <td><strong>The rename diff buries a real change.</strong> A 200-file mechanical diff is where a behavioural edit hides.</td>
+        <td>Phases 1 and 2 are string and identifier changes only, in their own commits. Anything that changes behaviour belongs in phase 4 or 5.</td>
+      </tr>
+      <tr>
+        <td><strong>Regrouping is a matter of taste</strong> and the first arrangement will be wrong somewhere — Meetings and Tasks especially.</td>
+        <td>No route moves, so a link changing groups is one line. Ship the arrangement, use it for a week, adjust.</td>
+      </tr>
+      <tr>
+        <td><strong>Two new pages is two new untested surfaces</strong> in a plan whose point was a rename.</td>
+        <td>Both are read-only lists over existing tables with no schema change, and both have a <code>loading.tsx</code> per the repo rule. If phase 5 slips, phases 1–4 still stand alone.</td>
+      </tr>
+      <tr>
+        <td><strong>An OS that is mostly empty rooms.</strong> Five modules where two have one page each can read as scaffolding.</td>
+        <td>That is the honest current shape, and naming it is the point — the empty rooms are what the CRM framing was hiding. Do not invent pages to fill the grid.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 id="scope">Out of scope</h2>
+  <ul>
+    <li><strong>Rewriting plans 002–007.</strong> Historical record.</li>
+    <li><strong>Renaming database objects.</strong> No table, column or enum changes. Renaming the Neon database itself is pure risk for zero benefit.</li>
+    <li><strong>Renaming routes.</strong> <code>/accounts</code>, <code>/brain</code> and the rest keep their URLs; only their grouping changes.</li>
+    <li><strong>The <code>gong-panel</code> class</strong> and the Gong-inspired design direction — unrelated to the name, and <code>AGENTS.md</code> pins the visual direction deliberately.</li>
+    <li><strong>Pillar 2 (agent memory).</strong> Still the next real build, deferred by this plan rather than replaced by it.</li>
+    <li><strong>Deploying.</strong> Phase 3 renames the Vercel project; shipping remains a separate, deliberate act.</li>
+  </ul>
+
+  <h2 id="verify">Verification</h2>
+  <ul>
+    <li><code>npm run lint</code> · <code>npm test</code> · <code>npm run build</code>.</li>
+    <li><code>grep -ri "crm" src/</code> returns only the deliberate module label — no <code>CrmShell</code>, no <code>crm-shell</code>, no <code>crm_session</code>.</li>
+    <li><code>grep -ri "crm" planning/00[2-7]*</code> is <em>unchanged</em> from before the rename. The history is intact.</li>
+    <li>Log out, log in: the new cookie works and the old one is gone.</li>
+    <li>Collapse the sidebar, reload: it stays collapsed, no hydration warning in the console, group headings hidden in the rail.</li>
+    <li>Every one of the 12 existing routes still resolves from the regrouped nav.</li>
+    <li><code>/delivery</code> shows repos ordered by last push with unlinked ones called out; <code>/agents</code> shows the plan 007 ingest runs with their token and item counts.</li>
+    <li>Both new routes have a <code>loading.tsx</code>.</li>
+    <li>After the folder rename: <code>npm run dev</code> works, <code>npm run import:brain -- --dry-run</code> reports 75 notes, and the assistant's memory directory exists under the new project key.</li>
+    <li>A client-facing <code>/p/[slug]</code> proposal still loads and PIN-gates correctly — the one surface a rename must never touch.</li>
+  </ul>
+
+  <footer>
+    Plan 008 · Toprock OS · renames the product established across
+    <a href="../002-proposal-creator-merge/plan.html">002</a>–<a href="../007-toprock-brain/plan.html">007</a>.
+    Depends on 007 landing first. Does not supersede any earlier plan.
+  </footer>
+</main>
+</body>
+</html>
