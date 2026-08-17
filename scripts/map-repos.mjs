@@ -26,6 +26,9 @@ const sql = neon(process.env.DATABASE_URL);
 
 // Toprock's own tooling. Mirrored so pushes are visible, but excluded from the
 // "delivery with no account" view, which would otherwise be mostly us.
+// `/^toprock/i` covers this repo under its current name (toprock-os) as well as
+// toprock_brain and friends. `crm-app` is kept for the pre-plan-008 row, which
+// the reconcile marks archived rather than deleting.
 const INTERNAL = [/^toprock/i, /^crm-app$/i, /^proposal-creator$/i];
 
 // Repo -> account name. Only for links the slug matcher cannot reach.
