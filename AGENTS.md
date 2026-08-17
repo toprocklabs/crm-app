@@ -65,6 +65,8 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `/brain`, `/brain/[...slug]`, `/brain/new` the Toprock Brain (merged in from the `toprock_brain` Obsidian vault)
 - `/tasks`
 - `/activities`
+- `/delivery` every mirrored repo, newest push first, plus repos with no account
+- `/agents` agent run history — cost, tokens, items proposed (`agent_runs`)
 - `/inbox` human-in-the-loop queue for agent-proposed writes (`suggestions`)
 - `/map` geocoded account map + proximity sourcing
 - **Token-gated agent API (no login):** `GET|POST /api/brain/documents`, `POST /api/brain/runs` — the ingest path for the scheduled agent runs (`BRAIN_INGEST_TOKEN` bearer)
@@ -183,7 +185,8 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - If touching contact profile editing, preserve blur autosave behavior.
 - If touching phone display, preserve `Call` button (`tel:` link behavior).
 - If adding activity logging context, set `returnPath` so the page revalidates after submit.
-- If adding/renaming routes, update top nav in `src/components/app-shell.tsx`.
+- If adding/renaming routes, add them to `navGroups` in `src/components/app-shell.tsx`. A route missing from every group falls into a "More" group rather than disappearing, so check the sidebar after adding one.
+- `project_repos.last_commit_message`/`_sha`/`_author` are never populated — `sync:repos` uses one org-listing request, which carries `pushed_at` only. Do not build UI on them without first making the sync fill them.
 - If editing create/log forms, preserve the collapsible interaction pattern.
 - If editing account stage selection, preserve immediate client-side feedback and the direct server-action update pattern in `AutoSaveCompanySelectField`.
 - If editing the account create form on `/accounts`, keep the expanded form spacious and readable (2-column grid, full-width URL/next-step fields); only its collapsed toggle is compact.

@@ -350,8 +350,20 @@ html[data-sidebar="collapsed"] .app-sidebar {
 }
 
 html[data-sidebar="collapsed"] .app-sidebar-label,
-html[data-sidebar="collapsed"] .app-sidebar-meta {
+html[data-sidebar="collapsed"] .app-sidebar-meta,
+/* Module headings (plan 008) hide in the rail the same way every other label
+   does — via CSS, never a React branch, or the collapsed state stops being
+   server-renderable and the hydration mismatch comes back. */
+html[data-sidebar="collapsed"] .app-sidebar-group {
   display: none;
+}
+
+/* Without the heading there is nothing marking a group boundary, so the rail
+   gets a hairline instead. :not(:first-child) keeps it off the top group. */
+html[data-sidebar="collapsed"] .app-sidebar-nav > div:not(:first-child) {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
 }
 
 html[data-sidebar="collapsed"] .app-sidebar-head {
