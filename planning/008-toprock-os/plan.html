@@ -83,7 +83,7 @@
 <main>
   <div class="top">
     <a href="../index.html">← Planning index</a>
-    <span class="status s-proposed">Proposed</span>
+    <span class="status s-accepted">Accepted</span>
   </div>
 
   <div class="kicker">Plan · Feature 008</div>
@@ -262,42 +262,43 @@
   <h2 id="phases">Phases</h2>
 
   <div class="phase">
-    <div class="tag">Phase 0 · <span class="tier tier-3">Prerequisite</span></div>
+    <div class="tag">Phase 0 · <span class="tier tier-3">Prerequisite</span> · <span class="tier tier-0">✓ Done</span></div>
     <h3>Land plan 007 first</h3>
     <p>Branch <code>plan-007-toprock-brain</code> has four unmerged commits. Renaming on top of an unmerged branch tangles a 200-file string diff with the brain work and makes both harder to review or revert.</p>
     <p class="ev"><strong>Done when</strong> 007 is merged to <code>main</code> and this work starts from a clean branch off it.</p>
   </div>
 
   <div class="phase">
-    <div class="tag">Phase 1 · <span class="tier tier-0">Tier 0 — cosmetic</span></div>
+    <div class="tag">Phase 1 · <span class="tier tier-0">Tier 0 — cosmetic</span> · <span class="tier tier-0">✓ Done</span></div>
     <h3>Identity</h3>
     <p>The 8 UI strings, <code>package.json</code> name, <code>README.md</code>, <code>AGENTS.md</code> prose, and a dated rename note in <code>planning/index.html</code>. No identifiers, no behaviour.</p>
     <p class="ev"><strong>Done when</strong> the app calls itself Toprock OS everywhere a person can see, and <code>planning/</code> is untouched apart from the index note.</p>
   </div>
 
   <div class="phase">
-    <div class="tag">Phase 2 · <span class="tier tier-1">Tier 1 — mechanical</span></div>
+    <div class="tag">Phase 2 · <span class="tier tier-1">Tier 1 — mechanical</span> · <span class="tier tier-0">✓ Done</span></div>
     <h3>Code identifiers</h3>
     <p><code>CrmShell</code> → <code>AppShell</code> (59 usages), <code>.crm-shell</code> → <code>.app-shell</code>, <code>crm_session</code> → <code>toprock_session</code>, <code>crm.sidebar-collapsed</code> → <code>toprock.sidebar-collapsed</code> with a one-release fallback read of the old key.</p>
     <p class="ev"><strong>Done when</strong> lint, tests and build pass, the sidebar still collapses and remembers, and logging in works after the forced logout.</p>
   </div>
 
   <div class="phase">
-    <div class="tag">Phase 3 · <span class="tier tier-2">Tier 2 — external</span></div>
+    <div class="tag">Phase 3 · <span class="tier tier-2">Tier 2 — external</span> · <span class="tier tier-2">Partly done</span></div>
     <h3>Repo, folder, deployment</h3>
     <p>Rename the GitHub repo, update the local remote, rename the working directory, <strong>copy the Claude Code memory directory to the new project key</strong>, fix the one path reference in <code>toprock-labs-brain-scheduled-run/CLAUDE.md</code>, and rename the Vercel project.</p>
     <p class="ev"><strong>Done when</strong> a fresh clone, the dev server, the ingest API and the assistant's memory all work under the new name.</p>
+    <p class="ev" style="color:#8a5a52"><strong>Blocked on the directory move.</strong> GitHub, the remote, package-lock, the launch config, map-repos and the scheduled-run references are all renamed, and the memory directory is copied to the new project key. The folder itself cannot be renamed from inside an assistant session: the harness resets the shell's working directory back into that folder after every command, so it permanently holds a handle and Windows refuses the rename. It has to be done from outside — one command, then reopen the session at the new path. The Vercel project rename is likewise a console action.</p>
   </div>
 
   <div class="phase">
-    <div class="tag">Phase 4 · <span class="tier tier-2">Tier 2 — design</span></div>
+    <div class="tag">Phase 4 · <span class="tier tier-2">Tier 2 — design</span> · <span class="tier tier-0">✓ Done</span></div>
     <h3>Regroup the nav</h3>
     <p>Turn the flat <code>links</code> array into groups, update both renderers, and keep group headings CSS-hidden in the collapsed rail.</p>
     <p class="ev"><strong>Done when</strong> both nav renderings show five modules, the collapsed rail still works with no hydration warning, and every existing route still resolves.</p>
   </div>
 
   <div class="phase">
-    <div class="tag">Phase 5 · <span class="tier tier-0">Tier 0 — additive</span></div>
+    <div class="tag">Phase 5 · <span class="tier tier-0">Tier 0 — additive</span> · <span class="tier tier-0">✓ Done</span></div>
     <h3><code>/delivery</code> and <code>/agents</code></h3>
     <p>Two read-only pages over existing tables, each with a <code>loading.tsx</code>.</p>
     <p class="ev"><strong>Done when</strong> "what shipped this week" and "what did the last ingest cost" are each answerable in one click.</p>
