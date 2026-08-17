@@ -108,6 +108,14 @@ export const meetingActionStatus = pgEnum("meeting_action_status", [
   "deferred",
 ]);
 
+// What kind of brain note this is, derived from its folder — not from
+// frontmatter, which ~30 of the imported 69 notes don't have at all.
+//   entity — one note per thing, long-lived    (Companies/ People/ Projects/ Clients/)
+//   digest — one note per agent run, dated     (Journal/ Drive/ Pipeline/ Delivery/ Code/ Meetings/)
+//   meta   — run status, not content           (Sources/)
+// See planning/007-toprock-brain/.
+export const brainDocKind = pgEnum("brain_doc_kind", ["entity", "digest", "meta"]);
+
 export const users = pgTable(
   "users",
   {
@@ -605,6 +613,90 @@ export const meetingActionItems = pgTable(
   ],
 );
 
+// The Toprock Brain (plan 007). Replaces the `toprock_brain` Obsidian vault:
+// every note in it becomes a row here, and the vault is archived read-only.
+export const brainDocuments = pgTable(
+  "brain_documents",
+  {
+    id: serial("id").primaryKey(),
+    // "Companies/Coatary.md" — the vault identity, kept so the import replays
+    // from the committed seed files. Same contract as project_repos.full_name.
+    path: text("path").notNull(),
+    // "companies/coatary" — the URL. Separate from `path` because vault
+    // filenames contain spaces ("Drive/2026-04-24 Drive Digest.md") and a
+    // date-prefixed slug matches the existing /meetings/[slug] convention.
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    kind: brainDocKind("kind").notNull(),
+    folder: text("folder").notNull(),
+    // From the "YYYY-MM-DD " filename prefix, which every digest has. Null on
+    // entity notes, which aren't about a point in time.
+    noteDate: date("note_date"),
+    // ~9KB average. NEVER select in a list query — same lesson as
+    // meetings.body_md (plan 006) and proposal_documents (plan 002).
+    bodyMd: text("body_md").notNull().default(""),
+    // Whatever keys the note happens to carry. JSONB rather than EAV: the vault
+    // disagrees with itself (`name` vs `title`, `type: person` vs
+    // `tags: [person]`), so the shape can't be pinned down, and EAV would turn
+    // every two-condition query into self-joins. Same call as suggestions.payload.
+    frontmatter: jsonb("frontmatter").notNull().default({}),
+    // sha256 of the whole source file as last imported — so a frontmatter-only
+    // edit still counts as a change, and an unchanged file short-circuits the
+    // re-import. Tracks the seed file, never what the app currently holds.
+    contentSha: text("content_sha").notNull(),
+    // Curated by hand or by map-brain.mjs, and never touched by the import.
+    // Same contract as project_repos.company_id: the link is the expensive part.
+    companyId: integer("company_id").references(() => companies.id, {
+      onDelete: "set null",
+    }),
+    contactId: integer("contact_id").references(() => contacts.id, {
+      onDelete: "set null",
+    }),
+    source: dataSource("source").default("manual").notNull(),
+    // Title + headings + body, stripped of markdown. The full-text GIN index is
+    // an expression index over this column, created by hand rather than by
+    // drizzle-kit — see planning/007-toprock-brain/ and AGENTS.md.
+    searchText: text("search_text").notNull().default(""),
+    // Soft delete. A deleted note keeps its curated company_id and its inbound
+    // links, so restoring it is free and nothing dangles.
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("brain_documents_path_unique").on(table.path),
+    uniqueIndex("brain_documents_slug_unique").on(table.slug),
+    index("brain_documents_company_idx").on(table.companyId),
+    // The browse view: one folder's notes, newest first.
+    index("brain_documents_kind_date_idx").on(table.kind, table.noteDate),
+  ],
+);
+
+// The [[wiki-link]] graph carried in note bodies — the one structural signal
+// every note has, frontmatter or not.
+export const brainDocumentLinks = pgTable(
+  "brain_document_links",
+  {
+    id: serial("id").primaryKey(),
+    sourceDocId: integer("source_doc_id")
+      .references(() => brainDocuments.id, { onDelete: "cascade" })
+      .notNull(),
+    // "Flint Gardner", exactly as written between the brackets.
+    rawTarget: text("raw_target").notNull(),
+    // Null means dangling — a link to a note nobody has written yet. Kept
+    // rather than dropped: that is precisely the signal Obsidian's graph view
+    // gave for free, and it resolves itself when the note appears.
+    targetDocId: integer("target_doc_id").references(() => brainDocuments.id, {
+      onDelete: "set null",
+    }),
+  },
+  (table) => [
+    index("brain_document_links_source_idx").on(table.sourceDocId),
+    // Backlinks: "what points at this note".
+    index("brain_document_links_target_idx").on(table.targetDocId),
+  ],
+);
+
 export type DealStage = (typeof dealStage.enumValues)[number];
 export type ActivityType = (typeof activityType.enumValues)[number];
 export type AccountStage = (typeof accountStage.enumValues)[number];
@@ -616,3 +708,4 @@ export type ProposalStatus = (typeof proposalStatus.enumValues)[number];
 export type PaymentStatus = (typeof paymentStatus.enumValues)[number];
 export type PaymentType = (typeof paymentType.enumValues)[number];
 export type MeetingActionStatus = (typeof meetingActionStatus.enumValues)[number];
+export type BrainDocKind = (typeof brainDocKind.enumValues)[number];

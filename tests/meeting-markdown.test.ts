@@ -46,6 +46,43 @@ describe("parseInline", () => {
     parseInline("**one** **two**");
     assert.deepEqual(parseInline("**one**"), [{ kind: "strong", text: "one" }]);
   });
+
+  // [[wiki-links]] arrived with the brain notes (plan 007).
+  it("parses a wiki-link, displaying the target when there is no alias", () => {
+    assert.deepEqual(parseInline("see [[Flint Gardner]] today"), [
+      { kind: "text", text: "see " },
+      { kind: "wikilink", target: "Flint Gardner", text: "Flint Gardner" },
+      { kind: "text", text: " today" },
+    ]);
+  });
+
+  it("displays the alias but links the target", () => {
+    assert.deepEqual(parseInline("[[Coatary|the client]]"), [
+      { kind: "wikilink", target: "Coatary", text: "the client" },
+    ]);
+  });
+
+  it("drops a heading anchor from the target", () => {
+    assert.deepEqual(parseInline("[[Coatary#Status]]"), [
+      { kind: "wikilink", target: "Coatary", text: "Coatary" },
+    ]);
+  });
+
+  it("prefers the wiki-link over the markdown-link pattern", () => {
+    // Without ordering, "[[a]](b)" could parse as a link with text "[a]".
+    assert.deepEqual(parseInline("[[a]](b)"), [
+      { kind: "wikilink", target: "a", text: "a" },
+      { kind: "text", text: "(b)" },
+    ]);
+  });
+
+  it("still parses an ordinary markdown link beside a wiki-link", () => {
+    assert.deepEqual(parseInline("[[A]] and [docs](https://x.dev)"), [
+      { kind: "wikilink", target: "A", text: "A" },
+      { kind: "text", text: " and " },
+      { kind: "link", text: "docs", href: "https://x.dev" },
+    ]);
+  });
 });
 
 describe("parseMeetingMarkdown", () => {
@@ -67,7 +104,15 @@ describe("parseMeetingMarkdown", () => {
   it("collects consecutive bullets into one list", () => {
     const blocks = parseMeetingMarkdown("- a\n- b\n- c");
     assert.equal(blocks.length, 1);
-    assert.deepEqual(expectKind(blocks[0], "list").items.map(spansToText), ["a", "b", "c"]);
+    assert.deepEqual(
+      expectKind(blocks[0], "list").items.map((item) => spansToText(item.spans)),
+      ["a", "b", "c"],
+    );
+  });
+
+  it("leaves `checked` absent on a plain bullet", () => {
+    const [first] = expectKind(parseMeetingMarkdown("- a")[0], "list").items;
+    assert.equal("checked" in first, false);
   });
 
   it("parses a GFM table with its header row", () => {
@@ -104,6 +149,40 @@ describe("parseMeetingMarkdown", () => {
   it("returns nothing for empty input", () => {
     assert.deepEqual(parseMeetingMarkdown(""), []);
     assert.deepEqual(parseMeetingMarkdown("\n\n  \n"), []);
+  });
+
+  // H1 and task items arrived with the brain notes (plan 007).
+  it("reads an H1, which brain notes open with", () => {
+    const blocks = parseMeetingMarkdown("# Coatary\n\n## Overview");
+    assert.equal(expectKind(blocks[0], "heading").level, 1);
+    assert.equal(textOf(blocks[0]), "Coatary");
+    assert.equal(expectKind(blocks[1], "heading").level, 2);
+  });
+
+  it("reads the vault's Open Items convention as task list items", () => {
+    const blocks = parseMeetingMarkdown("- [ ] OCR the signed proposal\n- [x] Confirm the deposit");
+    const { items } = expectKind(blocks[0], "list");
+    assert.equal(items.length, 2);
+    assert.equal(items[0].checked, false);
+    assert.equal(spansToText(items[0].spans), "OCR the signed proposal");
+    assert.equal(items[1].checked, true);
+    assert.equal(spansToText(items[1].spans), "Confirm the deposit");
+  });
+
+  it("accepts an uppercase X as done", () => {
+    assert.equal(expectKind(parseMeetingMarkdown("- [X] done")[0], "list").items[0].checked, true);
+  });
+
+  it("keeps a bracketed bullet that is not a checkbox as ordinary text", () => {
+    const [item] = expectKind(parseMeetingMarkdown("- [see the note] for context")[0], "list").items;
+    assert.equal("checked" in item, false);
+    assert.equal(spansToText(item.spans), "[see the note] for context");
+  });
+
+  it("mixes task items and plain bullets in one list", () => {
+    const { items } = expectKind(parseMeetingMarkdown("- [ ] a\n- b")[0], "list");
+    assert.equal(items[0].checked, false);
+    assert.equal("checked" in items[1], false);
   });
 });
 

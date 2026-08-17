@@ -43,6 +43,9 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `scripts/import-meetings.mjs` seeds `meetings` from the committed pairs in `scripts/seed/meetings/`
 - `scripts/seed/meetings/` one `<slug>.md` + `<slug>.json` per imported client note — the source of the import
 - `scripts/map-repos.mjs` links mirrored repos to accounts (`node scripts/map-repos.mjs [--apply]`)
+- `scripts/import-brain.mts` one-time, replayable import of the Obsidian vault (`npm run import:brain`)
+- `scripts/map-brain.mts` links brain notes to accounts/contacts (`npm run map:brain -- --apply`)
+- `scripts/seed/brain/` the 69 vault notes, committed verbatim — the source of that import
 - `scripts/create-user.mjs` CLI user upsert helper
 - `scripts/run-tests.mjs` test discovery shim (Node 20's runner doesn't glob `.ts`)
 
@@ -55,10 +58,12 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `/proposals`, `/proposals/[id]` (internal proposal management + signed-PDF download at `/proposals/[id]/pdf`)
 - `/payments` Stripe payment mirror (ledger + unassigned-payment matching)
 - `/meetings`, `/meetings/[slug]` client meeting notes (merged in from `toprock_client_notes`)
+- `/brain`, `/brain/[...slug]`, `/brain/new` the Toprock Brain (merged in from the `toprock_brain` Obsidian vault)
 - `/tasks`
 - `/activities`
 - `/inbox` human-in-the-loop queue for agent-proposed writes (`suggestions`)
 - `/map` geocoded account map + proximity sourcing
+- **Token-gated agent API (no login):** `GET|POST /api/brain/documents`, `POST /api/brain/runs` — the ingest path for the scheduled agent runs (`BRAIN_INGEST_TOKEN` bearer)
 - **Public, PIN-gated (no login):** `/p/[slug]` client-facing Statement of Work + signing, `/p/[slug]/terms` Terms of Service, `POST /p/[slug]/sign` signing endpoint
 - compatibility redirects: `/customers` and `/customers/[id]`
 - Every authenticated route has a `loading.tsx` skeleton; keep that true when adding routes.
@@ -76,6 +81,8 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `meetings` (client meeting notes; markdown body, one canonical account)
 - `meeting_companies` (extra accounts a meeting is shared with — the scuba cluster)
 - `meeting_action_items` (per-meeting homework, rows not prose, so it rolls up across clients)
+- `brain_documents` (every note from the Obsidian vault; markdown body + JSONB frontmatter)
+- `brain_document_links` (the `[[wiki-link]]` graph; a null target is a note nobody has written yet)
 - Enums:
   - `account_stage`: new_lead, attempting_to_engage, engaged, in_pipeline, customer
   - `deal_stage`: lead, qualified, proposal, negotiation, won, lost
@@ -83,6 +90,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
   - `task_status`: open, done
   - `proposal_status`: draft, sent, viewed, signed, declined, superseded
   - `meeting_action_status`: todo, doing, done, deferred
+  - `brain_doc_kind`: entity, digest, meta
 
 ## Coding Conventions (Repo-Specific)
 - Prefer server components for pages and data reads.
@@ -152,6 +160,21 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - Re-import the seed notes with `node scripts/import-meetings.mjs [--dry-run] [--force] [--only <slug>]`. It is idempotent by slug, and **without `--force` it never overwrites an edited body or resurrects completed action items**. The committed `scripts/seed/meetings/*.{md,json}` pairs make the whole import replayable from an empty database.
 - Opportunities feed the money panel (`deals.value_cents` and `implementation_cost_cents` where stage = `won`). Demoted in the UI, still load-bearing — don't stop maintaining them.
 
+## The Toprock Brain (plan 007)
+- The `toprocklabs/toprock_brain` Obsidian vault is **being retired**. Its 69 notes are `brain_documents` rows, and the committed `scripts/seed/brain/**` copies make the import replayable from an empty database. **Never add a note to the vault.** (Phase 3 — archiving the repo — is not done yet; until it is, the vault still exists but nothing should write to it.)
+- `brain_documents.path` (`Companies/Coatary.md`) is the import identity; `slug` (`companies/coatary`) is the URL. They are separate because vault filenames contain spaces and dots. Both are unique.
+- **Never select `body_md` in a list query.** Bodies average 2.2KB and the largest is 12.4KB, and the digests grow weekly. Every read goes through `src/lib/brain/queries.ts`, where exactly one function (`getBrainDocument`) selects the body.
+- **The import must never touch `company_id`, `contact_id`, or an edited body.** `npm run import:brain -- [--dry-run] [--force] [--only <slug-prefix>]` is idempotent by `path` and short-circuits on a `content_sha` match; without `--force` it preserves a body edited in the app. Account links come from `npm run map:brain -- --apply`, whose `MANUAL_LINKS` const keeps the un-guessable ones (`MacArthur, Heder & Metler` → `MHM Law Firm`) reproducible.
+- **The full-text index is created by hand, not by drizzle-kit.** After `db:push`, run `CREATE INDEX IF NOT EXISTS brain_documents_fts_idx ON brain_documents USING GIN (to_tsvector('english', search_text));`. Drizzle 0.45 has no `tsvector` type, so the expression index lives outside the schema file. Postgres will seq-scan it at 69 rows — that is correct, not a broken index.
+- Classification keys on **folder, the `YYYY-MM-DD ` filename prefix, and `[[wiki-links]]` — never frontmatter**, because 28 of the 69 notes have none and the rest disagree (`name` vs `title`, `type: person` vs `tags: [person]`). Frontmatter is a JSONB bag read only when present. Rules live in `src/lib/brain/frontmatter.ts` (pure, covered by `tests/brain-frontmatter.test.ts`).
+- **Anything that writes a body must rebuild the link graph.** `rebuildDocumentLinks` / `resolveDanglingLinksTo` in `src/lib/brain/links.ts` — the importer does it, and so must every server action. Skip it and an authored note's `[[links]]` all render dangling. A null `target_doc_id` is meaningful (a note nobody has written yet), so never delete dangling rows.
+- The markdown parser is shared with meetings (`src/lib/meeting/markdown.ts`) and now also handles `#` H1, `- [ ]` task items and `[[wiki-links]]`. Extend the parser and its tests, not the callers. There is no `dangerouslySetInnerHTML` in the brain path either.
+- Five businesses exist twice in the vault (`Clients/X.md` and `Companies/X.md`, already disagreeing on `status`). Both import and both link to the same account so the divergence is visible. Merging them is an editorial call, not the importer's.
+- **The agent write path is `POST /api/brain/documents`** (phase 2), authed with a `BRAIN_INGEST_TOKEN` bearer rather than the session cookie, because both callers are headless scheduled scripts. `GET` on the same route does existence checks and folder listings — the ingest needs reads, not just writes. `POST /api/brain/runs` opens and closes an `agent_runs` row so an ingest's cost and output are auditable.
+- **Ownership is enforced in `src/lib/brain/upsert.ts`, not by convention.** An agent may replace a note whose `source = 'agent'` (it owns its digests), but a blind write to a `source = 'manual'` note is a `409`. To edit a human's note the caller must read it and resend with `expectedSha` — read-modify-write. There is deliberately no force flag; add one and the guarantee is gone.
+- Everything derived from a note (kind, folder, date, slug, search text, links) is derived inside `upsertBrainDocument`, so an agent-written note is indistinguishable from an imported one. Never re-derive any of it at a call site.
+- **Still outstanding before the vault can be archived (phase 3):** the Codex daily run at `E:\Codex Projects\toprock_brain_scheduled_run_jt` still writes to the vault and must be repointed on the machine that hosts it. See `planning/007-toprock-brain/plan.html`.
+
 ## When Editing Existing Features
 - If touching contact profile editing, preserve blur autosave behavior.
 - If touching phone display, preserve `Call` button (`tel:` link behavior).
@@ -179,10 +202,12 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - If proposals touched: verify `/proposals` create/edit, the public `/p/[slug]` PIN gate + render, and (for signing changes) an end-to-end test signature against a throwaway proposal row
 - If project repos touched: run `npm run sync:repos -- --dry-run`, then confirm `/accounts` sorts by Last push in both directions with unlinked accounts pinned last
 - If meetings touched: run `node scripts/import-meetings.mjs --dry-run`, open a note with tables (`/meetings/2026-08-01-website-go-live-domain-cutover`), and confirm a shared note still appears on both Scuba Dive Utah and Pacific Scuba Repair
+- If the brain API touched: confirm a bad token gets 401, a blind write to a `source='manual'` note gets 409, and a read-modify-write with `expectedSha` succeeds
+- If the brain touched: run `npm run import:brain -- --dry-run` (expect 69 notes / 41 with frontmatter / 0 slug collisions), run it again for real and confirm it reports 69 unchanged, then open `/brain/companies/coatary` and check a `[[wiki-link]]` is a working link and the backlinks panel is populated
 
 ## Safety Notes
 - Do not store plaintext passwords; always hash with bcrypt (`bcryptjs`).
-- Keep `AUTH_SECRET` and DB credentials in `.env.local` only.
+- Keep `AUTH_SECRET`, `BRAIN_INGEST_TOKEN` and DB credentials in `.env.local` only. `BRAIN_INGEST_TOKEN` is a shared bearer for the headless ingest runs — rotating it means updating `.env.local` here, the Vercel project env, and `.env.local` in each scheduled-run repo at the same time.
 - Preserve existing redirects from `/customers` to `/accounts` unless explicitly removing backward compatibility.
 
 ## Known Issues / Tech Debt

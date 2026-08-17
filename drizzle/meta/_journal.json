@@ -71,6 +71,13 @@
       "when": 1786834985984,
       "tag": "0009_bizarre_bloodstorm",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786909552832,
+      "tag": "0010_bright_thunderball",
+      "breakpoints": true
     }
   ]
 }

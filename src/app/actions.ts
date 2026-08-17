@@ -1,10 +1,11 @@
 "use server";
 
-import { and, eq, ilike, isNull } from "drizzle-orm";
+import { and, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { setFlashToast } from "@/lib/flash";
+import { rebuildDocumentLinks, resolveDanglingLinksTo, slugsLinkingTo } from "@/lib/brain/links";
 import { defineAction, type Db } from "@/lib/define-action";
 import { accountStageOptions } from "@/lib/account-stage";
 import { edgeTypeOptions } from "@/lib/edge-type";
@@ -13,7 +14,7 @@ import { normalizeCompanyIndustry } from "@/lib/company-industry-utils";
 import { scrapeCompanyWebsite } from "@/lib/enrich";
 import { geocodeAddress } from "@/lib/geocode";
 import { sourceNearbyBusinesses } from "@/lib/source-nearby";
-import { activities, agentRuns, companies, contacts, deals, meetingActionItems, meetingCompanies, meetings, payments, placeEnrichment, proposals, relationships, salesTasks, stripeSubscriptions, suggestions, users } from "@/lib/schema";
+import { activities, agentRuns, brainDocuments, companies, contacts, deals, meetingActionItems, meetingCompanies, meetings, payments, placeEnrichment, proposals, relationships, salesTasks, stripeSubscriptions, suggestions, users } from "@/lib/schema";
 import { generatePin } from "@/lib/proposal/pin";
 import { parsePricingTotals } from "@/lib/proposal/markdown";
 import { cleanOptionalText, mergeDateWithTime, normalizeUrl, normalizeUsPhone } from "@/lib/normalize";
@@ -1705,5 +1706,192 @@ export const deleteMeetingActionItem = defineAction({
       revalidatePath(parsed.returnPath);
     }
     await setFlashToast("Action item removed");
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Brain notes (plan 007). The vault is retired, so these are the write path for
+// everything a human types — the agent write path is POST /api/brain/documents.
+
+const brainFieldSchema = z.object({
+  documentId: z.coerce.number().int().positive(),
+  field: z.enum(["title", "bodyMd"]),
+  value: z.string(),
+  returnPath: z.string().optional(),
+});
+
+const brainCreateSchema = z.object({
+  folder: z.string().trim().min(1),
+  title: z.string().trim().min(2),
+  noteDate: z.string().trim().optional(),
+  bodyMd: z.string(),
+  companyId: z.coerce.number().positive().optional(),
+});
+
+// Kept in step with ENTITY_FOLDERS / META_FOLDERS in src/lib/brain/frontmatter.ts,
+// which classifies imported notes by exactly these names.
+const ENTITY_FOLDERS = new Set(["Companies", "People", "Projects", "Clients"]);
+
+function brainKindFor(folder: string): "entity" | "digest" | "meta" {
+  if (folder === "Sources") return "meta";
+  if (ENTITY_FOLDERS.has(folder) || folder === "Root") return "entity";
+  return "digest";
+}
+
+const brainSlugify = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+export const updateBrainDocumentField = defineAction({
+  schema: brainFieldSchema,
+  input: (formData) => ({
+    documentId: formData.get("documentId"),
+    field: formData.get("field"),
+    value: formData.get("value") ?? "",
+    returnPath: formData.get("returnPath")?.toString() ?? undefined,
+  }),
+  handler: async ({ input: parsed, db }) => {
+    if (parsed.field === "title" && parsed.value.trim().length < 2) {
+      throw new Error("A note needs a title.");
+    }
+
+    // The body is stored verbatim — trimming markdown would eat the trailing
+    // blank lines that separate blocks. Same call as updateMeetingField.
+    const value = parsed.field === "bodyMd" ? parsed.value : parsed.value.trim();
+
+    // search_text is derived, so it has to move with the body or search goes
+    // stale against what the page shows. Stripping markdown in SQL would mean
+    // duplicating buildSearchText; storing title + raw body is close enough for
+    // ranking and can never drift from the source.
+    const [row] = await db
+      .update(brainDocuments)
+      .set(
+        parsed.field === "bodyMd"
+          ? { bodyMd: value, searchText: sql`${brainDocuments.title} || ' ' || ${value}`, updatedAt: new Date() }
+          : { title: value, searchText: sql`${value} || ' ' || ${brainDocuments.bodyMd}`, updatedAt: new Date() },
+      )
+      .where(eq(brainDocuments.id, parsed.documentId))
+      .returning({
+        slug: brainDocuments.slug,
+        title: brainDocuments.title,
+        path: brainDocuments.path,
+        companyId: brainDocuments.companyId,
+      });
+
+    if (row && parsed.field === "bodyMd") {
+      // The body IS the graph. Without this an edited note silently loses or
+      // keeps stale links, and every [[target]] it adds renders as dangling.
+      await rebuildDocumentLinks(db, parsed.documentId, value);
+    }
+    if (row && parsed.field === "title") {
+      // A rename can satisfy links that were waiting for this title.
+      await resolveDanglingLinksTo(db, { id: parsed.documentId, ...row });
+    }
+
+    if (row) {
+      for (const slug of await slugsLinkingTo(db, parsed.documentId)) {
+        revalidatePath(`/brain/${slug}`);
+      }
+      revalidatePath(`/brain/${row.slug}`);
+      revalidatePath("/brain");
+      if (row.companyId) revalidatePath(`/accounts/${row.companyId}`);
+    }
+    if (parsed.returnPath?.startsWith("/")) {
+      revalidatePath(parsed.returnPath);
+    }
+  },
+});
+
+export const createBrainDocument = defineAction({
+  schema: brainCreateSchema,
+  input: (formData) => ({
+    folder: formData.get("folder"),
+    title: formData.get("title"),
+    noteDate: formData.get("noteDate")?.toString() || undefined,
+    bodyMd: formData.get("bodyMd") ?? "",
+    companyId: formData.get("companyId") ? Number(formData.get("companyId")) : undefined,
+  }),
+  handler: async ({ input: parsed, db }) => {
+    const kind = brainKindFor(parsed.folder);
+    // A digest is identified by its date; an entity note by its name. Match the
+    // vault's own filename convention so imported and authored notes look alike.
+    const stem = kind === "entity" || !parsed.noteDate ? parsed.title : `${parsed.noteDate} ${parsed.title}`;
+    const base = `${brainSlugify(parsed.folder)}/${brainSlugify(stem)}`;
+
+    // `path` and `slug` are both unique. Two notes can legitimately want the
+    // same name ("2026-08-16" twice in Journal), so disambiguate rather than
+    // fail — the user asked for a note, not a lecture about collisions.
+    let slug = base;
+    let path = `${parsed.folder}/${stem}.md`;
+    for (let n = 2; n < 50; n += 1) {
+      const clash = await db
+        .select({ id: brainDocuments.id })
+        .from(brainDocuments)
+        .where(or(eq(brainDocuments.slug, slug), eq(brainDocuments.path, path)))
+        .limit(1);
+      if (clash.length === 0) break;
+      slug = `${base}-${n}`;
+      path = `${parsed.folder}/${stem} ${n}.md`;
+    }
+
+    const [created] = await db
+      .insert(brainDocuments)
+      .values({
+        path,
+        slug,
+        title: parsed.title,
+        kind,
+        folder: parsed.folder,
+        noteDate: kind === "entity" ? null : (parsed.noteDate ?? null),
+        bodyMd: parsed.bodyMd,
+        frontmatter: {},
+        // Authored here, never imported — so there is no source file to hash.
+        // The importer only ever touches rows whose `path` matches a seed file.
+        contentSha: "authored-in-app",
+        companyId: parsed.companyId ?? null,
+        searchText: `${parsed.title} ${parsed.bodyMd}`,
+        source: "manual",
+      })
+      .returning({ id: brainDocuments.id, slug: brainDocuments.slug, title: brainDocuments.title, path: brainDocuments.path });
+
+    await rebuildDocumentLinks(db, created.id, parsed.bodyMd);
+    // Notes written before this one may have been pointing here all along.
+    await resolveDanglingLinksTo(db, created);
+    for (const slug of await slugsLinkingTo(db, created.id)) {
+      revalidatePath(`/brain/${slug}`);
+    }
+
+    revalidatePath("/brain");
+    if (parsed.companyId) revalidatePath(`/accounts/${parsed.companyId}`);
+    await setFlashToast("Note created");
+    redirect(`/brain/${created.slug}`);
+  },
+});
+
+export const archiveBrainDocument = defineAction({
+  schema: z.object({
+    documentId: z.coerce.number().int().positive(),
+    returnPath: z.string().optional(),
+  }),
+  input: (formData) => ({
+    documentId: formData.get("documentId"),
+    returnPath: formData.get("returnPath")?.toString() ?? undefined,
+  }),
+  handler: async ({ input: parsed, db }) => {
+    // Soft delete: the row keeps its curated company_id and its inbound links,
+    // so nothing dangles and restoring it is a single UPDATE.
+    const [row] = await db
+      .update(brainDocuments)
+      .set({ archivedAt: new Date(), updatedAt: new Date() })
+      .where(eq(brainDocuments.id, parsed.documentId))
+      .returning({ companyId: brainDocuments.companyId });
+
+    revalidatePath("/brain");
+    if (row?.companyId) revalidatePath(`/accounts/${row.companyId}`);
+    if (parsed.returnPath?.startsWith("/")) revalidatePath(parsed.returnPath);
+    await setFlashToast("Note archived");
+    redirect("/brain");
   },
 });

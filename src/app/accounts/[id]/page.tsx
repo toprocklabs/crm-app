@@ -11,6 +11,7 @@ import {
   updateContactField,
 } from "@/app/actions";
 import { AccountActionItemsPanel } from "@/components/account-action-items-panel";
+import { AccountBrainPanel } from "@/components/account-brain-panel";
 import { AccountRelationshipGraph } from "@/components/account-relationship-graph";
 import { AccountTimelinePanel } from "@/components/account-timeline-panel";
 import { AutoSaveActivityDateField } from "@/components/auto-save-activity-date-field";
@@ -32,6 +33,7 @@ import { getDealStageLabel, getDealStageTone } from "@/lib/deal-stage";
 import { currency, formatDate } from "@/lib/format";
 import { getDb } from "@/lib/db";
 import { formatMeetingDate } from "@/lib/meeting/action-ui";
+import { listAccountBrainDocuments } from "@/lib/brain/queries";
 import { listAccountMeetings, listAccountOpenActionItems } from "@/lib/meeting/queries";
 import { getPushRecency } from "@/lib/push-recency";
 import { activities, companies, contacts, deals, projectRepos, salesTasks, users } from "@/lib/schema";
@@ -68,6 +70,7 @@ export default async function AccountDetailPage({ params }: Props) {
     companyTasks,
     companyActivities,
     accountMeetings,
+    accountBrainDocuments,
     openActionItems,
     repos,
   ] = await Promise.all([
@@ -95,6 +98,7 @@ export default async function AccountDetailPage({ params }: Props) {
       .where(eq(activities.companyId, companyId))
       .orderBy(desc(activities.occurredAt)),
     listAccountMeetings(db, companyId),
+    listAccountBrainDocuments(db, companyId),
     listAccountOpenActionItems(db, companyId),
     db
       .select({
@@ -296,6 +300,8 @@ export default async function AccountDetailPage({ params }: Props) {
 
       {/* 3. What's owed, out of those conversations. */}
       <AccountActionItemsPanel companyId={company.id} items={openActionItems} />
+
+      <AccountBrainPanel companyId={company.id} documents={accountBrainDocuments} />
 
       <AccountRelationshipGraph companyId={company.id} isProspect={company.stage !== "customer"} />
 
