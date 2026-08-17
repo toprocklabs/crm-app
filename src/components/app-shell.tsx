@@ -7,7 +7,10 @@ import { useCallback, useState } from "react";
 import { logout } from "@/app/login/actions";
 
 // Desktop sidebar collapse is a per-browser preference, not per-session state.
-const sidebarStorageKey = "crm.sidebar-collapsed";
+// The pre-plan-008 key is read as a fallback in the inline script in
+// app/layout.tsx; writes always go to the new one, so a browser migrates
+// itself the first time the toggle is used.
+const sidebarStorageKey = "toprock.sidebar-collapsed";
 
 const links = [
   {
@@ -176,7 +179,7 @@ const headerActions = [
   },
 ];
 
-export function CrmShell({
+export function AppShell({
   username,
   title,
   description,
@@ -206,13 +209,13 @@ export function CrmShell({
   }, []);
 
   return (
-    <main className="crm-shell min-h-screen bg-[var(--app-bg)] text-slate-950">
-      <div className="crm-shell-grid grid min-h-screen w-full gap-0 md:grid-cols-[240px_minmax(0,1fr)]">
-        <aside className="crm-sidebar border-r border-slate-200/95 bg-[var(--sidebar-bg)] px-3 py-4 text-slate-100 md:sticky md:top-0 md:h-screen">
-          <div className="crm-sidebar-head flex items-center justify-between gap-2 px-2">
+    <main className="app-shell min-h-screen bg-[var(--app-bg)] text-slate-950">
+      <div className="app-shell-grid grid min-h-screen w-full gap-0 md:grid-cols-[240px_minmax(0,1fr)]">
+        <aside className="app-sidebar border-r border-slate-200/95 bg-[var(--sidebar-bg)] px-3 py-4 text-slate-100 md:sticky md:top-0 md:h-screen">
+          <div className="app-sidebar-head flex items-center justify-between gap-2 px-2">
             <div className="flex items-center gap-2.5">
               <Image src="/toprock_logo_black.png" alt="Toprock" width={36} height={32} className="h-8 w-auto rounded-lg" />
-              <p className="crm-sidebar-label text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200">Toprock</p>
+              <p className="app-sidebar-label text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-200">Toprock</p>
             </div>
             <button
               type="button"
@@ -221,13 +224,13 @@ export function CrmShell({
               title="Toggle navigation width"
               className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-white/10 hover:text-white"
             >
-              <svg className="crm-sidebar-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg className="app-sidebar-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M15 18l-6-6 6-6" />
               </svg>
             </button>
           </div>
 
-          <div className="crm-sidebar-meta">
+          <div className="app-sidebar-meta">
             <div className="mt-4 px-2">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{username}</p>
             </div>
@@ -237,7 +240,7 @@ export function CrmShell({
             </div>
           </div>
 
-          <nav className="crm-sidebar-nav mt-2 grid gap-0.5">
+          <nav className="app-sidebar-nav mt-2 grid gap-0.5">
             {links.map((link) => {
               const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href));
               return (
@@ -246,7 +249,7 @@ export function CrmShell({
                   href={link.href}
                   onClick={close}
                   title={link.label}
-                  className={`crm-sidebar-link group flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm transition ${
+                  className={`app-sidebar-link group flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm transition ${
                     isActive
                       ? "bg-white/12 text-white"
                       : "text-slate-400 hover:bg-white/6 hover:text-white"
@@ -259,20 +262,20 @@ export function CrmShell({
                   >
                     {link.icon}
                   </span>
-                  <span className={`crm-sidebar-label font-medium ${isActive ? "text-white" : ""}`}>{link.label}</span>
+                  <span className={`app-sidebar-label font-medium ${isActive ? "text-white" : ""}`}>{link.label}</span>
                 </Link>
               );
             })}
           </nav>
 
-          <form action={logout} className="crm-sidebar-logout mt-6 px-1">
+          <form action={logout} className="app-sidebar-logout mt-6 px-1">
             <button
               type="submit"
               title="Log out"
               className="flex w-full items-center justify-center rounded-lg border border-white/8 bg-white/4 px-3 py-2 text-sm text-slate-400 transition hover:bg-white/8 hover:text-white"
             >
-              <span className="crm-sidebar-label">Log out</span>
-              <svg className="crm-sidebar-logout-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <span className="app-sidebar-label">Log out</span>
+              <svg className="app-sidebar-logout-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                 <polyline points="16 17 21 12 16 7" />
                 <line x1="21" y1="12" x2="9" y2="12" />

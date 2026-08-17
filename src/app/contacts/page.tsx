@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createContact } from "@/app/actions";
 import { CallLink } from "@/components/call-link";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SearchInput } from "@/components/search-input";
 import { requireUser } from "@/lib/auth";
@@ -60,7 +60,7 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
   });
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title="Contacts"
       description="Every person in your CRM with linked account context."
@@ -117,8 +117,8 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
           <p className="text-sm font-semibold text-slate-700">{filtered.length} contacts</p>
           <SearchInput placeholder="Search contacts..." />
         </div>
-        <div className="crm-table-wrap mt-4">
-          <table className="crm-data-table">
+        <div className="app-table-wrap mt-4">
+          <table className="app-data-table">
             <thead className="text-left text-slate-500">
               <tr>
                 <th>Name</th>
@@ -140,13 +140,13 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
               {filtered.map((row) => (
                 <tr key={row.id}>
                   <td className="min-w-[185px]">
-                    <Link href={`/contacts/${row.id}`} className="crm-table-link">
+                    <Link href={`/contacts/${row.id}`} className="app-table-link">
                       {row.firstName} {row.lastName}
                     </Link>
                   </td>
                   <td className="min-w-[160px] text-slate-700">{row.title ?? "-"}</td>
                   <td className="min-w-[180px] text-slate-700">
-                    {row.companyId ? <Link href={`/accounts/${row.companyId}`} className="crm-table-link font-normal">{row.companyName}</Link> : "-"}
+                    {row.companyId ? <Link href={`/accounts/${row.companyId}`} className="app-table-link font-normal">{row.companyName}</Link> : "-"}
                   </td>
                   <td className="min-w-[210px] text-slate-700">{row.email ?? "-"}</td>
                   <td className="min-w-[185px] text-slate-700">
@@ -179,6 +179,6 @@ export default async function ContactsPage({ searchParams }: ContactsPageProps) 
           </table>
         </div>
       </section>
-    </CrmShell>
+    </AppShell>
   );
 }

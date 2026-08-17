@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
 import { updateProposal } from "@/app/actions";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { hasSignedPdfExpr } from "@/lib/proposal/has-signed-pdf";
@@ -66,7 +66,7 @@ export default async function ProposalDetailPage({ params }: { params: Promise<{
   const returnPath = `/proposals/${proposal.id}`;
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title={proposal.title}
       description={`Proposal for ${company?.name ?? proposal.business} — shareable at /p/${proposal.slug} (PIN ${proposal.pin}).`}
@@ -199,6 +199,6 @@ export default async function ProposalDetailPage({ params }: { params: Promise<{
           </form>
         </article>
       </section>
-    </CrmShell>
+    </AppShell>
   );
 }

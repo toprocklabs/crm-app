@@ -1,6 +1,6 @@
 import { desc, eq, inArray, sql } from "drizzle-orm";
 import Link from "next/link";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -64,7 +64,7 @@ export default async function MeetingsPage() {
   const totalOpen = openCounts.reduce((sum, row) => sum + Number(row.open), 0);
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title="Meetings"
       description="Every client meeting note, newest first."
@@ -141,6 +141,6 @@ export default async function MeetingsPage() {
           })}
         </ul>
       </section>
-    </CrmShell>
+    </AppShell>
   );
 }

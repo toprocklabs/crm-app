@@ -2,7 +2,7 @@ import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { assignPaymentAccount } from "@/app/actions";
 import { AutoSavePaymentAccountField } from "@/components/auto-save-payment-account-field";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -79,7 +79,7 @@ export default async function PaymentsPage() {
   const accountOptions = companyRows.map((c) => ({ value: String(c.id), label: c.name }));
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title="Payments"
       description="Every dollar collected through Stripe, matched to the account that paid it."
@@ -227,6 +227,6 @@ export default async function PaymentsPage() {
           )}
         </div>
       </section>
-    </CrmShell>
+    </AppShell>
   );
 }

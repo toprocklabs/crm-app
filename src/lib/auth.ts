@@ -2,7 +2,12 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-const SESSION_COOKIE = "crm_session";
+const SESSION_COOKIE = "toprock_session";
+// The pre-plan-008 name. Only used to clear a stale cookie on logout so a
+// browser that logged in before the rename doesn't carry it around forever.
+// Nothing reads it — the rename deliberately invalidates old sessions rather
+// than accepting a token issued under a different name.
+const LEGACY_SESSION_COOKIE = "crm_session";
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 14;
 
 type SessionUser = {
@@ -40,6 +45,7 @@ export async function createSession(user: SessionUser) {
 export async function clearSession() {
   const cookieStore = await cookies();
   cookieStore.delete(SESSION_COOKIE);
+  cookieStore.delete(LEGACY_SESSION_COOKIE);
 }
 
 export async function getSession() {

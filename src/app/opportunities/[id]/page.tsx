@@ -7,7 +7,7 @@ import { AutoSaveDealField } from "@/components/auto-save-deal-field";
 import { AutoSaveDealSelectField } from "@/components/auto-save-deal-select-field";
 import { AutoSaveDealStageField } from "@/components/auto-save-deal-stage-field";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { BillingPanel } from "@/components/billing-panel";
 import { EmptyState } from "@/components/empty-state";
 import { ProposalsPanel } from "@/components/proposals-panel";
@@ -125,7 +125,7 @@ export default async function OpportunityDetailPage({ params }: Props) {
       : "bg-amber-100 text-amber-800";
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title={opportunity.name}
       description="Opportunity detail with editable fields, stage management, and timeline."
@@ -487,6 +487,6 @@ export default async function OpportunityDetailPage({ params }: Props) {
           </CollapsibleFormSection>
         </article>
       </section>
-    </CrmShell>
+    </AppShell>
   );
 }

@@ -11,8 +11,8 @@ export function Pulse({ className, style }: { className?: string; style?: React.
 
 export function SkeletonShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="crm-shell flex min-h-screen">
-      <aside className="crm-sidebar hidden w-60 shrink-0 md:block" />
+    <div className="app-shell flex min-h-screen">
+      <aside className="app-sidebar hidden w-60 shrink-0 md:block" />
       <div className="min-w-0 flex-1 bg-[var(--app-bg)] px-4 py-4 md:px-5 md:py-5">
         <div className="gong-panel rounded-xl px-5 py-4 md:px-6">
           <Pulse className="h-6 w-32 rounded bg-slate-200" />

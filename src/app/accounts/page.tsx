@@ -4,7 +4,7 @@ import { createCompany, updateCompanyField } from "@/app/actions";
 import { AutoSaveCompanyField } from "@/components/auto-save-company-field";
 import { AutoSaveCompanySelectField } from "@/components/auto-save-company-select-field";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SearchInput } from "@/components/search-input";
 import { StageFilter } from "@/components/stage-filter";
@@ -307,8 +307,8 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
 
   function renderAccountsTable(tableRows: typeof rows, emptyLabel: string) {
     return (
-      <div className="crm-table-wrap mt-4">
-        <table className="crm-data-table">
+      <div className="app-table-wrap mt-4">
+        <table className="app-data-table">
           <thead className="text-left text-slate-500">
             <tr>
               {(["account", "stage", "mrr", "lastPush", "nextStep", "nextStepDue"] as SortKey[]).map((key) => (
@@ -338,7 +338,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                 <tr key={row.id}>
                   <td className="min-w-[240px]">
                     <p className="font-medium text-slate-900">
-                      <Link href={`/accounts/${row.id}`} className="crm-table-link">
+                      <Link href={`/accounts/${row.id}`} className="app-table-link">
                         {row.name}
                       </Link>
                     </p>
@@ -348,7 +348,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                           href={row.website}
                           target="_blank"
                           rel="noreferrer"
-                          className="crm-table-link text-sm font-normal"
+                          className="app-table-link text-sm font-normal"
                         >
                           {getUrlLabel(row.website)}
                         </a>
@@ -361,7 +361,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                             href={primaryRepo.htmlUrl ?? `https://github.com/${primaryRepo.fullName}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="crm-table-link font-mono text-xs font-normal"
+                            className="app-table-link font-mono text-xs font-normal"
                           >
                             {primaryRepo.fullName.split("/").pop()}
                           </a>
@@ -392,10 +392,10 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                       stageToneStyle
                     />
                   </td>
-                  <td className="crm-money font-semibold text-slate-800">${Math.round(row.pipelineCents / 100).toLocaleString()}</td>
+                  <td className="app-money font-semibold text-slate-800">${Math.round(row.pipelineCents / 100).toLocaleString()}</td>
                   <td className="min-w-[110px]">
                     <span
-                      className="crm-push-pill"
+                      className="app-push-pill"
                       data-band={push.band}
                       title={
                         row.lastPushAt
@@ -419,7 +419,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                     />
                   </td>
                   <td className="min-w-[185px] text-slate-700">
-                    <span className="crm-due-pill mb-2" data-urgency={dueUrgency}>
+                    <span className="app-due-pill mb-2" data-urgency={dueUrgency}>
                       {row.nextStepDueDate ? (dueUrgency === "overdue" ? "Overdue" : dueUrgency === "today" ? "Due today" : "Scheduled") : "No date"}
                     </span>
                     <AutoSaveCompanyField
@@ -444,7 +444,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
   }
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title="Accounts"
       description="All account records with opportunities and total tracked MRR."
@@ -526,7 +526,7 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
           title={`Unlinked repos (${unlinkedRepoRows.length})`}
           description="Active repos with no account behind them — delivery you may not be tracking as revenue."
         >
-          <table className="crm-data-table">
+          <table className="app-data-table">
             <thead className="text-left text-slate-500">
               <tr>
                 <th>Repository</th>
@@ -551,13 +551,13 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
                         href={repo.htmlUrl ?? `https://github.com/${repo.fullName}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="crm-table-link font-mono text-xs"
+                        className="app-table-link font-mono text-xs"
                       >
                         {repo.fullName}
                       </a>
                     </td>
                     <td className="min-w-[110px]">
-                      <span className="crm-push-pill" data-band={push.band}>
+                      <span className="app-push-pill" data-band={push.band}>
                         {push.label}
                       </span>
                     </td>
@@ -568,6 +568,6 @@ export default async function AccountsPage({ searchParams }: AccountsPageProps) 
           </table>
         </CollapsibleFormSection>
       </div>
-    </CrmShell>
+    </AppShell>
   );
 }

@@ -9,7 +9,7 @@ import {
 } from "@/app/actions";
 import { AutoSaveMeetingField } from "@/components/auto-save-meeting-field";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { MeetingActionStatusSelect } from "@/components/meeting-action-status-select";
 import { MeetingBody } from "@/components/meeting-body";
 import { MeetingBodyEditor } from "@/components/meeting-body-editor";
@@ -79,7 +79,7 @@ export default async function MeetingDetailPage({ params }: Props) {
   const older = currentIndex >= 0 && currentIndex < ordered.length - 1 ? ordered[currentIndex + 1] : null;
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title={meeting.title}
       description={`Meeting note · ${formatMeetingDate(meeting.meetingDate)}`}
@@ -309,6 +309,6 @@ export default async function MeetingDetailPage({ params }: Props) {
           ) : null}
         </nav>
       ) : null}
-    </CrmShell>
+    </AppShell>
   );
 }

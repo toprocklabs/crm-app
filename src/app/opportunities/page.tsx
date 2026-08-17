@@ -2,7 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { createDeal } from "@/app/actions";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SearchInput } from "@/components/search-input";
 import { StageFilter } from "@/components/stage-filter";
@@ -75,7 +75,7 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
   });
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title="Opportunities"
       description="Complete opportunity pipeline with owner accountability and next-step deadlines."
@@ -150,8 +150,8 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
             <StageFilter options={stageOptions} />
           </div>
         </div>
-        <div className="crm-table-wrap mt-4">
-          <table className="crm-data-table">
+        <div className="app-table-wrap mt-4">
+          <table className="app-data-table">
             <thead className="text-left text-slate-500">
               <tr>
                 <th>Opportunity</th>
@@ -178,7 +178,7 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                   <tr key={row.id}>
                     <td className="min-w-[240px]">
                       <p className="font-medium text-slate-900">
-                        <Link href={`/opportunities/${row.id}`} className="crm-table-link">
+                        <Link href={`/opportunities/${row.id}`} className="app-table-link">
                           {row.name}
                         </Link>
                       </p>
@@ -193,15 +193,15 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
                     <td className="min-w-[260px]">
                       <p className="text-slate-800">{row.nextStep || "No next step"}</p>
                       {row.nextStepDueDate ? (
-                        <span className="crm-due-pill mt-1" data-urgency={dueUrgency}>
+                        <span className="app-due-pill mt-1" data-urgency={dueUrgency}>
                           {dueUrgency === "overdue" ? "Overdue" : dueUrgency === "today" ? "Due today" : `Due ${row.nextStepDueDate}`}
                         </span>
                       ) : (
-                        <span className="crm-due-pill mt-1" data-urgency="missing">No due date</span>
+                        <span className="app-due-pill mt-1" data-urgency="missing">No due date</span>
                       )}
                     </td>
-                    <td className="crm-money font-semibold text-slate-800">{currency.format(Math.round(row.valueCents / 100))}</td>
-                    <td className="crm-money text-slate-700">{currency.format(Math.round(row.implementationCostCents / 100))}</td>
+                    <td className="app-money font-semibold text-slate-800">{currency.format(Math.round(row.valueCents / 100))}</td>
+                    <td className="app-money text-slate-700">{currency.format(Math.round(row.implementationCostCents / 100))}</td>
                     <td className="min-w-[145px] text-slate-700">{row.expectedCloseDate ? new Date(`${row.expectedCloseDate}T00:00:00`).toLocaleDateString("en-US") : "-"}</td>
                   </tr>
                 );
@@ -210,6 +210,6 @@ export default async function OpportunitiesPage({ searchParams }: OpportunitiesP
           </table>
         </div>
       </section>
-    </CrmShell>
+    </AppShell>
   );
 }

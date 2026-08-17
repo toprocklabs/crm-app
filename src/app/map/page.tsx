@@ -1,5 +1,5 @@
 import { and, eq, isNotNull } from "drizzle-orm";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SourcingMap } from "@/components/sourcing-map";
 import type { MapCandidate } from "@/components/leaflet-canvas";
@@ -80,7 +80,7 @@ export default async function MapPage() {
   const total = customers.length + others.length + candidates.length;
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title="Sourcing map"
       description="Your geocoded customers and the nearby businesses sourced around them. Click a candidate pin to add it as a lead or dismiss it."
@@ -109,6 +109,6 @@ export default async function MapPage() {
           </>
         )}
       </article>
-    </CrmShell>
+    </AppShell>
   );
 }

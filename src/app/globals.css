@@ -51,13 +51,13 @@ body {
     linear-gradient(180deg, #f6f8fc 0%, #f3f7fb 100%);
 }
 
-.crm-shell {
+.app-shell {
   position: relative;
 }
 
-.crm-shell input,
-.crm-shell select,
-.crm-shell textarea {
+.app-shell input,
+.app-shell select,
+.app-shell textarea {
   border-radius: 0.5rem;
   border-color: rgb(203 213 225 / 0.95);
   background: rgb(255 255 255 / 1);
@@ -67,11 +67,11 @@ body {
     0 1px 2px rgb(15 23 42 / 0.03);
 }
 
-.crm-shell .crm-stage-select-shell {
+.app-shell .app-stage-select-shell {
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.45);
 }
 
-.crm-shell select.crm-stage-select {
+.app-shell select.app-stage-select {
   appearance: none;
   border: 0;
   background: transparent;
@@ -80,43 +80,43 @@ body {
   border-radius: 0;
 }
 
-.crm-shell select.crm-stage-select:focus {
+.app-shell select.app-stage-select:focus {
   box-shadow: none;
 }
 
-.crm-shell .crm-stage-select-shell[data-stage="new_lead"] {
+.app-shell .app-stage-select-shell[data-stage="new_lead"] {
   background: linear-gradient(180deg, rgb(248 250 252 / 0.98), rgb(241 245 249 / 0.96));
   border-color: rgb(203 213 225 / 0.95);
   color: rgb(51 65 85);
 }
 
-.crm-shell .crm-stage-select-shell[data-stage="attempting_to_engage"] {
+.app-shell .app-stage-select-shell[data-stage="attempting_to_engage"] {
   background: rgb(254 243 199 / 1);
   border-color: rgb(252 211 77 / 0.9);
   color: rgb(146 64 14);
 }
 
-.crm-shell .crm-stage-select-shell[data-stage="engaged"] {
+.app-shell .app-stage-select-shell[data-stage="engaged"] {
   background: rgb(224 242 254 / 1);
   border-color: rgb(125 211 252 / 0.95);
   color: rgb(7 89 133);
 }
 
-.crm-shell .crm-stage-select-shell[data-stage="in_pipeline"] {
+.app-shell .app-stage-select-shell[data-stage="in_pipeline"] {
   background: rgb(224 231 255 / 1);
   border-color: rgb(165 180 252 / 0.95);
   color: rgb(55 48 163);
 }
 
-.crm-shell .crm-stage-select-shell[data-stage="customer"] {
+.app-shell .app-stage-select-shell[data-stage="customer"] {
   background: rgb(209 250 229 / 1);
   border-color: rgb(110 231 183 / 0.95);
   color: rgb(6 95 70);
 }
 
-.crm-shell input:focus,
-.crm-shell select:focus,
-.crm-shell textarea:focus {
+.app-shell input:focus,
+.app-shell select:focus,
+.app-shell textarea:focus {
   outline: none;
   border-color: rgb(59 130 246 / 0.78);
   box-shadow:
@@ -124,41 +124,41 @@ body {
     inset 0 1px 0 rgb(255 255 255 / 0.98);
 }
 
-.crm-shell button,
-.crm-shell a.rounded-md,
-.crm-shell a.rounded-xl {
+.app-shell button,
+.app-shell a.rounded-md,
+.app-shell a.rounded-xl {
   transition: all 150ms ease;
 }
 
-.crm-shell button[type="submit"] {
+.app-shell button[type="submit"] {
   border: none;
 }
 
-.crm-shell table {
+.app-shell table {
   border-collapse: separate;
   border-spacing: 0;
 }
 
-.crm-shell .crm-table-wrap {
+.app-shell .app-table-wrap {
   overflow-x: auto;
   border: 1px solid rgb(226 232 240 / 0.95);
   border-radius: 0.75rem;
   background: #fff;
 }
 
-.crm-shell .crm-data-table {
+.app-shell .app-data-table {
   min-width: 100%;
   font-size: 0.875rem;
 }
 
-.crm-shell th {
+.app-shell th {
   font-size: 0.74rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: rgb(100 116 139);
 }
 
-.crm-shell .crm-data-table th {
+.app-shell .app-data-table th {
   position: sticky;
   top: 0;
   z-index: 1;
@@ -169,41 +169,41 @@ body {
   backdrop-filter: blur(8px);
 }
 
-.crm-shell .crm-data-table th a {
+.app-shell .app-data-table th a {
   border-radius: 0.375rem;
   padding: 0.125rem 0;
 }
 
-.crm-shell .crm-data-table th a:hover {
+.app-shell .app-data-table th a:hover {
   color: rgb(15 23 42);
 }
 
-.crm-shell td {
+.app-shell td {
   color: rgb(15 23 42);
 }
 
-.crm-shell .crm-data-table td {
+.app-shell .app-data-table td {
   border-bottom: 1px solid rgb(241 245 249);
   padding: 0.8rem 0.75rem;
   vertical-align: top;
 }
 
-.crm-shell .crm-data-table tbody tr:last-child td {
+.app-shell .app-data-table tbody tr:last-child td {
   border-bottom: 0;
 }
 
-.crm-shell tbody tr {
+.app-shell tbody tr {
   transition:
     background-color 140ms ease,
     box-shadow 140ms ease;
 }
 
-.crm-shell tbody tr:hover {
+.app-shell tbody tr:hover {
   background: rgb(248 250 252 / 1);
   box-shadow: inset 3px 0 0 rgb(14 165 233 / 0.6);
 }
 
-.crm-shell .crm-table-link {
+.app-shell .app-table-link {
   font-weight: 600;
   color: rgb(15 23 42);
   text-decoration-line: underline;
@@ -211,18 +211,18 @@ body {
   text-underline-offset: 3px;
 }
 
-.crm-shell .crm-table-link:hover {
+.app-shell .app-table-link:hover {
   color: rgb(2 132 199);
   text-decoration-color: rgb(14 165 233);
 }
 
-.crm-shell .crm-money {
+.app-shell .app-money {
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
 }
 
-.crm-shell .crm-due-pill {
+.app-shell .app-due-pill {
   display: inline-flex;
   align-items: center;
   border-radius: 9999px;
@@ -233,31 +233,31 @@ body {
   white-space: nowrap;
 }
 
-.crm-shell .crm-due-pill[data-urgency="overdue"] {
+.app-shell .app-due-pill[data-urgency="overdue"] {
   background: rgb(254 226 226);
   color: rgb(185 28 28);
 }
 
-.crm-shell .crm-due-pill[data-urgency="today"] {
+.app-shell .app-due-pill[data-urgency="today"] {
   background: rgb(254 243 199);
   color: rgb(146 64 14);
 }
 
-.crm-shell .crm-due-pill[data-urgency="future"] {
+.app-shell .app-due-pill[data-urgency="future"] {
   background: rgb(241 245 249);
   color: rgb(71 85 105);
 }
 
-.crm-shell .crm-due-pill[data-urgency="missing"] {
+.app-shell .app-due-pill[data-urgency="missing"] {
   background: rgb(248 250 252);
   color: rgb(100 116 139);
 }
 
-/* Repo push recency (plan 005). Same geometry as .crm-due-pill, its own colour
+/* Repo push recency (plan 005). Same geometry as .app-due-pill, its own colour
    ramp: cyan = shipping today, through to red = gone quiet. "none" is grey and
    deliberately not red — an account with no linked repo is unmeasured, not
    abandoned, and must not read as the latter. */
-.crm-shell .crm-push-pill {
+.app-shell .app-push-pill {
   display: inline-flex;
   align-items: center;
   border-radius: 9999px;
@@ -268,43 +268,43 @@ body {
   white-space: nowrap;
 }
 
-.crm-shell .crm-push-pill[data-band="today"] {
+.app-shell .app-push-pill[data-band="today"] {
   background: rgb(207 250 254);
   color: rgb(14 116 144);
 }
 
-.crm-shell .crm-push-pill[data-band="warm"] {
+.app-shell .app-push-pill[data-band="warm"] {
   background: rgb(220 252 231);
   color: rgb(21 128 61);
 }
 
-.crm-shell .crm-push-pill[data-band="slow"] {
+.app-shell .app-push-pill[data-band="slow"] {
   background: rgb(254 243 199);
   color: rgb(146 64 14);
 }
 
-.crm-shell .crm-push-pill[data-band="cold"] {
+.app-shell .app-push-pill[data-band="cold"] {
   background: rgb(254 226 226);
   color: rgb(185 28 28);
 }
 
-.crm-shell .crm-push-pill[data-band="none"] {
+.app-shell .app-push-pill[data-band="none"] {
   background: rgb(248 250 252);
   color: rgb(100 116 139);
 }
 
-.crm-shell .gong-panel {
+.app-shell .gong-panel {
   border: 1px solid rgb(226 232 240 / 0.95);
   background: #fff;
   box-shadow: 0 1px 3px rgb(15 23 42 / 0.06);
 }
 
-.crm-shell .gong-kpi {
+.app-shell .gong-kpi {
   position: relative;
   overflow: hidden;
 }
 
-.crm-shell .gong-kpi::after {
+.app-shell .gong-kpi::after {
   content: "";
   position: absolute;
   inset: 0 auto auto 0;
@@ -314,92 +314,92 @@ body {
 }
 
 /* KPI cards that drill into a filtered view. Defined here (not as Tailwind
-   hover: utilities) because .crm-shell .gong-panel sets border/box-shadow at
+   hover: utilities) because .app-shell .gong-panel sets border/box-shadow at
    equal specificity and would otherwise win. */
-.crm-shell .gong-kpi-link {
+.app-shell .gong-kpi-link {
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
-.crm-shell .gong-kpi-link:hover {
+.app-shell .gong-kpi-link:hover {
   transform: translateY(-2px);
   border-color: rgb(103 232 249);
   box-shadow: 0 6px 18px rgb(15 23 42 / 0.1);
 }
 
-.crm-shell .gong-kpi-link:focus-visible {
+.app-shell .gong-kpi-link:focus-visible {
   outline: 2px solid rgb(14 165 233);
   outline-offset: 2px;
 }
 
-.crm-sidebar {
+.app-sidebar {
   overflow-y: auto;
 }
 
 /* Collapsed sidebar. Driven by `data-sidebar` on <html> (seeded before paint by
-   the inline script in app/layout.tsx, toggled in crm-shell.tsx) so the width
+   the inline script in app/layout.tsx, toggled in app-shell.tsx) so the width
    survives navigation without React state or a hydration mismatch. */
 @media (min-width: 768px) {
-  html[data-sidebar="collapsed"] .crm-shell-grid {
+  html[data-sidebar="collapsed"] .app-shell-grid {
     grid-template-columns: 64px minmax(0, 1fr);
   }
 }
 
-html[data-sidebar="collapsed"] .crm-sidebar {
+html[data-sidebar="collapsed"] .app-sidebar {
   padding-left: 0.5rem;
   padding-right: 0.5rem;
 }
 
-html[data-sidebar="collapsed"] .crm-sidebar-label,
-html[data-sidebar="collapsed"] .crm-sidebar-meta {
+html[data-sidebar="collapsed"] .app-sidebar-label,
+html[data-sidebar="collapsed"] .app-sidebar-meta {
   display: none;
 }
 
-html[data-sidebar="collapsed"] .crm-sidebar-head {
+html[data-sidebar="collapsed"] .app-sidebar-head {
   flex-direction: column;
   gap: 0.5rem;
   padding-left: 0;
   padding-right: 0;
 }
 
-html[data-sidebar="collapsed"] .crm-sidebar-nav {
+html[data-sidebar="collapsed"] .app-sidebar-nav {
   margin-top: 1rem;
 }
 
-html[data-sidebar="collapsed"] .crm-sidebar-link {
+html[data-sidebar="collapsed"] .app-sidebar-link {
   justify-content: center;
   gap: 0;
   padding-left: 0;
   padding-right: 0;
 }
 
-html[data-sidebar="collapsed"] .crm-sidebar-caret {
+html[data-sidebar="collapsed"] .app-sidebar-caret {
   transform: rotate(180deg);
 }
 
-html[data-sidebar="collapsed"] .crm-sidebar-logout {
+html[data-sidebar="collapsed"] .app-sidebar-logout {
   padding-left: 0;
   padding-right: 0;
 }
 
-html[data-sidebar="collapsed"] .crm-sidebar-logout button {
+html[data-sidebar="collapsed"] .app-sidebar-logout button {
   padding-left: 0;
   padding-right: 0;
 }
 
-.crm-sidebar-logout-icon {
+.app-sidebar-logout-icon {
   display: none;
 }
 
-html[data-sidebar="collapsed"] .crm-sidebar-logout-icon {
+html[data-sidebar="collapsed"] .app-sidebar-logout-icon {
   display: inline-block;
 }
 
-.crm-disclosure > summary::-webkit-details-marker {
+.app-disclosure > summary::-webkit-details-marker {
   display: none;
 }
 
 @media (max-width: 767px) {
-  .crm-sidebar {
+  .app-sidebar {
     display: none;
   }
 }

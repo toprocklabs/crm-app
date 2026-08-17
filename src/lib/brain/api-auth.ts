@@ -2,7 +2,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 
 // Auth for the agent ingest API (plan 007, phase 2).
 //
-// A shared bearer token, NOT the `crm_session` JWT cookie: both callers are
+// A shared bearer token, NOT the `toprock_session` JWT cookie: both callers are
 // headless scheduled scripts (Task Scheduler on Windows, a Codex cron) with no
 // browser and nowhere to hold a login. Plan 008's MCP server puts OAuth in front
 // of the same handlers for interactive agents.

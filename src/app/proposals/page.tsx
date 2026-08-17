@@ -3,7 +3,7 @@ import { desc, eq } from "drizzle-orm";
 import { createProposal, updateProposalPin } from "@/app/actions";
 import { AutoSaveProposalPinField } from "@/components/auto-save-proposal-pin-field";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -47,7 +47,7 @@ export default async function ProposalsPage() {
   const outstandingCount = proposalRows.filter((p) => p.status === "sent" || p.status === "viewed").length;
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title="Proposals"
       description="Statements of work tied to accounts: draft, send the PIN-gated link, and track signatures."
@@ -213,6 +213,6 @@ export default async function ProposalsPage() {
           </div>
         </article>
       </section>
-    </CrmShell>
+    </AppShell>
   );
 }

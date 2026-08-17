@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { approveSuggestion, dismissSuggestion } from "@/app/actions";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -47,7 +47,7 @@ export default async function InboxPage() {
     .sort((a, b) => b.score.combined - a.score.combined);
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title="Sourcing inbox"
       description="Nearby businesses sourced around your customers, ranked by referral strength (warmth × fit). Promote the good ones — each lands wired to the customer it was found near."
@@ -132,6 +132,6 @@ export default async function InboxPage() {
           ))}
         </ul>
       </article>
-    </CrmShell>
+    </AppShell>
   );
 }

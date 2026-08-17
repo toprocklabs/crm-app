@@ -6,7 +6,7 @@ import { ActivityTimeline } from "@/components/activity-timeline";
 import { AutoSaveContactField } from "@/components/auto-save-contact-field";
 import { CallLink } from "@/components/call-link";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { activityTypeOptions, getActivityMeta } from "@/lib/activity-ui";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -100,7 +100,7 @@ export default async function ContactDetailPage({ params }: Props) {
   const dealOptions = accountDeals.length > 0 ? accountDeals : relatedDeals.map((deal) => ({ id: deal.id, name: deal.name }));
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title={`${contact.firstName} ${contact.lastName}`}
       description="Contact profile with linked account context, activity history, and related opportunities."
@@ -261,6 +261,6 @@ export default async function ContactDetailPage({ params }: Props) {
           </ul>
         </article>
       </section>
-    </CrmShell>
+    </AppShell>
   );
 }

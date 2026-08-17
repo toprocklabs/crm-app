@@ -21,7 +21,7 @@ import { AutoSaveContactField } from "@/components/auto-save-contact-field";
 import { BillingPanel } from "@/components/billing-panel";
 import { CallLink } from "@/components/call-link";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { ProposalsPanel } from "@/components/proposals-panel";
 import { getActivityMeta } from "@/lib/activity-ui";
@@ -152,7 +152,7 @@ export default async function AccountDetailPage({ params }: Props) {
   const pushRecency = getPushRecency(freshestPush, now.getTime());
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title={company.name}
       description="Everything on this client: what they pay, and every conversation."
@@ -675,6 +675,6 @@ export default async function AccountDetailPage({ params }: Props) {
           ) : null}
         </CollapsibleFormSection>
       </section>
-    </CrmShell>
+    </AppShell>
   );
 }

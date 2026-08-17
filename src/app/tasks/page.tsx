@@ -1,7 +1,7 @@
 ﻿import { desc, eq } from "drizzle-orm";
 import { completeTask, createTask } from "@/app/actions";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { OpenActionItemsRollup } from "@/components/open-action-items-rollup";
 import { requireUser } from "@/lib/auth";
@@ -43,7 +43,7 @@ export default async function TasksPage() {
   const completedTasks = taskRows.filter((task) => task.status === "done");
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title="Tasks"
       description="Manage follow-up reminders and close the loop on every open opportunity."
@@ -178,6 +178,6 @@ export default async function TasksPage() {
           </CollapsibleFormSection>
         </article>
       </section>
-    </CrmShell>
+    </AppShell>
   );
 }

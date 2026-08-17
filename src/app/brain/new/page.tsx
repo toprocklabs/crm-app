@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { asc } from "drizzle-orm";
 import { createBrainDocument } from "@/app/actions";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { companies } from "@/lib/schema";
@@ -51,7 +51,7 @@ export default async function NewBrainDocumentPage({
   const isJournal = selectedFolder === "Journal";
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title="New note"
       description="Goes straight into the brain — searchable immediately."
@@ -152,6 +152,6 @@ export default async function NewBrainDocumentPage({
           </div>
         </form>
       </section>
-    </CrmShell>
+    </AppShell>
   );
 }

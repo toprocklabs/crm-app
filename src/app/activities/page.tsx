@@ -2,7 +2,7 @@
 import { logActivity } from "@/app/actions";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { activityTypeOptions, getActivityMeta } from "@/lib/activity-ui";
 import { requireUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -46,7 +46,7 @@ export default async function ActivitiesPage() {
   ]);
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title="Activities"
       description="A full timeline of opportunity and account interactions across your team."
@@ -145,6 +145,6 @@ export default async function ActivitiesPage() {
           />
         </article>
       </section>
-    </CrmShell>
+    </AppShell>
   );
 }

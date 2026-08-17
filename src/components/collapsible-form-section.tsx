@@ -60,7 +60,7 @@ export function CollapsibleFormSection({
         ref={detailsRef}
         open={defaultOpen}
         onSubmitCapture={collapse}
-        className={`crm-disclosure group ${className ?? ""}`}
+        className={`app-disclosure group ${className ?? ""}`}
       >
         <summary
           className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
@@ -80,7 +80,7 @@ export function CollapsibleFormSection({
       ref={detailsRef}
       open={defaultOpen}
       onSubmitCapture={collapse}
-      className={`crm-disclosure group rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${className ?? ""}`}
+      className={`app-disclosure group rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${className ?? ""}`}
     >
       <summary className="flex cursor-pointer list-none items-start justify-between gap-3">
         <span>

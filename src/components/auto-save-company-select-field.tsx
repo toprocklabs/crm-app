@@ -31,7 +31,7 @@ export function AutoSaveCompanySelectField({
 }) {
   const { formRef, selectedValue, onSelectChange } = useAutoSaveSelect(defaultValue, action);
   const resolvedSelectClassName = stageToneStyle
-    ? "crm-stage-select w-full bg-transparent pr-7 pl-0 text-xs font-medium"
+    ? "app-stage-select w-full bg-transparent pr-7 pl-0 text-xs font-medium"
     : (selectClassName ?? "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900");
   const stageToneClassName = stageToneStyle ? getAccountStageTone(selectedValue as AccountStage) : "";
 
@@ -43,7 +43,7 @@ export function AutoSaveCompanySelectField({
       {stageToneStyle ? (
         <div
           data-stage={selectedValue}
-          className={`crm-stage-select-shell relative min-w-[180px] rounded-full border px-3 py-1.5 ${stageToneClassName}`}
+          className={`app-stage-select-shell relative min-w-[180px] rounded-full border px-3 py-1.5 ${stageToneClassName}`}
         >
           <select
             name="value"

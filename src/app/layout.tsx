@@ -22,7 +22,9 @@ export default async function RootLayout({
             sidebar never flashes open on navigation. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{document.documentElement.dataset.sidebar=localStorage.getItem("crm.sidebar-collapsed")==="1"?"collapsed":"expanded"}catch(e){}`,
+            // Falls back to the pre-plan-008 key so the rename doesn't silently
+            // reset everyone's sidebar. Drop the fallback after a release.
+            __html: `try{var s=localStorage.getItem("toprock.sidebar-collapsed")??localStorage.getItem("crm.sidebar-collapsed");document.documentElement.dataset.sidebar=s==="1"?"collapsed":"expanded"}catch(e){}`,
           }}
         />
         {children}

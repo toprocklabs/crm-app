@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { SearchInput } from "@/components/search-input";
 import { requireUser } from "@/lib/auth";
@@ -46,7 +46,7 @@ export default async function BrainPage({
   });
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title="Brain"
       description="Every note Toprock has written, searchable."
@@ -132,6 +132,6 @@ export default async function BrainPage({
           ))}
         </ul>
       </section>
-    </CrmShell>
+    </AppShell>
   );
 }

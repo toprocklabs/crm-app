@@ -1,7 +1,7 @@
 import { desc, eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { ActivityTimeline } from "@/components/activity-timeline";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { EmptyState } from "@/components/empty-state";
 import { OpenActionItemsRollup } from "@/components/open-action-items-rollup";
 import { requireUser } from "@/lib/auth";
@@ -115,7 +115,7 @@ export default async function Home() {
   };
 
   return (
-    <CrmShell
+    <AppShell
       username={session.username}
       title="Dashboard"
       description="Track pipeline, enforce next steps, and run a clean follow-up cadence for your SMB opportunities."
@@ -257,6 +257,6 @@ export default async function Home() {
           }))}
         />
       </section>
-    </CrmShell>
+    </AppShell>
   );
 }

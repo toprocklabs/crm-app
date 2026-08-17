@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { updateBrainDocumentField } from "@/app/actions";
 import { CollapsibleFormSection } from "@/components/collapsible-form-section";
-import { CrmShell } from "@/components/crm-shell";
+import { AppShell } from "@/components/app-shell";
 import { MarkdownBodyEditor } from "@/components/markdown-body-editor";
 import { MeetingBody } from "@/components/meeting-body";
 import { requireUser } from "@/lib/auth";
@@ -55,7 +55,7 @@ export default async function BrainDocumentPage({
   ).filter(([, value]) => (Array.isArray(value) ? value.length > 0 : String(value).trim() !== ""));
 
   return (
-    <CrmShell username={session.username} title={doc.title} description={doc.path}>
+    <AppShell username={session.username} title={doc.title} description={doc.path}>
       <div className="space-y-4">
         <section className="gong-panel rounded-xl p-5">
           <div className="flex flex-wrap items-center gap-2">
@@ -142,6 +142,6 @@ export default async function BrainDocumentPage({
           )}
         </section>
       </div>
-    </CrmShell>
+    </AppShell>
   );
 }

@@ -40,7 +40,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - `src/lib/db.ts` shared Neon Drizzle client
 - `src/lib/auth.ts` session create/verify helpers
 - `src/lib/normalize.ts` pure input normalizers (text/url/phone/date) used by actions
-- `src/components/` shared UI helpers (`crm-shell`, autosave fields, call link, collapsible form section)
+- `src/components/` shared UI helpers (`app-shell`, autosave fields, call link, collapsible form section)
 - `drizzle/` generated migrations
 - `tests/` `node:test` suites for pure logic — run with `npm test`
 - `scripts/sync-repos.mjs` GitHub org → `project_repos` mirror (`npm run sync:repos [-- --dry-run]`)
@@ -115,8 +115,8 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - Preserve the dark utility sidebar, bright analytics canvas, crisp white panels, and cyan/blue accent system unless explicitly redesigning again.
 - Favor dense but readable information hierarchy: compact KPI blocks, sharp tables, restrained pills, and fewer redundant explainer sections.
 - Avoid reintroducing glossy/glassy gradients or duplicative summary panels that repeat the page header or table metadata.
-- The shell is full-bleed (no centered `max-w` cap) so wide tables get the whole viewport. Don't reintroduce a max-width wrapper in `crm-shell.tsx` or `SkeletonShell`.
-- The desktop sidebar collapses to a 64px icon rail. State lives in `document.documentElement.dataset.sidebar` (`expanded` / `collapsed`), seeded before paint by the inline script in `app/layout.tsx` and persisted to `localStorage["crm.sidebar-collapsed"]`. Collapsed styling is CSS-only (`html[data-sidebar="collapsed"] …` in `globals.css`) — keep it out of React state or it re-introduces a hydration mismatch and a flash of the expanded rail.
+- The shell is full-bleed (no centered `max-w` cap) so wide tables get the whole viewport. Don't reintroduce a max-width wrapper in `app-shell.tsx` or `SkeletonShell`.
+- The desktop sidebar collapses to a 64px icon rail. State lives in `document.documentElement.dataset.sidebar` (`expanded` / `collapsed`), seeded before paint by the inline script in `app/layout.tsx` and persisted to `localStorage["toprock.sidebar-collapsed"]`. Collapsed styling is CSS-only (`html[data-sidebar="collapsed"] …` in `globals.css`) — keep it out of React state or it re-introduces a hydration mismatch and a flash of the expanded rail.
 - On `/accounts`, the account table is the page. Add account and Closed Lost are secondary: both are compact `CollapsibleFormSection variant="compact"` toggles, not full panels. Do not promote either back into its own headed section.
 
 ## Key Workflows Added
@@ -183,7 +183,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - If touching contact profile editing, preserve blur autosave behavior.
 - If touching phone display, preserve `Call` button (`tel:` link behavior).
 - If adding activity logging context, set `returnPath` so the page revalidates after submit.
-- If adding/renaming routes, update top nav in `src/components/crm-shell.tsx`.
+- If adding/renaming routes, update top nav in `src/components/app-shell.tsx`.
 - If editing create/log forms, preserve the collapsible interaction pattern.
 - If editing account stage selection, preserve immediate client-side feedback and the direct server-action update pattern in `AutoSaveCompanySelectField`.
 - If editing the account create form on `/accounts`, keep the expanded form spacious and readable (2-column grid, full-width URL/next-step fields); only its collapsed toggle is compact.

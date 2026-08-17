@@ -4,7 +4,7 @@ import Link from "next/link";
 // not-found.tsx. Deliberately built from plain Tailwind literals and no client
 // hooks — a boundary that itself depends on app state is a boundary that fails
 // exactly when it is needed. It intentionally mirrors the login card rather
-// than CrmShell, because the sidebar needs a session these pages may not have.
+// than AppShell, because the sidebar needs a session these pages may not have.
 export function FailurePage({
   kicker,
   title,
