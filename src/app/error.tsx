@@ -23,7 +23,7 @@ export default function AppError({
 
   return (
     <FailurePage
-      kicker="Toprock CRM"
+      kicker="Toprock OS"
       title="Something went wrong"
       message="That action didn't complete. Nothing was saved, so you can safely try again. If it keeps happening, the reference below will be in the server logs."
       detail={error.digest ? `Reference: ${error.digest}` : error.message || null}

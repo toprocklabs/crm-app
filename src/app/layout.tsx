@@ -4,7 +4,7 @@ import { getFlashToast } from "@/lib/flash";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Toprock CRM",
+  title: "Toprock OS",
   description: "A lightweight CRM for SMB AI agencies built with Next.js and Neon.",
 };
 

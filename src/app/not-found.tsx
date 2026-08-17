@@ -5,7 +5,7 @@ import { FailurePage } from "@/components/failure-page";
 export default function NotFound() {
   return (
     <FailurePage
-      kicker="Toprock CRM"
+      kicker="Toprock OS"
       title="Not found"
       message="We couldn't find that page. If you followed a link to a record, it may have been deleted or merged into another account."
     />

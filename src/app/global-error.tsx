@@ -58,7 +58,7 @@ export default function GlobalError({
               color: "#64748b",
             }}
           >
-            Toprock CRM
+            Toprock OS
           </p>
           <h1 style={{ margin: "16px 0 0", fontSize: 30, fontWeight: 600, letterSpacing: "-0.01em" }}>
             The app failed to load

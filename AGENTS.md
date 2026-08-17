@@ -8,8 +8,12 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 # AGENTS.md
 
 ## Project Snapshot
-- App: lightweight CRM (accounts, contacts, opportunities, tasks, activities)
-- Product label: Toprock CRM
+- App: Toprock OS — the operating system for a two-person agency. Five modules:
+  **CRM** (accounts, contacts, opportunities, map), **Money** (proposals, payments),
+  **Brain** (notes, meetings, activities, tasks), **Delivery** (GitHub mirror),
+  **Agents** (inbox, ingest API).
+- Product label: Toprock OS. "CRM" is now a module name, not the product — it covers
+  accounts/contacts/opportunities and nothing else. See planning/008-toprock-os/.
 - Stack: Next.js App Router, TypeScript, Tailwind, Drizzle ORM, Neon Postgres
 - Auth: custom username/password login with signed JWT cookie session
 - Rendering: route pages are server-rendered (`force-dynamic`) with server actions for writes
@@ -30,7 +34,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 
 ## Core Structure
 - `src/app/` App Router pages + server actions
-- `src/app/actions.ts` primary CRM mutations (create/update/log)
+- `src/app/actions.ts` every server action, all modules (create/update/log)
 - `src/app/login/` auth actions and login page
 - `src/lib/schema.ts` Drizzle schema and enums
 - `src/lib/db.ts` shared Neon Drizzle client
@@ -129,7 +133,7 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - Collapsible sections auto-close on submit (`onSubmitCapture`) and remain minimized after refresh.
 
 ## Proposals / Signed Agreements (merged from proposal_creator — plan 002)
-- Proposals are CRM records (`proposals` table) tied to an account (required) and optionally an opportunity/contact. The old standalone `proposal_creator` repo is superseded; do not add new proposals there.
+- Proposals are first-class records (`proposals` table) tied to an account (required) and optionally an opportunity/contact. The old standalone `proposal_creator` repo is superseded; do not add new proposals there.
 - Content stays the legacy four-section markdown: `## Overview`, `## Pricing` (GFM table: Phase / Item | Description | Cost), `## What's Included` (bullets), `## Notes` (optional). Parsers live in `src/lib/proposal/markdown.ts`.
 - **Creating a proposal by prompting Claude Code** (the standard flow): give it a transcript or pricing notes → it drafts the four-section markdown following the brand rules in `src/lib/proposal/toprock_branding.md` (tone: direct, second person, no jargon, no exclamation marks; accent used sparingly) → it inserts the row via SQL or you paste into the `/proposals` create + edit forms → review in-app, then send the client `/p/[slug]` + the PIN.
 - **Smart create:** the `/proposals` form accepts a "New account name" — `createProposal` creates the account (case-insensitive match first, stage `in_pipeline`) and, unless an existing opportunity is picked, auto-creates one from the proposal (stage `proposal`, MRR/one-time parsed from the Pricing table via `parsePricingTotals`). Saving proposal content later back-fills the linked opportunity's value only while it's still 0/0.
@@ -151,8 +155,8 @@ Check `node_modules/next/dist/docs/` when changing framework behavior.
 - Recency bands live in `src/lib/push-recency.ts` (pure, `now` passed in, covered by `tests/push-recency.test.ts`). Change thresholds there, not in the page.
 
 ## Client meeting notes (plan 006)
-- The standalone `client-projects/toprock_client_notes` site is **frozen**. Never add a note there. Meeting notes are CRM records now.
-- An account page leads with **money** (`BillingPanel`) then **Meetings & notes**. Contacts, engagement, tasks and details are collapsed on purpose — this CRM serves a two-person agency, so the pipeline machinery is supporting detail, not the headline. Don't promote them back up.
+- The standalone `client-projects/toprock_client_notes` site is **frozen**. Never add a note there. Meeting notes live in this app now.
+- An account page leads with **money** (`BillingPanel`) then **Meetings & notes**. Contacts, engagement, tasks and details are collapsed on purpose — this app serves a two-person agency, so the pipeline machinery is supporting detail, not the headline. Don't promote them back up.
 - A meeting belongs to one account (`meetings.company_id`) and may be shared with more via `meeting_companies`. Always read through `src/lib/meeting/queries.ts` — a bare `where company_id = ?` silently hides shared notes from the second account.
 - `meeting_action_items.company_id` is denormalised from the meeting's **owner** account. The per-account panel reads by *visibility* (so a shared note's homework shows on both pages); the cross-account roll-up reads by *owner* (so it can't double-count). That asymmetry is deliberate.
 - **Never select `body_md` in a list query** — it averages ~11KB. Only `/meetings/[slug]` reads it. Same lesson as `proposal_documents` in plan 002.
